@@ -23,11 +23,13 @@ const joinInitialState: JoinGroupActionState = { error: null, success: false, gr
 export function GroupsPageClient({ groups }: GroupsPageClientProps) {
   const router = useRouter();
   const [showForm, setShowForm] = useState(groups.length === 0);
+  const [isNavigatingToGroup, setIsNavigatingToGroup] = useState(false);
   const [createState, createFormAction, isCreatePending] = useActionState(createGroupAction, createInitialState);
   const [joinState, joinFormAction, isJoinPending] = useActionState(joinGroupAction, joinInitialState);
 
   useEffect(() => {
     if (createState.success && createState.groupId) {
+      setIsNavigatingToGroup(true);
       setShowForm(false);
       router.push(`${ROUTES.groups}/${createState.groupId}`);
       router.refresh();
@@ -52,13 +54,16 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
         <Card className="rounded-3xl">
           <h2 className="text-lg font-semibold text-slate-900">Crear nuevo grupo</h2>
           <form action={createFormAction} className="mt-4 space-y-4">
-            <Input label="Nombre del grupo" name="name" placeholder="Ej. Planes de Madrid" required />
-            <Input label="Descripcion (opcional)" name="description" placeholder="Tipo de planes o notas del grupo" />
-            {createState.error ? <p className="text-sm text-rose-600">{createState.error}</p> : null}
-            {createState.success ? <p className="text-sm text-emerald-600">Grupo creado correctamente.</p> : null}
-            <Button disabled={isCreatePending} type="submit">
-              {isCreatePending ? "Creando..." : "Crear grupo"}
-            </Button>
+            <fieldset className="space-y-4" disabled={isCreatePending || isNavigatingToGroup}>
+              <Input label="Nombre del grupo" name="name" placeholder="Ej. Planes de Madrid" required />
+              <Input label="Descripcion (opcional)" name="description" placeholder="Tipo de planes o notas del grupo" />
+              {createState.error ? <p className="text-sm text-rose-600">{createState.error}</p> : null}
+              {createState.success ? <p className="text-sm text-emerald-600">Grupo creado correctamente.</p> : null}
+              {isNavigatingToGroup ? <p className="text-sm text-slate-500">Abriendo el grupo...</p> : null}
+              <Button disabled={isCreatePending || isNavigatingToGroup} type="submit">
+                {isCreatePending ? "Creando..." : "Crear grupo"}
+              </Button>
+            </fieldset>
           </form>
         </Card>
       ) : null}
@@ -66,22 +71,24 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
       <Card className="rounded-3xl">
         <h2 className="text-lg font-semibold text-slate-900">Unirse con codigo</h2>
         <form action={joinFormAction} className="mt-4 space-y-4">
-          <Input label="Codigo del grupo" name="joinCode" placeholder="Ej. A1B2C3D4" required />
-          {joinState.error ? <p className="text-sm text-rose-600">{joinState.error}</p> : null}
-          {joinState.success ? <p className="text-sm text-emerald-600">Te uniste al grupo correctamente.</p> : null}
-          <div className="flex flex-wrap items-center gap-3">
-            <Button disabled={isJoinPending} type="submit" variant="secondary">
-              {isJoinPending ? "Uniendote..." : "Unirme"}
-            </Button>
-            {joinState.success && joinState.groupId ? (
-              <Link
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-teal-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-teal-600"
-                href={`${ROUTES.groups}/${joinState.groupId}`}
-              >
-                Ir al grupo
-              </Link>
-            ) : null}
-          </div>
+          <fieldset className="space-y-4" disabled={isJoinPending}>
+            <Input label="Codigo del grupo" name="joinCode" placeholder="Ej. A1B2C3D4" required />
+            {joinState.error ? <p className="text-sm text-rose-600">{joinState.error}</p> : null}
+            {joinState.success ? <p className="text-sm text-emerald-600">Te uniste al grupo correctamente.</p> : null}
+            <div className="flex flex-wrap items-center gap-3">
+              <Button disabled={isJoinPending} type="submit" variant="secondary">
+                {isJoinPending ? "Uniendote..." : "Unirme"}
+              </Button>
+              {joinState.success && joinState.groupId ? (
+                <Link
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-teal-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-teal-600"
+                  href={`${ROUTES.groups}/${joinState.groupId}`}
+                >
+                  Ir al grupo
+                </Link>
+              ) : null}
+            </div>
+          </fieldset>
         </form>
       </Card>
 

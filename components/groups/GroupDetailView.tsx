@@ -58,7 +58,7 @@ export function GroupDetailView({ group, groupId, places }: GroupDetailViewProps
           </div>
 
           <Button onClick={() => setShowAddPlaceForm((value) => !value)} type="button">
-            {showAddPlaceForm ? "Cerrar formulario" : "Añadir lugar"}
+            {showAddPlaceForm ? "Cerrar formulario" : "Anadir lugar"}
           </Button>
         </div>
       </Card>
@@ -88,3 +88,4 @@ export function GroupDetailView({ group, groupId, places }: GroupDetailViewProps
     </section>
   );
 }
+

@@ -45,27 +45,29 @@ export function PlaceCard({ groupId, place }: PlaceCardProps) {
       <p className="mt-1 text-sm text-slate-600">{place.address}</p>
       {place.notes ? <p className="mt-2 text-sm text-slate-500">{place.notes}</p> : null}
 
-      <form action={formAction} className="mt-4 flex flex-wrap gap-2">
-        <input name="groupId" type="hidden" value={groupId} />
-        <input name="placeId" type="hidden" value={place.id} />
-        <label className="sr-only" htmlFor={`status-${place.id}`}>
-          Estado
-        </label>
-        <select
-          className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
-          defaultValue={place.status}
-          id={`status-${place.id}`}
-          name="status"
-        >
-          {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <Button disabled={isPending} size="sm" type="submit" variant="secondary">
-          {isPending ? "Guardando..." : "Cambiar estado"}
-        </Button>
+      <form action={formAction} className="mt-4">
+        <fieldset className="flex flex-wrap gap-2" disabled={isPending}>
+          <input name="groupId" type="hidden" value={groupId} />
+          <input name="placeId" type="hidden" value={place.id} />
+          <label className="sr-only" htmlFor={`status-${place.id}`}>
+            Estado
+          </label>
+          <select
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+            defaultValue={place.status}
+            id={`status-${place.id}`}
+            name="status"
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <Button disabled={isPending} size="sm" type="submit" variant="secondary">
+            {isPending ? "Guardando..." : "Cambiar estado"}
+          </Button>
+        </fieldset>
       </form>
       {state.error ? <p className="mt-2 text-sm text-rose-600">{state.error}</p> : null}
       {state.success ? <p className="mt-2 text-sm text-emerald-600">Estado actualizado.</p> : null}
