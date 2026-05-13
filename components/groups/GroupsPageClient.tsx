@@ -2,28 +2,37 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import { ROUTES } from "@/utils/constants";
-import type { GroupListItem } from "@/lib/groups";
-import { createGroupAction, createGroupInitialState } from "@/app/groups/actions";
+import type { GroupListItem } from "@/lib/groups/types";
+import { createGroupAction, joinGroupAction } from "@/app/groups/actions";
+import type { CreateGroupActionState, JoinGroupActionState } from "@/app/groups/actions";
 
 type GroupsPageClientProps = {
   groups: GroupListItem[];
 };
 
+const createInitialState: CreateGroupActionState = { error: null, success: false, groupId: null };
+const joinInitialState: JoinGroupActionState = { error: null, success: false, groupId: null };
+
 export function GroupsPageClient({ groups }: GroupsPageClientProps) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(groups.length === 0);
-  const [state, formAction, isPending] = useActionState(createGroupAction, createGroupInitialState);
+  const [createState, createFormAction, isCreatePending] = useActionState(createGroupAction, createInitialState);
+  const [joinState, joinFormAction, isJoinPending] = useActionState(joinGroupAction, joinInitialState);
 
   useEffect(() => {
-    if (state.success) {
+    if (createState.success && createState.groupId) {
       setShowForm(false);
+      router.push(`${ROUTES.groups}/${createState.groupId}`);
+      router.refresh();
     }
-  }, [state.success]);
+  }, [createState.groupId, createState.success, router]);
 
   return (
     <>
@@ -42,17 +51,39 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
       {showForm ? (
         <Card className="rounded-3xl">
           <h2 className="text-lg font-semibold text-slate-900">Crear nuevo grupo</h2>
-          <form action={formAction} className="mt-4 space-y-4">
+          <form action={createFormAction} className="mt-4 space-y-4">
             <Input label="Nombre del grupo" name="name" placeholder="Ej. Planes de Madrid" required />
             <Input label="Descripcion (opcional)" name="description" placeholder="Tipo de planes o notas del grupo" />
-            {state.error ? <p className="text-sm text-rose-600">{state.error}</p> : null}
-            {state.success ? <p className="text-sm text-emerald-600">Grupo creado correctamente.</p> : null}
-            <Button disabled={isPending} type="submit">
-              {isPending ? "Creando..." : "Crear grupo"}
+            {createState.error ? <p className="text-sm text-rose-600">{createState.error}</p> : null}
+            {createState.success ? <p className="text-sm text-emerald-600">Grupo creado correctamente.</p> : null}
+            <Button disabled={isCreatePending} type="submit">
+              {isCreatePending ? "Creando..." : "Crear grupo"}
             </Button>
           </form>
         </Card>
       ) : null}
+
+      <Card className="rounded-3xl">
+        <h2 className="text-lg font-semibold text-slate-900">Unirse con codigo</h2>
+        <form action={joinFormAction} className="mt-4 space-y-4">
+          <Input label="Codigo del grupo" name="joinCode" placeholder="Ej. A1B2C3D4" required />
+          {joinState.error ? <p className="text-sm text-rose-600">{joinState.error}</p> : null}
+          {joinState.success ? <p className="text-sm text-emerald-600">Te uniste al grupo correctamente.</p> : null}
+          <div className="flex flex-wrap items-center gap-3">
+            <Button disabled={isJoinPending} type="submit" variant="secondary">
+              {isJoinPending ? "Uniendote..." : "Unirme"}
+            </Button>
+            {joinState.success && joinState.groupId ? (
+              <Link
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-teal-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-teal-600"
+                href={`${ROUTES.groups}/${joinState.groupId}`}
+              >
+                Ir al grupo
+              </Link>
+            ) : null}
+          </div>
+        </form>
+      </Card>
 
       {groups.length > 0 ? (
         <ul className="grid gap-3 sm:grid-cols-2">

@@ -1,21 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-export type GroupListItem = {
-  id: string;
-  name: string;
-  description: string | null;
-  createdAt: string;
-  role: "owner" | "member";
-};
-
-export type GroupDetail = {
-  id: string;
-  name: string;
-  description: string | null;
-  joinCode: string;
-  createdAt: string;
-  role: "owner" | "member";
-};
+import type { GroupDetail, GroupListItem } from "@/lib/groups/types";
 
 export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   const supabase = await createSupabaseServerClient();
