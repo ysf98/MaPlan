@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 import { ROUTES } from "@/utils/constants";
 import { cn } from "@/lib/cn";
 
@@ -12,8 +13,16 @@ const items = [
   { href: ROUTES.profile, label: "Perfil" }
 ];
 
-export function MobileNav() {
+type MobileNavProps = {
+  isAuthenticated: boolean;
+};
+
+export function MobileNav({ isAuthenticated }: MobileNavProps) {
   const pathname = usePathname();
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 px-2 py-2 backdrop-blur md:hidden">
@@ -35,6 +44,7 @@ export function MobileNav() {
           );
         })}
       </ul>
+      {isAuthenticated ? <div className="mt-2 flex justify-center"><SignOutButton /></div> : null}
     </nav>
   );
 }

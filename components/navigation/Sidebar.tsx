@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 import { ROUTES } from "@/utils/constants";
 import { cn } from "@/lib/cn";
 
@@ -12,8 +13,16 @@ const items = [
   { href: ROUTES.profile, label: "Profile" }
 ];
 
-export function Sidebar() {
+type SidebarProps = {
+  isAuthenticated: boolean;
+};
+
+export function Sidebar({ isAuthenticated }: SidebarProps) {
   const pathname = usePathname();
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <aside className="sticky top-20 hidden h-[calc(100vh-6rem)] w-56 rounded-2xl border border-slate-200 bg-white p-3 lg:block">
@@ -35,6 +44,7 @@ export function Sidebar() {
           );
         })}
       </ul>
+      {isAuthenticated ? <div className="mt-4"><SignOutButton /></div> : null}
     </aside>
   );
 }
