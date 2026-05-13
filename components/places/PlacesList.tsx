@@ -8,9 +8,10 @@ import type { GroupPlace } from "@/lib/places/shared";
 type PlacesListProps = {
   groupId: string;
   places: GroupPlace[];
+  canEdit: boolean;
 };
 
-export function PlacesList({ groupId, places }: PlacesListProps) {
+export function PlacesList({ groupId, places, canEdit }: PlacesListProps) {
   const [statusFilter, setStatusFilter] = useState<PlaceStatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<PlaceCategoryFilter>("all");
 
@@ -35,7 +36,7 @@ export function PlacesList({ groupId, places }: PlacesListProps) {
         <ul className="grid gap-3 sm:grid-cols-2">
           {filteredPlaces.map((place) => (
             <li key={place.id}>
-              <PlaceCard groupId={groupId} place={place} />
+              <PlaceCard canEdit={canEdit} groupId={groupId} place={place} />
             </li>
           ))}
         </ul>

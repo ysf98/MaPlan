@@ -138,7 +138,7 @@ describe("group server actions", () => {
     getCurrentUserMock.mockResolvedValue({ id: "user-1" });
     createSupabaseServerClientMock.mockResolvedValue(
       createGroupsActionClient({
-        foundGroup: { id: "group-xyz" },
+        foundGroup: { id: "group-xyz", join_policy: "open_by_code" },
         existingMembership: null
       })
     );

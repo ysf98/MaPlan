@@ -81,7 +81,6 @@ export async function createGroupAction(
       join_policy: joinPolicy
     };
     let groupResult = await supabase.from("groups").insert(groupInsertPayload).select("id").single();
-
     if (isRlsError(groupResult.error) && adminClient) {
       groupResult = await adminClient.from("groups").insert(groupInsertPayload).select("id").single();
     }
@@ -109,10 +108,10 @@ export async function createGroupAction(
     role: "owner" as const
   };
   let memberInsertResult = await supabase.from("group_members").insert(memberInsertPayload);
-
   if (isRlsError(memberInsertResult.error) && adminClient) {
     memberInsertResult = await adminClient.from("group_members").insert(memberInsertPayload);
   }
+
   const { error: memberError } = memberInsertResult;
 
   if (memberError) {
@@ -156,8 +155,7 @@ export async function joinGroupAction(
   const supabase = await createSupabaseServerClient();
   const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
   let groupResult = await supabase.from("groups").select("id, join_policy").eq("join_code", joinCode).maybeSingle();
-
-  if ((isRlsError(groupResult.error) || (!groupResult.error && !groupResult.data)) && adminClient) {
+  if ((groupResult.error?.code === "42501" || (!groupResult.error && !groupResult.data)) && adminClient) {
     groupResult = await adminClient.from("groups").select("id, join_policy").eq("join_code", joinCode).maybeSingle();
   }
 
@@ -180,10 +178,6 @@ export async function joinGroupAction(
     };
     let requestResult = await supabase.from("group_join_requests").upsert(requestPayload, { onConflict: "group_id,user_id" });
 
-    if (isRlsError(requestResult.error) && adminClient) {
-      requestResult = await adminClient.from("group_join_requests").upsert(requestPayload, { onConflict: "group_id,user_id" });
-    }
-
     if (requestResult.error) {
       return { error: requestResult.error.message, success: false, groupId: null, mode: null };
     }
@@ -199,15 +193,6 @@ export async function joinGroupAction(
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (isRlsError(existingMembershipResult.error) && adminClient) {
-    existingMembershipResult = await adminClient
-      .from("group_members")
-      .select("id")
-      .eq("group_id", group.id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-  }
-
   const { data: existingMembership, error: existingMembershipError } = existingMembershipResult;
 
   if (existingMembershipError) {
@@ -221,10 +206,6 @@ export async function joinGroupAction(
       role: "member" as const
     };
     let insertMembershipResult = await supabase.from("group_members").insert(insertPayload);
-
-    if (isRlsError(insertMembershipResult.error) && adminClient) {
-      insertMembershipResult = await adminClient.from("group_members").insert(insertPayload);
-    }
 
     const { error: insertMembershipError } = insertMembershipResult;
 

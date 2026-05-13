@@ -138,7 +138,7 @@ export async function getPendingJoinRequestsForOwner(userId: string, groupId: st
 
   let requestsResult = await supabase
     .from("group_join_requests")
-    .select("id, group_id, user_id, message, status, created_at")
+    .select("id, group_id, user_id, message, status, created_at, reviewed_at, reviewed_by")
     .eq("group_id", groupId)
     .eq("status", "pending")
     .order("created_at", { ascending: true });
@@ -146,7 +146,7 @@ export async function getPendingJoinRequestsForOwner(userId: string, groupId: st
   if (requestsResult.error?.code === "42501" && adminClient) {
     requestsResult = await adminClient
       .from("group_join_requests")
-      .select("id, group_id, user_id, message, status, created_at")
+      .select("id, group_id, user_id, message, status, created_at, reviewed_at, reviewed_by")
       .eq("group_id", groupId)
       .eq("status", "pending")
       .order("created_at", { ascending: true });
@@ -176,6 +176,89 @@ export async function getPendingJoinRequestsForOwner(userId: string, groupId: st
     userEmail: null,
     message: request.message,
     status: request.status,
-    createdAt: request.created_at
+    createdAt: request.created_at,
+    reviewedAt: request.reviewed_at,
+    reviewedByUserId: request.reviewed_by,
+    reviewedByUsername: null
+  }));
+}
+
+export async function getReviewedJoinRequestsForOwner(userId: string, groupId: string): Promise<GroupJoinRequestItem[]> {
+  const supabase = await createSupabaseServerClient();
+  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
+
+  let ownerMembershipResult = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .eq("role", "owner")
+    .maybeSingle();
+
+  if (ownerMembershipResult.error?.code === "42501" && adminClient) {
+    ownerMembershipResult = await adminClient
+      .from("group_members")
+      .select("id")
+      .eq("group_id", groupId)
+      .eq("user_id", userId)
+      .eq("role", "owner")
+      .maybeSingle();
+  }
+
+  if (ownerMembershipResult.error || !ownerMembershipResult.data) {
+    return [];
+  }
+
+  let requestsResult = await supabase
+    .from("group_join_requests")
+    .select("id, group_id, user_id, message, status, created_at, reviewed_at, reviewed_by")
+    .eq("group_id", groupId)
+    .in("status", ["approved", "rejected"])
+    .order("updated_at", { ascending: false })
+    .limit(8);
+
+  if (requestsResult.error?.code === "42501" && adminClient) {
+    requestsResult = await adminClient
+      .from("group_join_requests")
+      .select("id, group_id, user_id, message, status, created_at, reviewed_at, reviewed_by")
+      .eq("group_id", groupId)
+      .in("status", ["approved", "rejected"])
+      .order("updated_at", { ascending: false })
+      .limit(8);
+  }
+
+  if (requestsResult.error || !requestsResult.data || requestsResult.data.length === 0) {
+    return [];
+  }
+
+  const relatedUserIds = Array.from(
+    new Set(
+      requestsResult.data
+        .flatMap((request) => [request.user_id, request.reviewed_by].filter((value): value is string => Boolean(value)))
+    )
+  );
+
+  let profilesResult = await supabase.from("profiles").select("id, username").in("id", relatedUserIds);
+  if (profilesResult.error?.code === "42501" && adminClient) {
+    profilesResult = await adminClient.from("profiles").select("id, username").in("id", relatedUserIds);
+  }
+
+  const usernameByUserId = new Map<string, string | null>();
+  (profilesResult.data || []).forEach((profile) => {
+    usernameByUserId.set(profile.id, profile.username);
+  });
+
+  return requestsResult.data.map((request) => ({
+    id: request.id,
+    groupId: request.group_id,
+    userId: request.user_id,
+    username: usernameByUserId.get(request.user_id) ?? null,
+    userEmail: null,
+    message: request.message,
+    status: request.status,
+    createdAt: request.created_at,
+    reviewedAt: request.reviewed_at,
+    reviewedByUserId: request.reviewed_by,
+    reviewedByUsername: request.reviewed_by ? (usernameByUserId.get(request.reviewed_by) ?? null) : null
   }));
 }

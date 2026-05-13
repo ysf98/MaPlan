@@ -190,10 +190,9 @@ on public.group_members
 for insert to authenticated
 with check (
   exists (
-    select 1 from public.group_members gm
-    where gm.group_id = group_members.group_id
-      and gm.user_id = auth.uid()
-      and gm.role = 'owner'
+    select 1 from public.groups g
+    where g.id = group_members.group_id
+      and g.created_by = auth.uid()
   )
 );
 

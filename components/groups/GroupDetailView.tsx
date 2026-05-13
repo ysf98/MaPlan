@@ -16,13 +16,14 @@ type GroupDetailViewProps = {
   groupId: string;
   places: GroupPlace[];
   pendingRequests: GroupJoinRequestItem[];
+  reviewedRequests: GroupJoinRequestItem[];
 };
 
 type DetailTab = "list" | "map";
 
-export function GroupDetailView({ group, groupId, places, pendingRequests }: GroupDetailViewProps) {
+export function GroupDetailView({ group, groupId, places, pendingRequests, reviewedRequests }: GroupDetailViewProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>("list");
-  const [showAddPlaceForm, setShowAddPlaceForm] = useState(places.length === 0);
+  const [showAddPlaceForm, setShowAddPlaceForm] = useState(places.length === 0 && group.canEditPlaces);
 
   return (
     <section className="space-y-4">
@@ -61,23 +62,31 @@ export function GroupDetailView({ group, groupId, places, pendingRequests }: Gro
             </button>
           </div>
 
-          <Button onClick={() => setShowAddPlaceForm((value) => !value)} type="button">
-            {showAddPlaceForm ? "Cerrar formulario" : "Anadir lugar"}
-          </Button>
+          {group.canEditPlaces ? (
+            <Button onClick={() => setShowAddPlaceForm((value) => !value)} type="button">
+              {showAddPlaceForm ? "Cerrar formulario" : "Anadir lugar"}
+            </Button>
+          ) : null}
         </div>
       </Card>
 
-      {showAddPlaceForm ? <AddPlaceForm groupId={groupId} /> : null}
+      {showAddPlaceForm && group.canEditPlaces ? <AddPlaceForm groupId={groupId} /> : null}
 
-      {group.role === "owner" ? <OwnerJoinRequestsPanel groupId={groupId} requests={pendingRequests} /> : null}
+      {group.role === "owner" ? (
+        <OwnerJoinRequestsPanel groupId={groupId} requests={pendingRequests} reviewedRequests={reviewedRequests} />
+      ) : null}
 
       {activeTab === "list" ? (
         places.length > 0 ? (
-          <PlacesList groupId={groupId} places={places} />
+          <PlacesList canEdit={group.canEditPlaces} groupId={groupId} places={places} />
         ) : (
           <EmptyState
             title="Todavia no hay lugares"
-            description="Empieza agregando el primer sitio recomendado para que tu grupo pueda verlo en lista."
+            description={
+              group.canEditPlaces
+                ? "Empieza agregando el primer sitio recomendado para que tu grupo pueda verlo en lista."
+                : "Aun no hay lugares. Solo el propietario puede agregar el primer sitio en este grupo."
+            }
           />
         )
       ) : (
