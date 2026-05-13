@@ -3,6 +3,7 @@ import {
   createGroupSchema,
   joinGroupSchema,
   createPlaceSchema,
+  reviewJoinRequestSchema,
   updatePlaceStatusSchema
 } from "@/lib/validation/schemas";
 
@@ -10,7 +11,9 @@ describe("createGroupSchema", () => {
   it("accepts valid payload", () => {
     const result = createGroupSchema.safeParse({
       name: "Madrid Crew",
-      description: "Planes de finde"
+      description: "Planes de finde",
+      placeEditPolicy: "owner_only",
+      joinPolicy: "request_to_join"
     });
 
     expect(result.success).toBe(true);
@@ -20,6 +23,28 @@ describe("createGroupSchema", () => {
     const result = createGroupSchema.safeParse({
       name: "   ",
       description: "abc"
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("reviewJoinRequestSchema", () => {
+  it("accepts review payload", () => {
+    const result = reviewJoinRequestSchema.safeParse({
+      groupId: "group-1",
+      requestId: "request-1",
+      decision: "approved"
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid decision", () => {
+    const result = reviewJoinRequestSchema.safeParse({
+      groupId: "group-1",
+      requestId: "request-1",
+      decision: "pending"
     });
 
     expect(result.success).toBe(false);

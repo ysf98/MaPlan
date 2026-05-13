@@ -1,6 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { GroupDetail, GroupListItem } from "@/lib/groups/types";
+import type { GroupDetail, GroupJoinRequestItem, GroupListItem } from "@/lib/groups/types";
 
 export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   const supabase = await createSupabaseServerClient();
@@ -25,14 +25,14 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
 
   let groupsResult = await supabase
     .from("groups")
-    .select("id, name, description, created_at")
+    .select("id, name, description, created_at, place_edit_policy, join_policy")
     .in("id", groupIds)
     .order("created_at", { ascending: false });
 
   if (groupsResult.error?.code === "42501" && adminClient) {
     groupsResult = await adminClient
       .from("groups")
-      .select("id, name, description, created_at")
+      .select("id, name, description, created_at, place_edit_policy, join_policy")
       .in("id", groupIds)
       .order("created_at", { ascending: false });
   }
@@ -47,7 +47,9 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
     name: group.name,
     description: group.description,
     createdAt: group.created_at,
-    role: roleByGroupId.get(group.id) ?? "member"
+    role: roleByGroupId.get(group.id) ?? "member",
+    placeEditPolicy: group.place_edit_policy,
+    joinPolicy: group.join_policy
   }));
 }
 
@@ -78,14 +80,14 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
 
   let groupResult = await supabase
     .from("groups")
-    .select("id, name, description, join_code, created_at")
+    .select("id, name, description, join_code, created_at, place_edit_policy, join_policy")
     .eq("id", groupId)
     .maybeSingle();
 
   if (groupResult.error?.code === "42501" && adminClient) {
     groupResult = await adminClient
       .from("groups")
-      .select("id, name, description, join_code, created_at")
+      .select("id, name, description, join_code, created_at, place_edit_policy, join_policy")
       .eq("id", groupId)
       .maybeSingle();
   }
@@ -101,6 +103,79 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
     description: group.description,
     joinCode: group.join_code,
     createdAt: group.created_at,
-    role: membership.role
+    role: membership.role,
+    placeEditPolicy: group.place_edit_policy,
+    joinPolicy: group.join_policy,
+    canEditPlaces: membership.role === "owner" || group.place_edit_policy === "members_can_edit"
   };
+}
+
+export async function getPendingJoinRequestsForOwner(userId: string, groupId: string): Promise<GroupJoinRequestItem[]> {
+  const supabase = await createSupabaseServerClient();
+  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
+
+  let ownerMembershipResult = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .eq("role", "owner")
+    .maybeSingle();
+
+  if (ownerMembershipResult.error?.code === "42501" && adminClient) {
+    ownerMembershipResult = await adminClient
+      .from("group_members")
+      .select("id")
+      .eq("group_id", groupId)
+      .eq("user_id", userId)
+      .eq("role", "owner")
+      .maybeSingle();
+  }
+
+  if (ownerMembershipResult.error || !ownerMembershipResult.data) {
+    return [];
+  }
+
+  let requestsResult = await supabase
+    .from("group_join_requests")
+    .select("id, group_id, user_id, message, status, created_at")
+    .eq("group_id", groupId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
+  if (requestsResult.error?.code === "42501" && adminClient) {
+    requestsResult = await adminClient
+      .from("group_join_requests")
+      .select("id, group_id, user_id, message, status, created_at")
+      .eq("group_id", groupId)
+      .eq("status", "pending")
+      .order("created_at", { ascending: true });
+  }
+
+  if (requestsResult.error || !requestsResult.data || requestsResult.data.length === 0) {
+    return [];
+  }
+
+  const userIds = requestsResult.data.map((request) => request.user_id);
+  let profilesResult = await supabase.from("profiles").select("id, username").in("id", userIds);
+
+  if (profilesResult.error?.code === "42501" && adminClient) {
+    profilesResult = await adminClient.from("profiles").select("id, username").in("id", userIds);
+  }
+
+  const usernameByUserId = new Map<string, string | null>();
+  (profilesResult.data || []).forEach((profile) => {
+    usernameByUserId.set(profile.id, profile.username);
+  });
+
+  return requestsResult.data.map((request) => ({
+    id: request.id,
+    groupId: request.group_id,
+    userId: request.user_id,
+    username: usernameByUserId.get(request.user_id) ?? null,
+    userEmail: null,
+    message: request.message,
+    status: request.status,
+    createdAt: request.created_at
+  }));
 }

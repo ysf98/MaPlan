@@ -7,18 +7,20 @@ import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { GroupDetail } from "@/lib/groups/types";
+import { OwnerJoinRequestsPanel } from "@/components/groups/OwnerJoinRequestsPanel";
+import type { GroupDetail, GroupJoinRequestItem } from "@/lib/groups/types";
 import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupDetailViewProps = {
   group: GroupDetail;
   groupId: string;
   places: GroupPlace[];
+  pendingRequests: GroupJoinRequestItem[];
 };
 
 type DetailTab = "list" | "map";
 
-export function GroupDetailView({ group, groupId, places }: GroupDetailViewProps) {
+export function GroupDetailView({ group, groupId, places, pendingRequests }: GroupDetailViewProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>("list");
   const [showAddPlaceForm, setShowAddPlaceForm] = useState(places.length === 0);
 
@@ -28,6 +30,8 @@ export function GroupDetailView({ group, groupId, places }: GroupDetailViewProps
         <div className="flex flex-wrap items-center gap-2">
           <CategoryBadge label={group.role === "owner" ? "Admin" : "Member"} tone="visit" />
           <CategoryBadge label="Grupo" tone="plan" />
+          <CategoryBadge label={group.placeEditPolicy === "owner_only" ? "Edicion: solo owner" : "Edicion: miembros"} tone="food" />
+          <CategoryBadge label={group.joinPolicy === "request_to_join" ? "Acceso: por solicitud" : "Acceso: por codigo"} tone="coffee" />
         </div>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{group.name}</h1>
         <p className="mt-2 text-sm text-slate-500">{group.description || "Grupo sin descripcion"}</p>
@@ -64,6 +68,8 @@ export function GroupDetailView({ group, groupId, places }: GroupDetailViewProps
       </Card>
 
       {showAddPlaceForm ? <AddPlaceForm groupId={groupId} /> : null}
+
+      {group.role === "owner" ? <OwnerJoinRequestsPanel groupId={groupId} requests={pendingRequests} /> : null}
 
       {activeTab === "list" ? (
         places.length > 0 ? (

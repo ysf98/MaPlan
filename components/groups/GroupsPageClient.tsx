@@ -18,7 +18,7 @@ type GroupsPageClientProps = {
 };
 
 const createInitialState: CreateGroupActionState = { error: null, success: false, groupId: null };
-const joinInitialState: JoinGroupActionState = { error: null, success: false, groupId: null };
+const joinInitialState: JoinGroupActionState = { error: null, success: false, groupId: null, mode: null };
 
 export function GroupsPageClient({ groups }: GroupsPageClientProps) {
   const router = useRouter();
@@ -57,6 +57,28 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
             <fieldset className="space-y-4" disabled={isCreatePending || isNavigatingToGroup}>
               <Input label="Nombre del grupo" name="name" placeholder="Ej. Planes de Madrid" required />
               <Input label="Descripcion (opcional)" name="description" placeholder="Tipo de planes o notas del grupo" />
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-slate-700">Edicion de lugares</span>
+                <select
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                  defaultValue="members_can_edit"
+                  name="placeEditPolicy"
+                >
+                  <option value="members_can_edit">Todos los miembros pueden anadir lugares</option>
+                  <option value="owner_only">Solo el propietario puede anadir lugares</option>
+                </select>
+              </label>
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-slate-700">Acceso al grupo</span>
+                <select
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                  defaultValue="open_by_code"
+                  name="joinPolicy"
+                >
+                  <option value="open_by_code">Cualquiera con codigo entra directamente</option>
+                  <option value="request_to_join">Requiere solicitud y aprobacion del propietario</option>
+                </select>
+              </label>
               {createState.error ? <p className="text-sm text-rose-600">{createState.error}</p> : null}
               {createState.success ? <p className="text-sm text-emerald-600">Grupo creado correctamente.</p> : null}
               {isNavigatingToGroup ? <p className="text-sm text-slate-500">Abriendo el grupo...</p> : null}
@@ -74,12 +96,17 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
           <fieldset className="space-y-4" disabled={isJoinPending}>
             <Input label="Codigo del grupo" name="joinCode" placeholder="Ej. A1B2C3D4" required />
             {joinState.error ? <p className="text-sm text-rose-600">{joinState.error}</p> : null}
-            {joinState.success ? <p className="text-sm text-emerald-600">Te uniste al grupo correctamente.</p> : null}
+            {joinState.success && joinState.mode === "joined" ? (
+              <p className="text-sm text-emerald-600">Te uniste al grupo correctamente.</p>
+            ) : null}
+            {joinState.success && joinState.mode === "requested" ? (
+              <p className="text-sm text-amber-700">Solicitud enviada al propietario del grupo.</p>
+            ) : null}
             <div className="flex flex-wrap items-center gap-3">
               <Button disabled={isJoinPending} type="submit" variant="secondary">
                 {isJoinPending ? "Uniendote..." : "Unirme"}
               </Button>
-              {joinState.success && joinState.groupId ? (
+              {joinState.success && joinState.groupId && joinState.mode === "joined" ? (
                 <Link
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-teal-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-teal-600"
                   href={`${ROUTES.groups}/${joinState.groupId}`}

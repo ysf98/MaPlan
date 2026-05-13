@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { isGroupMember } from "@/lib/groupPermissions";
+import { canEditPlaces, isGroupMember } from "@/lib/groupPermissions";
 import { INITIAL_PLACE_CATEGORIES, type GroupPlace, type PlaceCategory } from "@/lib/places/shared";
 import type { PlaceStatus } from "@/types/supabase";
 
@@ -108,9 +108,9 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
 }
 
 export async function createPlace(input: CreatePlaceInput): Promise<{ error: string | null }> {
-  const hasAccess = await isGroupMember(input.userId, input.groupId);
-  if (!hasAccess) {
-    return { error: "No tienes acceso a este grupo." };
+  const canEdit = await canEditPlaces(input.userId, input.groupId);
+  if (!canEdit) {
+    return { error: "No tienes permisos para editar lugares en este grupo." };
   }
 
   const name = input.name.trim();
@@ -146,9 +146,9 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
 }
 
 export async function updatePlaceStatus(input: UpdatePlaceStatusInput): Promise<{ error: string | null }> {
-  const hasAccess = await isGroupMember(input.userId, input.groupId);
-  if (!hasAccess) {
-    return { error: "No tienes acceso a este grupo." };
+  const canEdit = await canEditPlaces(input.userId, input.groupId);
+  if (!canEdit) {
+    return { error: "No tienes permisos para editar lugares en este grupo." };
   }
 
   const supabase = await createSupabaseServerClient();

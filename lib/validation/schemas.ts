@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  GROUP_JOIN_POLICY_VALUES,
+  GROUP_JOIN_REQUEST_STATUS_VALUES,
+  GROUP_PLACE_EDIT_POLICY_VALUES
+} from "@/lib/groups/policies";
 
 export const PLACE_STATUS_VALUES = ["pending", "visited", "favorite"] as const;
 
@@ -13,7 +18,21 @@ export const createGroupSchema = z.object({
     .trim()
     .max(300, "La descripcion no puede superar 300 caracteres.")
     .optional()
-    .transform((value) => (value && value.length > 0 ? value : null))
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  placeEditPolicy: z
+    .string()
+    .optional()
+    .transform((value) => value || "members_can_edit")
+    .refine((value): value is (typeof GROUP_PLACE_EDIT_POLICY_VALUES)[number] => {
+      return GROUP_PLACE_EDIT_POLICY_VALUES.includes(value as never);
+    }, "Politica de edicion invalida."),
+  joinPolicy: z
+    .string()
+    .optional()
+    .transform((value) => value || "open_by_code")
+    .refine((value): value is (typeof GROUP_JOIN_POLICY_VALUES)[number] => {
+      return GROUP_JOIN_POLICY_VALUES.includes(value as never);
+    }, "Politica de acceso invalida.")
 });
 
 export const joinGroupSchema = z.object({
@@ -57,7 +76,18 @@ export const updatePlaceStatusSchema = z.object({
     })
 });
 
+export const reviewJoinRequestSchema = z.object({
+  groupId: z.string().trim().min(1, "Grupo invalido."),
+  requestId: z.string().trim().min(1, "Solicitud invalida."),
+  decision: z
+    .string()
+    .refine((value): value is Exclude<(typeof GROUP_JOIN_REQUEST_STATUS_VALUES)[number], "pending"> => {
+      return value === "approved" || value === "rejected";
+    }, "Decision invalida.")
+});
+
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;
 export type UpdatePlaceStatusInput = z.infer<typeof updatePlaceStatusSchema>;
+export type ReviewJoinRequestInput = z.infer<typeof reviewJoinRequestSchema>;

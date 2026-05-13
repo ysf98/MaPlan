@@ -30,7 +30,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 function createGroupsActionClient({
   createdGroupId = "group-1",
   existingMembership = null as { id: string } | null,
-  foundGroup = { id: "group-by-code" } as { id: string } | null
+  foundGroup = { id: "group-by-code", join_policy: "open_by_code" } as { id: string; join_policy: string } | null
 }) {
   return {
     from(table: string) {
@@ -81,6 +81,12 @@ function createGroupsActionClient({
         };
       }
 
+      if (table === "group_join_requests") {
+        return {
+          upsert: () => Promise.resolve({ data: null, error: null })
+        };
+      }
+
       throw new Error(`Unexpected table ${table}`);
     }
   };
@@ -117,6 +123,8 @@ describe("group server actions", () => {
     const formData = new FormData();
     formData.set("name", "My Group");
     formData.set("description", "Desc");
+    formData.set("placeEditPolicy", "owner_only");
+    formData.set("joinPolicy", "request_to_join");
 
     const result = await createGroupAction({ error: null, success: false, groupId: null }, formData);
 
@@ -138,10 +146,28 @@ describe("group server actions", () => {
     const formData = new FormData();
     formData.set("joinCode", "abc123");
 
-    const result = await joinGroupAction({ error: null, success: false, groupId: null }, formData);
+    const result = await joinGroupAction({ error: null, success: false, groupId: null, mode: null }, formData);
 
-    expect(result).toEqual({ error: null, success: true, groupId: "group-xyz" });
+    expect(result).toEqual({ error: null, success: true, groupId: "group-xyz", mode: "joined" });
     expect(revalidatePathMock).toHaveBeenCalledWith("/groups");
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("joinGroupAction creates pending request when group requires approval", async () => {
+    const { joinGroupAction } = await import("@/app/groups/actions");
+    getCurrentUserMock.mockResolvedValue({ id: "user-1" });
+    createSupabaseServerClientMock.mockResolvedValue(
+      createGroupsActionClient({
+        foundGroup: { id: "group-xyz", join_policy: "request_to_join" },
+        existingMembership: null
+      })
+    );
+
+    const formData = new FormData();
+    formData.set("joinCode", "abc123");
+
+    const result = await joinGroupAction({ error: null, success: false, groupId: null, mode: null }, formData);
+
+    expect(result).toEqual({ error: null, success: true, groupId: "group-xyz", mode: "requested" });
   });
 });
