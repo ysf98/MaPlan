@@ -7,7 +7,7 @@ import { createPlace, updatePlaceStatus } from "@/lib/places";
 import { createPlaceSchema, reviewJoinRequestSchema, updatePlaceStatusSchema } from "@/lib/validation/schemas";
 import type { PlaceStatus } from "@/types/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { canReviewJoinRequests } from "@/lib/groupPermissions";
+import { canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export type AddPlaceActionState = {
@@ -25,6 +25,16 @@ export type ReviewJoinRequestActionState = {
   success: boolean;
 };
 
+export type LeaveGroupActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type DeleteGroupActionState = {
+  error: string | null;
+  success: boolean;
+};
+
 const ADD_PLACE_INITIAL_STATE: AddPlaceActionState = {
   error: null,
   success: false
@@ -36,6 +46,16 @@ const UPDATE_PLACE_STATUS_INITIAL_STATE: UpdatePlaceStatusActionState = {
 };
 
 const REVIEW_JOIN_REQUEST_INITIAL_STATE: ReviewJoinRequestActionState = {
+  error: null,
+  success: false
+};
+
+const LEAVE_GROUP_INITIAL_STATE: LeaveGroupActionState = {
+  error: null,
+  success: false
+};
+
+const DELETE_GROUP_INITIAL_STATE: DeleteGroupActionState = {
   error: null,
   success: false
 };
@@ -211,4 +231,78 @@ export async function reviewJoinRequestAction(
   revalidatePath(`/groups/${groupId}`);
   revalidatePath("/groups");
   return { error: null, success: true };
+}
+
+export async function leaveGroupAction(
+  _previousState: LeaveGroupActionState = LEAVE_GROUP_INITIAL_STATE,
+  formData: FormData
+): Promise<LeaveGroupActionState> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login?next=/groups");
+  }
+
+  const groupId = String(formData.get("groupId") || "").trim();
+  if (!groupId) {
+    return { error: "Grupo invalido.", success: false };
+  }
+
+  const owner = await isGroupOwner(user.id, groupId);
+  if (owner) {
+    return { error: "Como propietario, elimina el grupo para cerrarlo para todos.", success: false };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
+  let deleteResult = await supabase.from("group_members").delete().eq("group_id", groupId).eq("user_id", user.id);
+
+  if (deleteResult.error?.code === "42501" && adminClient) {
+    deleteResult = await adminClient.from("group_members").delete().eq("group_id", groupId).eq("user_id", user.id);
+  }
+
+  if (deleteResult.error) {
+    return { error: deleteResult.error.message, success: false };
+  }
+
+  revalidatePath("/groups");
+  revalidatePath("/dashboard");
+  revalidatePath(`/groups/${groupId}`);
+  redirect("/groups");
+}
+
+export async function deleteGroupAction(
+  _previousState: DeleteGroupActionState = DELETE_GROUP_INITIAL_STATE,
+  formData: FormData
+): Promise<DeleteGroupActionState> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login?next=/groups");
+  }
+
+  const groupId = String(formData.get("groupId") || "").trim();
+  if (!groupId) {
+    return { error: "Grupo invalido.", success: false };
+  }
+
+  const owner = await isGroupOwner(user.id, groupId);
+  if (!owner) {
+    return { error: "Solo el propietario puede eliminar este grupo.", success: false };
+  }
+
+  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
+  if (!adminClient) {
+    return { error: "Falta SUPABASE_SERVICE_ROLE_KEY para eliminar grupos de forma segura.", success: false };
+  }
+
+  const deleteResult = await adminClient.from("groups").delete().eq("id", groupId);
+
+  if (deleteResult.error) {
+    return { error: deleteResult.error.message, success: false };
+  }
+
+  revalidatePath("/groups");
+  revalidatePath("/dashboard");
+  redirect("/groups");
 }

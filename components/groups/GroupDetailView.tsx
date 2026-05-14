@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { OwnerJoinRequestsPanel } from "@/components/groups/OwnerJoinRequestsPanel";
+import { GroupMembershipActions } from "@/components/groups/GroupMembershipActions";
 import type { GroupDetail, GroupJoinRequestItem } from "@/lib/groups/types";
 import type { GroupPlace } from "@/lib/places/shared";
 
@@ -71,6 +72,8 @@ export function GroupDetailView({ group, groupId, places, pendingRequests, revie
       </Card>
 
       {showAddPlaceForm && group.canEditPlaces ? <AddPlaceForm groupId={groupId} /> : null}
+
+      <GroupMembershipActions groupId={groupId} groupName={group.name} role={group.role} />
 
       {group.role === "owner" ? (
         <OwnerJoinRequestsPanel groupId={groupId} requests={pendingRequests} reviewedRequests={reviewedRequests} />

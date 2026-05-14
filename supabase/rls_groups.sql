@@ -250,3 +250,14 @@ with check (
   )
   and status in ('approved', 'rejected')
 );
+
+create policy group_join_requests_update_requester_reopen
+on public.group_join_requests
+for update to authenticated
+using (
+  user_id = auth.uid()
+)
+with check (
+  user_id = auth.uid()
+  and status = 'pending'
+);

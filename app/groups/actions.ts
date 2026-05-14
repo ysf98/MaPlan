@@ -168,18 +168,58 @@ export async function joinGroupAction(
   const joinPolicy = group.join_policy as GroupJoinPolicy;
 
   if (joinPolicy === "request_to_join") {
-    const requestPayload = {
-      group_id: group.id,
-      user_id: user.id,
-      status: "pending" as const,
-      message: null,
-      reviewed_by: null,
-      reviewed_at: null
-    };
-    let requestResult = await supabase.from("group_join_requests").upsert(requestPayload, { onConflict: "group_id,user_id" });
+    let existingRequestResult = await supabase
+      .from("group_join_requests")
+      .select("id, status")
+      .eq("group_id", group.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-    if (requestResult.error) {
-      return { error: requestResult.error.message, success: false, groupId: null, mode: null };
+    if (isRlsError(existingRequestResult.error) && adminClient) {
+      existingRequestResult = await adminClient
+        .from("group_join_requests")
+        .select("id, status")
+        .eq("group_id", group.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+    }
+
+    if (existingRequestResult.error) {
+      return { error: existingRequestResult.error.message, success: false, groupId: null, mode: null };
+    }
+
+    if (!existingRequestResult.data) {
+      const insertPayload = {
+        group_id: group.id,
+        user_id: user.id,
+        status: "pending" as const,
+        message: null,
+        reviewed_by: null,
+        reviewed_at: null
+      };
+      let insertResult = await supabase.from("group_join_requests").insert(insertPayload);
+      if (isRlsError(insertResult.error) && adminClient) {
+        insertResult = await adminClient.from("group_join_requests").insert(insertPayload);
+      }
+      if (insertResult.error) {
+        return { error: insertResult.error.message, success: false, groupId: null, mode: null };
+      }
+    } else if (existingRequestResult.data.status !== "pending") {
+      const updatePayload = {
+        status: "pending" as const,
+        reviewed_by: null,
+        reviewed_at: null
+      };
+      let updateResult = await supabase
+        .from("group_join_requests")
+        .update(updatePayload)
+        .eq("id", existingRequestResult.data.id);
+      if (isRlsError(updateResult.error) && adminClient) {
+        updateResult = await adminClient.from("group_join_requests").update(updatePayload).eq("id", existingRequestResult.data.id);
+      }
+      if (updateResult.error) {
+        return { error: updateResult.error.message, success: false, groupId: null, mode: null };
+      }
     }
 
     revalidatePath("/groups");

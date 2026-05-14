@@ -31,6 +31,7 @@ export type GroupJoinRequestItem = {
   message: string | null;
   status: "pending" | "approved" | "rejected";
   createdAt: string;
+  updatedAt: string;
   reviewedAt: string | null;
   reviewedByUserId: string | null;
   reviewedByUsername: string | null;

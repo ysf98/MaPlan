@@ -45,7 +45,7 @@ export function OwnerJoinRequestsPanel({ groupId, requests, reviewedRequests }: 
         {requests.map((request) => (
           <li key={request.id} className="rounded-2xl border border-slate-200 p-4">
             <p className="text-sm font-semibold text-slate-900">{request.username || "Usuario sin nombre"}</p>
-            <p className="mt-1 text-xs text-slate-500">Solicitada: {formatDate(request.createdAt)}</p>
+            <p className="mt-1 text-xs text-slate-500">Ultimo intento: {formatDate(request.updatedAt)}</p>
             {request.message ? <p className="mt-1 text-sm text-slate-500">{request.message}</p> : null}
             <form action={formAction} className="mt-3 flex flex-wrap gap-2">
               <input name="groupId" type="hidden" value={groupId} />

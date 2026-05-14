@@ -138,7 +138,7 @@ export async function getPendingJoinRequestsForOwner(userId: string, groupId: st
 
   let requestsResult = await supabase
     .from("group_join_requests")
-    .select("id, group_id, user_id, message, status, created_at, reviewed_at, reviewed_by")
+    .select("id, group_id, user_id, message, status, created_at, updated_at, reviewed_at, reviewed_by")
     .eq("group_id", groupId)
     .eq("status", "pending")
     .order("created_at", { ascending: true });
@@ -146,7 +146,7 @@ export async function getPendingJoinRequestsForOwner(userId: string, groupId: st
   if (requestsResult.error?.code === "42501" && adminClient) {
     requestsResult = await adminClient
       .from("group_join_requests")
-      .select("id, group_id, user_id, message, status, created_at, reviewed_at, reviewed_by")
+      .select("id, group_id, user_id, message, status, created_at, updated_at, reviewed_at, reviewed_by")
       .eq("group_id", groupId)
       .eq("status", "pending")
       .order("created_at", { ascending: true });
@@ -177,6 +177,7 @@ export async function getPendingJoinRequestsForOwner(userId: string, groupId: st
     message: request.message,
     status: request.status,
     createdAt: request.created_at,
+    updatedAt: request.updated_at,
     reviewedAt: request.reviewed_at,
     reviewedByUserId: request.reviewed_by,
     reviewedByUsername: null
@@ -211,7 +212,7 @@ export async function getReviewedJoinRequestsForOwner(userId: string, groupId: s
 
   let requestsResult = await supabase
     .from("group_join_requests")
-    .select("id, group_id, user_id, message, status, created_at, reviewed_at, reviewed_by")
+    .select("id, group_id, user_id, message, status, created_at, updated_at, reviewed_at, reviewed_by")
     .eq("group_id", groupId)
     .in("status", ["approved", "rejected"])
     .order("updated_at", { ascending: false })
@@ -220,7 +221,7 @@ export async function getReviewedJoinRequestsForOwner(userId: string, groupId: s
   if (requestsResult.error?.code === "42501" && adminClient) {
     requestsResult = await adminClient
       .from("group_join_requests")
-      .select("id, group_id, user_id, message, status, created_at, reviewed_at, reviewed_by")
+      .select("id, group_id, user_id, message, status, created_at, updated_at, reviewed_at, reviewed_by")
       .eq("group_id", groupId)
       .in("status", ["approved", "rejected"])
       .order("updated_at", { ascending: false })
@@ -257,6 +258,7 @@ export async function getReviewedJoinRequestsForOwner(userId: string, groupId: s
     message: request.message,
     status: request.status,
     createdAt: request.created_at,
+    updatedAt: request.updated_at,
     reviewedAt: request.reviewed_at,
     reviewedByUserId: request.reviewed_by,
     reviewedByUsername: request.reviewed_by ? (usernameByUserId.get(request.reviewed_by) ?? null) : null
