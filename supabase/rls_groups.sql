@@ -150,6 +150,16 @@ using (
       where gm.group_id = groups.id
         and gm.user_id = auth.uid()
     )
+  or exists (
+      select 1
+      from public.group_join_requests r
+      where r.group_id = groups.id
+        and r.user_id = auth.uid()
+    )
+  -- Limited discoverability for code-based access flows.
+  -- This keeps invite_only groups private while allowing join-by-code and request-by-code
+  -- to resolve target groups without service-role bypass.
+  or groups.join_policy in ('open_by_code', 'request_to_join')
 );
 
 create policy groups_insert_creator_only

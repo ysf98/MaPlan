@@ -111,7 +111,6 @@ with check (
   and status in ('accepted', 'rejected')
 );
 
--- Let invited users join group_members only when they accepted a valid invitation.
 create policy group_members_insert_self_invitation_accepted
 on public.group_members
 for insert to authenticated

@@ -1,173 +1,99 @@
 # MaPlan
 
-MaPlan es una app social de mapas para grupos de amigos. Su objetivo es ayudar a guardar, organizar y compartir sitios recomendados (restaurantes, cafeterias, sitios para visitar, discotecas y planes) dentro de un mapa colaborativo por grupo.
+MaPlan es una app social (Next.js + Supabase) para crear grupos de amigos y guardar lugares recomendados.
 
-## Vision del producto
+## Estado actual
 
-Hoy muchas recomendaciones se pierden en chats, notas sueltas o mensajes viejos. MaPlan resuelve eso con un espacio comun donde cada grupo puede:
+Implementado:
+- Auth (registro/login/logout) con Supabase.
+- Grupos: crear, listar, detalle, salir y eliminar (owner).
+- Modos de acceso a grupo:
+  - `invite_only` (default)
+  - `request_to_join`
+  - `open_by_code`
+- Solicitudes de unión por código (cuando aplica).
+- Sistema de amigos:
+  - buscar por `username`
+  - enviar/aceptar/rechazar solicitudes
+  - eliminar amistad
+- Invitaciones a grupo:
+  - owner invita amigos
+  - invitado acepta/rechaza
+  - inserción en `group_members` sin duplicados
+- Lugares por grupo (lista), creación y cambio de estado.
+- Validaciones con Zod.
+- Tests unitarios y de acciones con Vitest.
 
-- Guardar lugares utiles para el grupo
-- Ver recomendaciones en lista y en mapa
-- Filtrar por categoria para decidir mas rapido
-- Marcar estado de cada lugar (pendiente, visitado, favorito)
+## Stack
 
-El foco es reducir friccion para que planear con amigos sea simple, visual y social.
-
-## Objetivo del MVP
-
-El MVP busca validar que un grupo puede completar el flujo principal extremo a extremo:
-
-1. Registrarse o iniciar sesion
-2. Crear un grupo o unirse a uno
-3. Anadir lugares manualmente
-4. Categorizar lugares
-5. Ver lugares en lista
-6. Ver lugares en mapa
-7. Filtrar por categoria
-8. Marcar lugares como pendiente, visitado o favorito
-
-## Estado actual del proyecto
-
-Estado: base inicial creada.
-
-Incluye:
-
-- Estructura de proyecto limpia y escalable con Next.js App Router
-- UI inicial movil-first con componentes reutilizables
-- Navegacion principal (navbar, mobile nav y sidebar)
-- Paginas placeholder para las vistas clave
-
-No incluye aun:
-
-- Supabase (auth y base de datos)
-- Integracion de mapa (Mapbox o Google Maps)
-- Logica de negocio real
-- API routes funcionales
-
-## Stack tecnologico
-
-- Next.js (App Router)
-- TypeScript
+- Next.js App Router
+- TypeScript (strict)
 - Tailwind CSS
-- Supabase (planificado para auth + DB)
-- Mapbox o Google Maps API (planificado para mapa)
-- Vercel (despliegue)
-
-## Arquitectura del frontend
-
-Estructura actual:
-
-- `app/`: paginas y layout global
-- `components/`: componentes de UI, layout y navegacion
-- `lib/`: utilidades base
-- `hooks/`: hooks reutilizables
-- `types/`: tipos TypeScript
-- `styles/`: estilos globales y tokens visuales
-- `utils/`: constantes y helpers
-
-Rutas iniciales:
-
-- `/` landing
-- `/login`
-- `/register`
-- `/dashboard`
-- `/groups`
-- `/groups/[groupId]`
-- `/map`
-- `/profile`
-
-## Sistema de UI inicial
-
-Componentes reutilizables creados:
-
-- `Button`
-- `Input`
-- `Card`
-- `Navbar`
-- `Sidebar`
-- `MobileNav`
-- `AppShell` (layout principal)
-- `EmptyState`
-- `CategoryBadge`
-
-Lineas de estilo:
-
-- Minimalista y moderno
-- Enfoque social
-- Tarjetas redondeadas
-- Espaciado limpio
-- Base preparada para agregar dark mode
-
-## Modelo de datos planificado (MVP)
-
-Entidades objetivo:
-
-- `profiles`
-- `groups`
-- `group_members`
-- `categories`
-- `places`
-
-Campos clave de `places`:
-
-- `name`
-- `address`
-- `latitude`
-- `longitude`
-- `category_id`
-- `status` (`pending`, `visited`, `favorite`)
-- `group_id`
-- `created_by`
-
-## Roadmap recomendado
-
-1. Integrar Supabase Auth (register/login/logout)
-2. Crear tablas y politicas RLS en Supabase
-3. Implementar flujo de grupos (crear, unirse, listar)
-4. Implementar flujo de lugares (crear, listar, actualizar estado)
-5. Integrar mapa y marcadores
-6. Implementar filtros por categoria/estado
-7. Mejorar UX (loading, empty states, errores)
-8. Deploy en Vercel con variables de entorno
-
-## Como ejecutar en local
-
-Requisitos:
-
-- Node.js 18+
+- Supabase (Auth + Postgres + RLS)
+- Server Actions
+- Zod
+- Vitest
 - pnpm
 
-Pasos:
+## Estructura clave
+
+- `app/`: rutas y server actions
+- `components/`: UI y vistas de dominio
+- `lib/`: lógica de negocio (groups, friends, invitations, places, permissions)
+- `supabase/`: SQL de schema/RLS
+- `tests/`: tests de validación y acciones
+
+## Variables de entorno
+
+En `.env`:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (solo para tareas administrativas puntuales; no usado como fallback genérico de permisos)
+
+## SQL a ejecutar en Supabase
+
+Ejecuta en SQL Editor (puedes usar una query nueva por archivo):
+
+1. `supabase/rls_groups.sql`
+2. `supabase/rls_places.sql`
+3. `supabase/places_links.sql`
+4. `supabase/rls_friends.sql`
+5. `supabase/rls_group_invitations.sql`
+
+Notas:
+- Los scripts son idempotentes en lo posible (`if exists` / `if not exists`).
+- Si hay datos legacy, corrige duplicados antes de crear constraints únicas (especialmente usernames).
+
+## Desarrollo local
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Abrir en navegador:
-
-- [http://localhost:3000](http://localhost:3000)
-
-## Scripts disponibles
+## Tests
 
 ```bash
-pnpm dev
-pnpm build
-pnpm start
-pnpm lint
+pnpm test
 ```
 
-## Convenciones del proyecto
+Cobertura actual:
+- Schemas Zod (groups, places, friends, invitations).
+- Server actions principales.
+- Casos de seguridad en capa de acciones/permisos.
 
-- Lenguaje principal: TypeScript
-- Componentes pequenos y reutilizables
-- Separacion clara entre UI, logica y datos
-- Escalado progresivo desde MVP a version productiva
+## Flujo principal de producto (actual)
 
-## Funcion de la app (resumen corto)
+1. Usuario A agrega a Usuario B como amigo.
+2. Owner crea grupo (default `invite_only`).
+3. Owner invita a B al grupo.
+4. B acepta invitación.
+5. B entra en `group_members` y accede al grupo.
 
-MaPlan sirve para convertir recomendaciones dispersas en un mapa colaborativo por grupo, ayudando a decidir planes mas rapido y sin perder sitios importantes.
+`join_code` sigue disponible como fallback para grupos con política compatible.
 
-## Licencia
+## Roadmap corto
 
-Pendiente de definir.
+- Endurecer más tests de seguridad RLS extremo a extremo.
+- Mejorar observabilidad/errores de acciones.
+- Integración de mapa real (siguiente gran bloque).
