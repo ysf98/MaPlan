@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   createGroupSchema,
+  inviteFriendToGroupSchema,
   joinGroupSchema,
   createPlaceSchema,
+  respondGroupInvitationSchema,
+  respondFriendRequestSchema,
   reviewJoinRequestSchema,
+  sendFriendRequestSchema,
   updatePlaceStatusSchema
 } from "@/lib/validation/schemas";
 
@@ -135,5 +139,63 @@ describe("updatePlaceStatusSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe("friend request schemas", () => {
+  it("sendFriendRequestSchema rejects invalid uuid", () => {
+    const result = sendFriendRequestSchema.safeParse({
+      receiverId: "invalid"
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("respondFriendRequestSchema accepts accepted/rejected only", () => {
+    expect(
+      respondFriendRequestSchema.safeParse({
+        requestId: "11111111-1111-4111-8111-111111111111",
+        decision: "accepted"
+      }).success
+    ).toBe(true);
+
+    expect(
+      respondFriendRequestSchema.safeParse({
+        requestId: "11111111-1111-4111-8111-111111111111",
+        decision: "rejected"
+      }).success
+    ).toBe(true);
+
+    expect(
+      respondFriendRequestSchema.safeParse({
+        requestId: "11111111-1111-4111-8111-111111111111",
+        decision: "pending"
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("group invitation schemas", () => {
+  it("inviteFriendToGroupSchema validates ids", () => {
+    expect(
+      inviteFriendToGroupSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        friendUserId: "22222222-2222-4222-8222-222222222222"
+      }).success
+    ).toBe(true);
+  });
+
+  it("respondGroupInvitationSchema accepts accepted/rejected", () => {
+    expect(
+      respondGroupInvitationSchema.safeParse({
+        invitationId: "11111111-1111-4111-8111-111111111111",
+        decision: "accepted"
+      }).success
+    ).toBe(true);
+    expect(
+      respondGroupInvitationSchema.safeParse({
+        invitationId: "11111111-1111-4111-8111-111111111111",
+        decision: "pending"
+      }).success
+    ).toBe(false);
   });
 });

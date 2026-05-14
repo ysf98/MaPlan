@@ -5,6 +5,8 @@ export type PlaceSource = "manual" | "google_maps" | "tiktok" | "instagram" | "w
 export type GroupPlaceEditPolicy = "owner_only" | "members_can_edit";
 export type GroupJoinPolicy = "invite_only" | "open_by_code" | "request_to_join";
 export type GroupJoinRequestStatus = "pending" | "approved" | "rejected";
+export type FriendRequestStatus = "pending" | "accepted" | "rejected";
+export type GroupInvitationStatus = "pending" | "accepted" | "rejected";
 
 export type Database = {
   public: {
@@ -170,6 +172,67 @@ export type Database = {
           message?: string | null;
           reviewed_by?: string | null;
           reviewed_at?: string | null;
+          updated_at?: string;
+        };
+      };
+      friend_requests: {
+        Row: {
+          id: string;
+          sender_id: string;
+          receiver_id: string;
+          status: FriendRequestStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          sender_id: string;
+          receiver_id: string;
+          status?: FriendRequestStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: FriendRequestStatus;
+          updated_at?: string;
+        };
+      };
+      friendships: {
+        Row: {
+          id: string;
+          user_a_id: string;
+          user_b_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_a_id: string;
+          user_b_id: string;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+      };
+      group_invitations: {
+        Row: {
+          id: string;
+          group_id: string;
+          invited_by: string;
+          invited_user_id: string;
+          status: GroupInvitationStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          group_id: string;
+          invited_by: string;
+          invited_user_id: string;
+          status?: GroupInvitationStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: GroupInvitationStatus;
           updated_at?: string;
         };
       };

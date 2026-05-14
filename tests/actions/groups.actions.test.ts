@@ -238,4 +238,26 @@ describe("group server actions", () => {
 
     expect(result).toEqual({ error: null, success: true, groupId: "55555555-5555-4555-8555-555555555555", mode: "requested" });
   });
+
+  it("joinGroupAction rejects invite_only groups by code", async () => {
+    const { joinGroupAction } = await import("@/app/groups/actions");
+    getCurrentUserMock.mockResolvedValue({ id: "user-1" });
+    createSupabaseServerClientMock.mockResolvedValue(
+      createGroupsActionClient({
+        foundGroup: { id: "66666666-6666-4666-8666-666666666666", join_policy: "invite_only" },
+        existingMembership: null
+      })
+    );
+
+    const formData = new FormData();
+    formData.set("joinCode", "A1B2C3D4");
+    const result = await joinGroupAction({ error: null, success: false, groupId: null, mode: null }, formData);
+
+    expect(result).toEqual({
+      error: "Este grupo solo permite acceso por invitacion.",
+      success: false,
+      groupId: null,
+      mode: null
+    });
+  });
 });

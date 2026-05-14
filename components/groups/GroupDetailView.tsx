@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
 import type { GroupDetail, GroupJoinRequestItem } from "@/lib/groups/types";
+import type { GroupInvitationItem } from "@/lib/groupInvitations";
 import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupDetailViewProps = {
@@ -16,11 +17,13 @@ type GroupDetailViewProps = {
   groupId: string;
   places: GroupPlace[];
   pendingRequests: GroupJoinRequestItem[];
+  invitableFriends: Array<{ id: string; username: string | null }>;
+  groupInvitations: GroupInvitationItem[];
 };
 
 type DetailTab = "list" | "map";
 
-export function GroupDetailView({ group, groupId, places, pendingRequests }: GroupDetailViewProps) {
+export function GroupDetailView({ group, groupId, places, pendingRequests, invitableFriends, groupInvitations }: GroupDetailViewProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>("list");
   const [showAddPlaceForm, setShowAddPlaceForm] = useState(false);
 
@@ -55,6 +58,8 @@ export function GroupDetailView({ group, groupId, places, pendingRequests }: Gro
             pendingRequests={pendingRequests}
             placeEditPolicy={group.placeEditPolicy}
             role={group.role}
+            invitableFriends={invitableFriends}
+            groupInvitations={groupInvitations}
           />
         </div>
       </Card>

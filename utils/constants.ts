@@ -5,6 +5,8 @@ export const ROUTES = {
   login: "/login",
   register: "/register",
   dashboard: "/dashboard",
+  friends: "/friends",
+  invitations: "/invitations",
   groups: "/groups",
   newGroup: "/groups/new",
   joinGroup: "/groups/join",

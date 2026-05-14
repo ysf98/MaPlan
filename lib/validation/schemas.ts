@@ -7,6 +7,7 @@ import {
 
 export const PLACE_STATUS_VALUES = ["pending", "visited", "favorite"] as const;
 export const PLACE_SOURCE_VALUES = ["manual", "google_maps", "tiktok", "instagram", "website"] as const;
+export const FRIEND_REQUEST_DECISION_VALUES = ["accepted", "rejected"] as const;
 const uuidSchema = z.string().uuid("Identificador invalido.");
 
 export const createGroupSchema = z.object({
@@ -117,9 +118,45 @@ export const updateGroupSettingsSchema = z.object({
     }, "Politica de acceso invalida.")
 });
 
+export const sendFriendRequestSchema = z.object({
+  receiverId: uuidSchema
+});
+
+export const respondFriendRequestSchema = z.object({
+  requestId: uuidSchema,
+  decision: z
+    .string()
+    .refine((value): value is (typeof FRIEND_REQUEST_DECISION_VALUES)[number] => {
+      return FRIEND_REQUEST_DECISION_VALUES.includes(value as never);
+    }, "Decision invalida.")
+});
+
+export const removeFriendSchema = z.object({
+  friendUserId: uuidSchema
+});
+
+export const inviteFriendToGroupSchema = z.object({
+  groupId: uuidSchema,
+  friendUserId: uuidSchema
+});
+
+export const respondGroupInvitationSchema = z.object({
+  invitationId: uuidSchema,
+  decision: z
+    .string()
+    .refine((value): value is (typeof FRIEND_REQUEST_DECISION_VALUES)[number] => {
+      return FRIEND_REQUEST_DECISION_VALUES.includes(value as never);
+    }, "Decision invalida.")
+});
+
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;
 export type UpdatePlaceStatusInput = z.infer<typeof updatePlaceStatusSchema>;
 export type ReviewJoinRequestInput = z.infer<typeof reviewJoinRequestSchema>;
 export type UpdateGroupSettingsInput = z.infer<typeof updateGroupSettingsSchema>;
+export type SendFriendRequestInput = z.infer<typeof sendFriendRequestSchema>;
+export type RespondFriendRequestInput = z.infer<typeof respondFriendRequestSchema>;
+export type RemoveFriendInput = z.infer<typeof removeFriendSchema>;
+export type InviteFriendToGroupInput = z.infer<typeof inviteFriendToGroupSchema>;
+export type RespondGroupInvitationInput = z.infer<typeof respondGroupInvitationSchema>;

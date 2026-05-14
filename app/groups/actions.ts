@@ -147,6 +147,10 @@ export async function joinGroupAction(
 
   const joinPolicy = group.join_policy as GroupJoinPolicy;
 
+  if (joinPolicy === "invite_only") {
+    return { error: "Este grupo solo permite acceso por invitacion.", success: false, groupId: null, mode: null };
+  }
+
   if (joinPolicy === "request_to_join") {
     const existingRequestResult = await supabase
       .from("group_join_requests")

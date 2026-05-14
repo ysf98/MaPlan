@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { deleteGroupAction, leaveGroupAction, reviewJoinRequestAction, updateGroupSettingsAction } from "@/app/groups/[groupId]/actions";
+import { inviteFriendToGroupAction } from "@/app/groups/[groupId]/invitations/actions";
+import type { InviteFriendActionState } from "@/app/groups/[groupId]/invitations/actions";
 import type {
   DeleteGroupActionState,
   LeaveGroupActionState,
@@ -12,6 +14,7 @@ import type {
 import { Button } from "@/components/ui/Button";
 import type { GroupJoinRequestItem } from "@/lib/groups/types";
 import type { GroupJoinPolicy, GroupPlaceEditPolicy } from "@/lib/groups/policies";
+import type { GroupInvitationItem } from "@/lib/groupInvitations";
 
 type GroupOwnerControlsProps = {
   groupId: string;
@@ -20,6 +23,8 @@ type GroupOwnerControlsProps = {
   placeEditPolicy: GroupPlaceEditPolicy;
   joinPolicy: GroupJoinPolicy;
   pendingRequests: GroupJoinRequestItem[];
+  invitableFriends: Array<{ id: string; username: string | null }>;
+  groupInvitations: GroupInvitationItem[];
 };
 
 const settingsInitialState: UpdateGroupSettingsActionState = {
@@ -42,6 +47,11 @@ const deleteInitialState: DeleteGroupActionState = {
   success: false
 };
 
+const inviteInitialState: InviteFriendActionState = {
+  error: null,
+  success: false
+};
+
 function formatDate(value: string | null) {
   if (!value) return "-";
   return new Date(value).toLocaleString("es-ES", {
@@ -50,7 +60,16 @@ function formatDate(value: string | null) {
   });
 }
 
-export function GroupOwnerControls({ groupId, groupName, role, placeEditPolicy, joinPolicy, pendingRequests }: GroupOwnerControlsProps) {
+export function GroupOwnerControls({
+  groupId,
+  groupName,
+  role,
+  placeEditPolicy,
+  joinPolicy,
+  pendingRequests,
+  invitableFriends,
+  groupInvitations
+}: GroupOwnerControlsProps) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [confirmMode, setConfirmMode] = useState<"leave" | "delete" | null>(null);
@@ -59,6 +78,7 @@ export function GroupOwnerControls({ groupId, groupName, role, placeEditPolicy, 
   const [reviewState, reviewAction, isReviewPending] = useActionState(reviewJoinRequestAction, reviewInitialState);
   const [leaveState, leaveAction, isLeaving] = useActionState(leaveGroupAction, leaveInitialState);
   const [deleteState, deleteAction, isDeleting] = useActionState(deleteGroupAction, deleteInitialState);
+  const [inviteState, inviteAction, isInviting] = useActionState(inviteFriendToGroupAction, inviteInitialState);
 
   useEffect(() => {
     if (settingsState.success || reviewState.success) {
@@ -149,6 +169,48 @@ export function GroupOwnerControls({ groupId, groupName, role, placeEditPolicy, 
               )}
               {reviewState.error ? <p className="mt-2 text-xs text-rose-600">{reviewState.error}</p> : null}
               {reviewState.success ? <p className="mt-2 text-xs text-emerald-600">Solicitud actualizada.</p> : null}
+            </div>
+          ) : null}
+
+          {role === "owner" ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <h3 className="text-sm font-semibold text-slate-900">Invitar amigos</h3>
+              {invitableFriends.length === 0 ? (
+                <p className="mt-2 text-xs text-slate-500">No hay amigos disponibles para invitar ahora mismo.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {invitableFriends.map((friend) => (
+                    <li key={friend.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 p-2">
+                      <p className="text-xs font-medium text-slate-900">@{friend.username || "sin-username"}</p>
+                      <form action={inviteAction}>
+                        <input name="groupId" type="hidden" value={groupId} />
+                        <input name="friendUserId" type="hidden" value={friend.id} />
+                        <Button disabled={isInviting} size="sm" type="submit" variant="secondary">
+                          {isInviting ? "Enviando..." : "Invitar"}
+                        </Button>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {inviteState.error ? <p className="mt-2 text-xs text-rose-600">{inviteState.error}</p> : null}
+              {inviteState.success ? <p className="mt-2 text-xs text-emerald-600">Invitacion enviada.</p> : null}
+
+              {groupInvitations.length > 0 ? (
+                <div className="mt-3 border-t border-slate-200 pt-3">
+                  <h4 className="text-xs font-semibold text-slate-900">Invitaciones del grupo</h4>
+                  <ul className="mt-2 space-y-2">
+                    {groupInvitations.slice(0, 8).map((invitation) => (
+                      <li key={invitation.id} className="rounded-lg border border-slate-200 p-2">
+                        <p className="text-xs text-slate-900">
+                          @{invitation.invitedUsername || "sin-username"} -{" "}
+                          <span className={invitation.status === "pending" ? "text-amber-700" : "text-slate-600"}>{invitation.status}</span>
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
           ) : null}
 

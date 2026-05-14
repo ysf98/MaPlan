@@ -8,6 +8,8 @@ import { cn } from "@/lib/cn";
 
 const items = [
   { href: ROUTES.dashboard, label: "Inicio" },
+  { href: ROUTES.invitations, label: "Invitaciones" },
+  { href: ROUTES.friends, label: "Amigos" },
   { href: ROUTES.groups, label: "Grupos" },
   { href: ROUTES.map, label: "Mapa" },
   { href: ROUTES.profile, label: "Perfil" }
