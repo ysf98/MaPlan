@@ -17,12 +17,17 @@ begin
     select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'groups' and column_name = 'join_policy'
   ) then
-    alter table public.groups add column join_policy text not null default 'open_by_code';
+    alter table public.groups add column join_policy text not null default 'invite_only';
   end if;
 end $$;
 
+alter table public.groups
+  alter column join_policy set default 'invite_only';
+
 do $$
 begin
+  alter table public.groups drop constraint if exists groups_join_policy_check;
+
   if not exists (select 1 from pg_constraint where conname = 'groups_place_edit_policy_check') then
     alter table public.groups
       add constraint groups_place_edit_policy_check
@@ -32,7 +37,7 @@ begin
   if not exists (select 1 from pg_constraint where conname = 'groups_join_policy_check') then
     alter table public.groups
       add constraint groups_join_policy_check
-      check (join_policy in ('open_by_code', 'request_to_join'));
+      check (join_policy in ('invite_only', 'open_by_code', 'request_to_join'));
   end if;
 end $$;
 

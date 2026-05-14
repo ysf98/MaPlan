@@ -36,12 +36,15 @@ function createGroupsActionClient({
   } | null
 }) {
   const groupDeleteEqMock = vi.fn(() => Promise.resolve({ data: null, error: null }));
+  const groupInsertMock = vi.fn();
   return {
     groupDeleteEqMock,
+    groupInsertMock,
     from(table: string) {
       if (table === "groups") {
         return {
-          insert() {
+          insert(payload: unknown) {
+            groupInsertMock(payload);
             return {
               select() {
                 return {
@@ -156,6 +159,24 @@ describe("group server actions", () => {
     expect(revalidatePathMock).toHaveBeenCalledWith("/groups");
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
     expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
+  });
+
+  it("createGroupAction defaults join policy to invite_only", async () => {
+    const { createGroupAction } = await import("@/app/groups/actions");
+    getCurrentUserMock.mockResolvedValue({ id: "user-1" });
+    const client = createGroupsActionClient({ createdGroupId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
+    createSupabaseServerClientMock.mockResolvedValue(client);
+
+    const formData = new FormData();
+    formData.set("name", "My Group");
+    formData.set("description", "Desc");
+    formData.set("placeEditPolicy", "owner_only");
+
+    const result = await createGroupAction({ error: null, success: false, groupId: null }, formData);
+
+    expect(result).toEqual({ error: null, success: true, groupId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
+    const firstInsertPayload = client.groupInsertMock.mock.calls[0]?.[0] as { join_policy?: string };
+    expect(firstInsertPayload.join_policy).toBe("invite_only");
   });
 
   it("createGroupAction deletes created group if owner membership insert fails", async () => {

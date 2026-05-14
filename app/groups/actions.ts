@@ -72,7 +72,7 @@ export async function createGroupAction(
       created_by: user.id,
       join_code: joinCode,
       place_edit_policy: placeEditPolicy,
-      join_policy: joinPolicy
+      join_policy: joinPolicy || "invite_only"
     };
     const groupResult = await supabase.from("groups").insert(groupInsertPayload).select("id").single();
 

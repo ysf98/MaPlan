@@ -43,11 +43,12 @@ export function CreateGroupForm() {
           <span className="text-sm font-medium text-slate-700">Acceso al grupo</span>
           <select
             className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
-            defaultValue="open_by_code"
+            defaultValue="invite_only"
             name="joinPolicy"
           >
-            <option value="open_by_code">Cualquiera con codigo entra directamente</option>
-            <option value="request_to_join">Requiere solicitud y aprobacion del propietario</option>
+            <option value="invite_only">Solo por invitacion</option>
+            <option value="request_to_join">Solicitud con codigo</option>
+            <option value="open_by_code">Abierto con codigo</option>
           </select>
         </label>
         {createState.error ? <p className="text-sm text-rose-600">{createState.error}</p> : null}
@@ -65,4 +66,3 @@ export function CreateGroupForm() {
     </form>
   );
 }
-

@@ -109,8 +109,9 @@ export function GroupOwnerControls({ groupId, groupName, role, placeEditPolicy, 
                   defaultValue={joinPolicy}
                   name="joinPolicy"
                 >
-                  <option value="open_by_code">Acceso directo por codigo</option>
-                  <option value="request_to_join">Requiere aprobacion</option>
+                  <option value="invite_only">Solo por invitacion</option>
+                  <option value="request_to_join">Solicitud con codigo</option>
+                  <option value="open_by_code">Abierto con codigo</option>
                 </select>
               </label>
               {settingsState.error ? <p className="text-xs text-rose-600">{settingsState.error}</p> : null}

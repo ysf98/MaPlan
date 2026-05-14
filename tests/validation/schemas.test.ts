@@ -27,6 +27,23 @@ describe("createGroupSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts invite_only join policy", () => {
+    const result = createGroupSchema.safeParse({
+      name: "Grupo privado",
+      joinPolicy: "invite_only"
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("defaults join policy to invite_only", () => {
+    const result = createGroupSchema.parse({
+      name: "Grupo default"
+    });
+
+    expect(result.joinPolicy).toBe("invite_only");
+  });
 });
 
 describe("reviewJoinRequestSchema", () => {

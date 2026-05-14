@@ -31,7 +31,7 @@ export const createGroupSchema = z.object({
   joinPolicy: z
     .string()
     .optional()
-    .transform((value) => value || "open_by_code")
+    .transform((value) => value || "invite_only")
     .refine((value): value is (typeof GROUP_JOIN_POLICY_VALUES)[number] => {
       return GROUP_JOIN_POLICY_VALUES.includes(value as never);
     }, "Politica de acceso invalida.")

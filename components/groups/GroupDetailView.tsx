@@ -33,7 +33,16 @@ export function GroupDetailView({ group, groupId, places, pendingRequests }: Gro
               <CategoryBadge label={group.role === "owner" ? "Admin" : "Member"} tone="visit" />
               <CategoryBadge label="Grupo" tone="plan" />
               <CategoryBadge label={group.placeEditPolicy === "owner_only" ? "Edicion: solo owner" : "Edicion: miembros"} tone="food" />
-              <CategoryBadge label={group.joinPolicy === "request_to_join" ? "Acceso: por solicitud" : "Acceso: por codigo"} tone="coffee" />
+              <CategoryBadge
+                label={
+                  group.joinPolicy === "invite_only"
+                    ? "Acceso: solo invitacion"
+                    : group.joinPolicy === "request_to_join"
+                      ? "Acceso: por solicitud"
+                      : "Acceso: por codigo"
+                }
+                tone="coffee"
+              />
             </div>
             <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{group.name}</h1>
             <p className="mt-2 text-sm text-slate-500">{group.description || "Grupo sin descripcion"}</p>

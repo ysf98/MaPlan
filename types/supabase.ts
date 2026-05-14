@@ -3,7 +3,7 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type PlaceStatus = "pending" | "visited" | "favorite";
 export type PlaceSource = "manual" | "google_maps" | "tiktok" | "instagram" | "website";
 export type GroupPlaceEditPolicy = "owner_only" | "members_can_edit";
-export type GroupJoinPolicy = "open_by_code" | "request_to_join";
+export type GroupJoinPolicy = "invite_only" | "open_by_code" | "request_to_join";
 export type GroupJoinRequestStatus = "pending" | "approved" | "rejected";
 
 export type Database = {
