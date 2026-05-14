@@ -6,6 +6,7 @@ import {
 } from "@/lib/groups/policies";
 
 export const PLACE_STATUS_VALUES = ["pending", "visited", "favorite"] as const;
+export const PLACE_SOURCE_VALUES = ["manual", "google_maps", "tiktok", "instagram", "website"] as const;
 const uuidSchema = z.string().uuid("Identificador invalido.");
 
 export const createGroupSchema = z.object({
@@ -65,7 +66,21 @@ export const createPlaceSchema = z.object({
     .trim()
     .max(40, "La categoria no es valida.")
     .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  originalUrl: z
+    .string()
+    .trim()
+    .max(500, "El enlace no puede superar 500 caracteres.")
+    .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value), "El enlace debe ser una URL valida."),
+  source: z
+    .string()
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value): value is (typeof PLACE_SOURCE_VALUES)[number] | null => {
+      return value === null || PLACE_SOURCE_VALUES.includes(value as never);
+    }, "Fuente invalida.")
 });
 
 export const updatePlaceStatusSchema = z.object({

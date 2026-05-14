@@ -86,6 +86,17 @@ describe("createPlaceSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("rejects invalid originalUrl", () => {
+    const result = createPlaceSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      name: "Lugar",
+      address: "Madrid",
+      originalUrl: "not-a-url"
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("updatePlaceStatusSchema", () => {

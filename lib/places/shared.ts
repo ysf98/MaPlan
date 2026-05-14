@@ -1,4 +1,5 @@
 import type { PlaceStatus } from "@/types/supabase";
+import type { PlaceSource } from "@/types/supabase";
 
 export const INITIAL_PLACE_CATEGORIES = [
   "Comer",
@@ -18,6 +19,10 @@ export type GroupPlace = {
   name: string;
   address: string;
   notes: string | null;
+  originalUrl: string | null;
+  source: PlaceSource | null;
+  latitude: number | null;
+  longitude: number | null;
   status: PlaceStatus;
   category: PlaceCategory;
   createdAt: string;

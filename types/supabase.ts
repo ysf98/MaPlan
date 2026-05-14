@@ -1,6 +1,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type PlaceStatus = "pending" | "visited" | "favorite";
+export type PlaceSource = "manual" | "google_maps" | "tiktok" | "instagram" | "website";
 export type GroupPlaceEditPolicy = "owner_only" | "members_can_edit";
 export type GroupJoinPolicy = "open_by_code" | "request_to_join";
 export type GroupJoinRequestStatus = "pending" | "approved" | "rejected";
@@ -103,8 +104,10 @@ export type Database = {
           category_id: string | null;
           name: string;
           address: string;
-          latitude: number;
-          longitude: number;
+          original_url: string | null;
+          source: PlaceSource | null;
+          latitude: number | null;
+          longitude: number | null;
           notes: string | null;
           status: PlaceStatus;
           created_at: string;
@@ -117,8 +120,10 @@ export type Database = {
           category_id?: string | null;
           name: string;
           address: string;
-          latitude: number;
-          longitude: number;
+          original_url?: string | null;
+          source?: PlaceSource | null;
+          latitude?: number | null;
+          longitude?: number | null;
           notes?: string | null;
           status?: PlaceStatus;
           created_at?: string;
@@ -128,8 +133,10 @@ export type Database = {
           category_id?: string | null;
           name?: string;
           address?: string;
-          latitude?: number;
-          longitude?: number;
+          original_url?: string | null;
+          source?: PlaceSource | null;
+          latitude?: number | null;
+          longitude?: number | null;
           notes?: string | null;
           status?: PlaceStatus;
           updated_at?: string;

@@ -45,6 +45,16 @@ export function PlaceCard({ groupId, place, canEdit }: PlaceCardProps) {
       <h3 className="mt-3 text-lg font-semibold text-slate-900">{place.name}</h3>
       <p className="mt-1 text-sm text-slate-600">{place.address}</p>
       {place.notes ? <p className="mt-2 text-sm text-slate-500">{place.notes}</p> : null}
+      {place.originalUrl ? (
+        <a
+          className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          href={place.originalUrl}
+          rel="noreferrer noopener"
+          target="_blank"
+        >
+          Abrir enlace
+        </a>
+      ) : null}
 
       {canEdit ? (
         <form action={formAction} className="mt-4">

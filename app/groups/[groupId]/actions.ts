@@ -85,7 +85,9 @@ export async function addPlaceAction(
     name: String(formData.get("name") || ""),
     address: String(formData.get("address") || ""),
     notes: String(formData.get("notes") || ""),
-    category: String(formData.get("category") || "")
+    category: String(formData.get("category") || ""),
+    originalUrl: String(formData.get("originalUrl") || ""),
+    source: String(formData.get("source") || "")
   });
 
   if (!parsedInput.success) {
@@ -95,7 +97,7 @@ export async function addPlaceAction(
     };
   }
 
-  const { groupId, name, address, notes, category } = parsedInput.data;
+  const { groupId, name, address, notes, category, originalUrl, source } = parsedInput.data;
 
   const result = await createPlace({
     userId: user.id,
@@ -103,7 +105,9 @@ export async function addPlaceAction(
     name,
     address,
     notes: notes || null,
-    category: category || null
+    category: category || null,
+    originalUrl: originalUrl || null,
+    source: source || null
   });
 
   if (result.error) {

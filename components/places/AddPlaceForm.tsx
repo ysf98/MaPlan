@@ -35,6 +35,28 @@ export function AddPlaceForm({ groupId }: AddPlaceFormProps) {
           <input name="groupId" type="hidden" value={groupId} />
           <Input label="Nombre" name="name" placeholder="Ej. La Bicicleta Cafe" required />
           <Input label="Direccion" name="address" placeholder="Ej. Malasana, Madrid" required />
+          <Input
+            label="Enlace original (opcional)"
+            name="originalUrl"
+            placeholder="https://..."
+            type="url"
+          />
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-slate-700">Fuente (opcional)</span>
+            <select
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+              defaultValue=""
+              name="source"
+            >
+              <option value="">Sin especificar</option>
+              <option value="manual">Manual</option>
+              <option value="google_maps">Google Maps</option>
+              <option value="tiktok">TikTok</option>
+              <option value="instagram">Instagram</option>
+              <option value="website">Website</option>
+            </select>
+          </label>
 
           <label className="block space-y-2">
             <span className="text-sm font-medium text-slate-700">Categoria</span>

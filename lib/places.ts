@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canEditPlaces, isGroupMember } from "@/lib/groupPermissions";
 import { INITIAL_PLACE_CATEGORIES, type GroupPlace, type PlaceCategory } from "@/lib/places/shared";
-import type { PlaceStatus } from "@/types/supabase";
+import type { PlaceSource, PlaceStatus } from "@/types/supabase";
 
 type CreatePlaceInput = {
   userId: string;
@@ -10,6 +10,8 @@ type CreatePlaceInput = {
   address: string;
   notes?: string | null;
   category?: string | null;
+  originalUrl?: string | null;
+  source?: PlaceSource | null;
 };
 
 type UpdatePlaceStatusInput = {
@@ -71,7 +73,7 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
   const supabase = await createSupabaseServerClient();
   const { data: places, error } = await supabase
     .from("places")
-    .select("id, name, address, notes, status, created_at, category_id")
+    .select("id, name, address, notes, status, created_at, category_id, original_url, source, latitude, longitude")
     .eq("group_id", groupId)
     .order("created_at", { ascending: false });
 
@@ -100,6 +102,10 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
       name: place.name,
       address: place.address,
       notes: place.notes,
+      originalUrl: place.original_url,
+      source: place.source,
+      latitude: place.latitude,
+      longitude: place.longitude,
       status: place.status,
       category: normalizeCategory(categoryName),
       createdAt: place.created_at
@@ -132,8 +138,10 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
     category_id: categoryId,
     name,
     address,
-    latitude: 0,
-    longitude: 0,
+    original_url: input.originalUrl?.trim() || null,
+    source: input.source || null,
+    latitude: null,
+    longitude: null,
     notes: input.notes?.trim() || null,
     status: "pending"
   });
