@@ -4,6 +4,7 @@ const redirectMock = vi.fn();
 const revalidatePathMock = vi.fn();
 const getCurrentUserMock = vi.fn();
 const createSupabaseServerClientMock = vi.fn();
+const createSupabaseAdminClientMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   redirect: redirectMock
@@ -22,20 +23,21 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 vi.mock("@/lib/supabase/admin", () => ({
-  createSupabaseAdminClient: vi.fn(() => {
-    throw new Error("admin not configured in tests");
-  })
+  createSupabaseAdminClient: createSupabaseAdminClientMock
 }));
 
 function createGroupsActionClient({
   createdGroupId = "11111111-1111-4111-8111-111111111111",
   existingMembership = null as { id: string } | null,
+  memberInsertError = null as { message: string } | null,
   foundGroup = { id: "22222222-2222-4222-8222-222222222222", join_policy: "open_by_code" } as {
     id: string;
     join_policy: string;
   } | null
 }) {
+  const groupDeleteEqMock = vi.fn(() => Promise.resolve({ data: null, error: null }));
   return {
+    groupDeleteEqMock,
     from(table: string) {
       if (table === "groups") {
         return {
@@ -59,7 +61,7 @@ function createGroupsActionClient({
           },
           delete() {
             return {
-              eq: () => Promise.resolve({ data: null, error: null })
+              eq: groupDeleteEqMock
             };
           }
         };
@@ -67,7 +69,7 @@ function createGroupsActionClient({
 
       if (table === "group_members") {
         return {
-          insert: () => Promise.resolve({ data: null, error: null }),
+          insert: () => Promise.resolve(memberInsertError ? { data: null, error: memberInsertError } : { data: null, error: null }),
           select() {
             return {
               eq() {
@@ -139,7 +141,8 @@ describe("group server actions", () => {
   it("createGroupAction creates group and owner membership", async () => {
     const { createGroupAction } = await import("@/app/groups/actions");
     getCurrentUserMock.mockResolvedValue({ id: "user-1" });
-    createSupabaseServerClientMock.mockResolvedValue(createGroupsActionClient({ createdGroupId: "33333333-3333-4333-8333-333333333333" }));
+    const client = createGroupsActionClient({ createdGroupId: "33333333-3333-4333-8333-333333333333" });
+    createSupabaseServerClientMock.mockResolvedValue(client);
 
     const formData = new FormData();
     formData.set("name", "My Group");
@@ -152,6 +155,29 @@ describe("group server actions", () => {
     expect(result).toEqual({ error: null, success: true, groupId: "33333333-3333-4333-8333-333333333333" });
     expect(revalidatePathMock).toHaveBeenCalledWith("/groups");
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
+    expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
+  });
+
+  it("createGroupAction deletes created group if owner membership insert fails", async () => {
+    const { createGroupAction } = await import("@/app/groups/actions");
+    getCurrentUserMock.mockResolvedValue({ id: "user-1" });
+    const client = createGroupsActionClient({
+      createdGroupId: "77777777-7777-4777-8777-777777777777",
+      memberInsertError: { message: "membership insert failed" }
+    });
+    createSupabaseServerClientMock.mockResolvedValue(client);
+
+    const formData = new FormData();
+    formData.set("name", "My Group");
+    formData.set("description", "Desc");
+    formData.set("placeEditPolicy", "owner_only");
+    formData.set("joinPolicy", "request_to_join");
+
+    const result = await createGroupAction({ error: null, success: false, groupId: null }, formData);
+
+    expect(result).toEqual({ error: "membership insert failed", success: false, groupId: null });
+    expect(client.groupDeleteEqMock).toHaveBeenCalledWith("id", "77777777-7777-4777-8777-777777777777");
+    expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
   });
 
   it("joinGroupAction returns group id and revalidates", async () => {

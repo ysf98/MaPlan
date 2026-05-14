@@ -131,16 +131,20 @@ begin
 end $$;
 
 -- 7) GROUPS policies
-create policy groups_select_member_only
+-- Important: the creator must be able to read the newly created group row
+-- right after INSERT (before group_members owner row exists), otherwise
+-- `insert(...).select("id").single()` is blocked by RLS.
+create policy groups_select_member_or_creator
 on public.groups
 for select to authenticated
 using (
-  exists (
-    select 1
-    from public.group_members gm
-    where gm.group_id = groups.id
-      and gm.user_id = auth.uid()
-  )
+  created_by = auth.uid()
+  or exists (
+      select 1
+      from public.group_members gm
+      where gm.group_id = groups.id
+        and gm.user_id = auth.uid()
+    )
 );
 
 create policy groups_insert_creator_only
@@ -165,6 +169,20 @@ using (
 with check (
   exists (
     select 1 from public.group_members gm
+    where gm.group_id = groups.id
+      and gm.user_id = auth.uid()
+      and gm.role = 'owner'
+  )
+);
+
+create policy groups_delete_creator_or_owner
+on public.groups
+for delete to authenticated
+using (
+  created_by = auth.uid()
+  or exists (
+    select 1
+    from public.group_members gm
     where gm.group_id = groups.id
       and gm.user_id = auth.uid()
       and gm.role = 'owner'
