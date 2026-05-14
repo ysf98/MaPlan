@@ -87,8 +87,23 @@ export const reviewJoinRequestSchema = z.object({
     }, "Decision invalida.")
 });
 
+export const updateGroupSettingsSchema = z.object({
+  groupId: z.string().trim().min(1, "Grupo invalido."),
+  placeEditPolicy: z
+    .string()
+    .refine((value): value is (typeof GROUP_PLACE_EDIT_POLICY_VALUES)[number] => {
+      return GROUP_PLACE_EDIT_POLICY_VALUES.includes(value as never);
+    }, "Politica de edicion invalida."),
+  joinPolicy: z
+    .string()
+    .refine((value): value is (typeof GROUP_JOIN_POLICY_VALUES)[number] => {
+      return GROUP_JOIN_POLICY_VALUES.includes(value as never);
+    }, "Politica de acceso invalida.")
+});
+
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;
 export type UpdatePlaceStatusInput = z.infer<typeof updatePlaceStatusSchema>;
 export type ReviewJoinRequestInput = z.infer<typeof reviewJoinRequestSchema>;
+export type UpdateGroupSettingsInput = z.infer<typeof updateGroupSettingsSchema>;

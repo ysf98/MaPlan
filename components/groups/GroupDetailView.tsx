@@ -7,8 +7,7 @@ import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { OwnerJoinRequestsPanel } from "@/components/groups/OwnerJoinRequestsPanel";
-import { GroupMembershipActions } from "@/components/groups/GroupMembershipActions";
+import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
 import type { GroupDetail, GroupJoinRequestItem } from "@/lib/groups/types";
 import type { GroupPlace } from "@/lib/places/shared";
 
@@ -17,27 +16,38 @@ type GroupDetailViewProps = {
   groupId: string;
   places: GroupPlace[];
   pendingRequests: GroupJoinRequestItem[];
-  reviewedRequests: GroupJoinRequestItem[];
 };
 
 type DetailTab = "list" | "map";
 
-export function GroupDetailView({ group, groupId, places, pendingRequests, reviewedRequests }: GroupDetailViewProps) {
+export function GroupDetailView({ group, groupId, places, pendingRequests }: GroupDetailViewProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>("list");
   const [showAddPlaceForm, setShowAddPlaceForm] = useState(places.length === 0 && group.canEditPlaces);
 
   return (
     <section className="space-y-4">
       <Card className="rounded-3xl">
-        <div className="flex flex-wrap items-center gap-2">
-          <CategoryBadge label={group.role === "owner" ? "Admin" : "Member"} tone="visit" />
-          <CategoryBadge label="Grupo" tone="plan" />
-          <CategoryBadge label={group.placeEditPolicy === "owner_only" ? "Edicion: solo owner" : "Edicion: miembros"} tone="food" />
-          <CategoryBadge label={group.joinPolicy === "request_to_join" ? "Acceso: por solicitud" : "Acceso: por codigo"} tone="coffee" />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <CategoryBadge label={group.role === "owner" ? "Admin" : "Member"} tone="visit" />
+              <CategoryBadge label="Grupo" tone="plan" />
+              <CategoryBadge label={group.placeEditPolicy === "owner_only" ? "Edicion: solo owner" : "Edicion: miembros"} tone="food" />
+              <CategoryBadge label={group.joinPolicy === "request_to_join" ? "Acceso: por solicitud" : "Acceso: por codigo"} tone="coffee" />
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{group.name}</h1>
+            <p className="mt-2 text-sm text-slate-500">{group.description || "Grupo sin descripcion"}</p>
+            <p className="mt-3 text-xs text-slate-500">Codigo de invitacion: {group.joinCode}</p>
+          </div>
+          <GroupOwnerControls
+            groupId={groupId}
+            groupName={group.name}
+            joinPolicy={group.joinPolicy}
+            pendingRequests={pendingRequests}
+            placeEditPolicy={group.placeEditPolicy}
+            role={group.role}
+          />
         </div>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{group.name}</h1>
-        <p className="mt-2 text-sm text-slate-500">{group.description || "Grupo sin descripcion"}</p>
-        <p className="mt-3 text-xs text-slate-500">Codigo de invitacion: {group.joinCode}</p>
       </Card>
 
       <Card className="rounded-3xl">
@@ -72,12 +82,6 @@ export function GroupDetailView({ group, groupId, places, pendingRequests, revie
       </Card>
 
       {showAddPlaceForm && group.canEditPlaces ? <AddPlaceForm groupId={groupId} /> : null}
-
-      <GroupMembershipActions groupId={groupId} groupName={group.name} role={group.role} />
-
-      {group.role === "owner" ? (
-        <OwnerJoinRequestsPanel groupId={groupId} requests={pendingRequests} reviewedRequests={reviewedRequests} />
-      ) : null}
 
       {activeTab === "list" ? (
         places.length > 0 ? (

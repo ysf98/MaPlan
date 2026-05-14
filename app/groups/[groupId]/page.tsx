@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
-import { getGroupDetailForUser, getPendingJoinRequestsForOwner, getReviewedJoinRequestsForOwner } from "@/lib/groups";
+import { getGroupDetailForUser, getPendingJoinRequestsForOwner } from "@/lib/groups";
 import { getGroupPlacesForUser } from "@/lib/places";
 import { GroupDetailView } from "@/components/groups/GroupDetailView";
 import { notFound, redirect } from "next/navigation";
@@ -27,17 +27,10 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   }
 
   const pendingRequests = group.role === "owner" ? await getPendingJoinRequestsForOwner(user.id, groupId) : [];
-  const reviewedRequests = group.role === "owner" ? await getReviewedJoinRequestsForOwner(user.id, groupId) : [];
 
   return (
     <AppShell>
-      <GroupDetailView
-        group={group}
-        groupId={groupId}
-        pendingRequests={pendingRequests}
-        places={places}
-        reviewedRequests={reviewedRequests}
-      />
+      <GroupDetailView group={group} groupId={groupId} pendingRequests={pendingRequests} places={places} />
     </AppShell>
   );
 }

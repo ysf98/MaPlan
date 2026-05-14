@@ -83,7 +83,25 @@ function createGroupsActionClient({
 
       if (table === "group_join_requests") {
         return {
-          upsert: () => Promise.resolve({ data: null, error: null })
+          select() {
+            return {
+              eq() {
+                return {
+                  eq() {
+                    return {
+                      maybeSingle: () => Promise.resolve({ data: null, error: null })
+                    };
+                  }
+                };
+              }
+            };
+          },
+          insert: () => Promise.resolve({ data: null, error: null }),
+          update() {
+            return {
+              eq: () => Promise.resolve({ data: null, error: null })
+            };
+          }
         };
       }
 
@@ -144,7 +162,7 @@ describe("group server actions", () => {
     );
 
     const formData = new FormData();
-    formData.set("joinCode", "abc123");
+    formData.set("joinCode", "A1B2C3D4");
 
     const result = await joinGroupAction({ error: null, success: false, groupId: null, mode: null }, formData);
 
@@ -164,7 +182,7 @@ describe("group server actions", () => {
     );
 
     const formData = new FormData();
-    formData.set("joinCode", "abc123");
+    formData.set("joinCode", "A1B2C3D4");
 
     const result = await joinGroupAction({ error: null, success: false, groupId: null, mode: null }, formData);
 

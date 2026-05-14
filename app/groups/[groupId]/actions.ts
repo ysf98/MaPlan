@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { createPlace, updatePlaceStatus } from "@/lib/places";
-import { createPlaceSchema, reviewJoinRequestSchema, updatePlaceStatusSchema } from "@/lib/validation/schemas";
+import { createPlaceSchema, reviewJoinRequestSchema, updateGroupSettingsSchema, updatePlaceStatusSchema } from "@/lib/validation/schemas";
 import type { PlaceStatus } from "@/types/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
@@ -35,6 +35,11 @@ export type DeleteGroupActionState = {
   success: boolean;
 };
 
+export type UpdateGroupSettingsActionState = {
+  error: string | null;
+  success: boolean;
+};
+
 const ADD_PLACE_INITIAL_STATE: AddPlaceActionState = {
   error: null,
   success: false
@@ -56,6 +61,11 @@ const LEAVE_GROUP_INITIAL_STATE: LeaveGroupActionState = {
 };
 
 const DELETE_GROUP_INITIAL_STATE: DeleteGroupActionState = {
+  error: null,
+  success: false
+};
+
+const UPDATE_GROUP_SETTINGS_INITIAL_STATE: UpdateGroupSettingsActionState = {
   error: null,
   success: false
 };
@@ -230,6 +240,55 @@ export async function reviewJoinRequestAction(
 
   revalidatePath(`/groups/${groupId}`);
   revalidatePath("/groups");
+  return { error: null, success: true };
+}
+
+export async function updateGroupSettingsAction(
+  _previousState: UpdateGroupSettingsActionState = UPDATE_GROUP_SETTINGS_INITIAL_STATE,
+  formData: FormData
+): Promise<UpdateGroupSettingsActionState> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login?next=/groups");
+  }
+
+  const parsedInput = updateGroupSettingsSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    placeEditPolicy: String(formData.get("placeEditPolicy") || ""),
+    joinPolicy: String(formData.get("joinPolicy") || "")
+  });
+
+  if (!parsedInput.success) {
+    return { error: parsedInput.error.issues[0]?.message ?? "Datos invalidos.", success: false };
+  }
+
+  const { groupId, placeEditPolicy, joinPolicy } = parsedInput.data;
+  const owner = await isGroupOwner(user.id, groupId);
+
+  if (!owner) {
+    return { error: "Solo el propietario puede cambiar la configuracion del grupo.", success: false };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
+  const payload = {
+    place_edit_policy: placeEditPolicy,
+    join_policy: joinPolicy
+  };
+
+  let updateResult = await supabase.from("groups").update(payload).eq("id", groupId);
+  if (updateResult.error?.code === "42501" && adminClient) {
+    updateResult = await adminClient.from("groups").update(payload).eq("id", groupId);
+  }
+
+  if (updateResult.error) {
+    return { error: updateResult.error.message, success: false };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/groups");
+  revalidatePath("/dashboard");
   return { error: null, success: true };
 }
 
