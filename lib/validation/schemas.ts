@@ -40,8 +40,9 @@ export const joinGroupSchema = z.object({
     .string()
     .trim()
     .min(1, "El codigo del grupo es obligatorio.")
-    .max(20, "El codigo del grupo no es valido.")
+    .max(8, "El codigo del grupo no es valido.")
     .transform((value) => value.toUpperCase())
+    .refine((value) => /^[A-Z0-9]{8}$/.test(value), "El codigo del grupo debe tener 8 caracteres alfanumericos.")
 });
 
 export const createPlaceSchema = z.object({

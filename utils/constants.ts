@@ -6,6 +6,8 @@ export const ROUTES = {
   register: "/register",
   dashboard: "/dashboard",
   groups: "/groups",
+  newGroup: "/groups/new",
+  joinGroup: "/groups/join",
   map: "/map",
   profile: "/profile"
 } as const;
