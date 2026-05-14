@@ -6,6 +6,7 @@ import {
 } from "@/lib/groups/policies";
 
 export const PLACE_STATUS_VALUES = ["pending", "visited", "favorite"] as const;
+const uuidSchema = z.string().uuid("Identificador invalido.");
 
 export const createGroupSchema = z.object({
   name: z
@@ -46,7 +47,7 @@ export const joinGroupSchema = z.object({
 });
 
 export const createPlaceSchema = z.object({
-  groupId: z.string().trim().min(1, "Grupo invalido."),
+  groupId: uuidSchema,
   name: z.string().trim().min(1, "El nombre del lugar es obligatorio.").max(120, "El nombre es demasiado largo."),
   address: z
     .string()
@@ -68,8 +69,8 @@ export const createPlaceSchema = z.object({
 });
 
 export const updatePlaceStatusSchema = z.object({
-  groupId: z.string().trim().min(1, "Datos invalidos para actualizar el estado."),
-  placeId: z.string().trim().min(1, "Datos invalidos para actualizar el estado."),
+  groupId: uuidSchema,
+  placeId: uuidSchema,
   status: z
     .string()
     .refine((value): value is (typeof PLACE_STATUS_VALUES)[number] => PLACE_STATUS_VALUES.includes(value as never), {
@@ -78,8 +79,8 @@ export const updatePlaceStatusSchema = z.object({
 });
 
 export const reviewJoinRequestSchema = z.object({
-  groupId: z.string().trim().min(1, "Grupo invalido."),
-  requestId: z.string().trim().min(1, "Solicitud invalida."),
+  groupId: uuidSchema,
+  requestId: uuidSchema,
   decision: z
     .string()
     .refine((value): value is Exclude<(typeof GROUP_JOIN_REQUEST_STATUS_VALUES)[number], "pending"> => {
@@ -88,7 +89,7 @@ export const reviewJoinRequestSchema = z.object({
 });
 
 export const updateGroupSettingsSchema = z.object({
-  groupId: z.string().trim().min(1, "Grupo invalido."),
+  groupId: uuidSchema,
   placeEditPolicy: z
     .string()
     .refine((value): value is (typeof GROUP_PLACE_EDIT_POLICY_VALUES)[number] => {

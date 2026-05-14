@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { createGroupSchema, joinGroupSchema } from "@/lib/validation/schemas";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GroupJoinPolicy } from "@/types/supabase";
 
@@ -38,10 +37,6 @@ function createJoinCode() {
   return Math.random().toString(36).slice(2, 10).toUpperCase();
 }
 
-function isRlsError(error: { code?: string } | null | undefined) {
-  return error?.code === "42501";
-}
-
 export async function createGroupAction(
   _previousState: CreateGroupActionState = INITIAL_STATE,
   formData: FormData
@@ -66,7 +61,6 @@ export async function createGroupAction(
   const { name, description, placeEditPolicy, joinPolicy } = parsedInput.data;
 
   const supabase = await createSupabaseServerClient();
-  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
   let createdGroupId: string | null = null;
   let lastErrorMessage = "No se pudo crear el grupo. Intentalo otra vez.";
 
@@ -80,10 +74,7 @@ export async function createGroupAction(
       place_edit_policy: placeEditPolicy,
       join_policy: joinPolicy
     };
-    let groupResult = await supabase.from("groups").insert(groupInsertPayload).select("id").single();
-    if (isRlsError(groupResult.error) && adminClient) {
-      groupResult = await adminClient.from("groups").insert(groupInsertPayload).select("id").single();
-    }
+    const groupResult = await supabase.from("groups").insert(groupInsertPayload).select("id").single();
 
     const { data: group, error: groupError } = groupResult;
 
@@ -107,19 +98,12 @@ export async function createGroupAction(
     user_id: user.id,
     role: "owner" as const
   };
-  let memberInsertResult = await supabase.from("group_members").insert(memberInsertPayload);
-  if (isRlsError(memberInsertResult.error) && adminClient) {
-    memberInsertResult = await adminClient.from("group_members").insert(memberInsertPayload);
-  }
+  const memberInsertResult = await supabase.from("group_members").insert(memberInsertPayload);
 
   const { error: memberError } = memberInsertResult;
 
   if (memberError) {
-    if (adminClient) {
-      await adminClient.from("groups").delete().eq("id", createdGroupId);
-    } else {
-      await supabase.from("groups").delete().eq("id", createdGroupId);
-    }
+    await supabase.from("groups").delete().eq("id", createdGroupId);
     return { error: memberError.message, success: false, groupId: null };
   }
 
@@ -153,11 +137,7 @@ export async function joinGroupAction(
   const { joinCode } = parsedInput.data;
 
   const supabase = await createSupabaseServerClient();
-  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
-  let groupResult = await supabase.from("groups").select("id, join_policy").eq("join_code", joinCode).maybeSingle();
-  if ((groupResult.error?.code === "42501" || (!groupResult.error && !groupResult.data)) && adminClient) {
-    groupResult = await adminClient.from("groups").select("id, join_policy").eq("join_code", joinCode).maybeSingle();
-  }
+  const groupResult = await supabase.from("groups").select("id, join_policy").eq("join_code", joinCode).maybeSingle();
 
   const { data: group, error: groupError } = groupResult;
 
@@ -168,21 +148,12 @@ export async function joinGroupAction(
   const joinPolicy = group.join_policy as GroupJoinPolicy;
 
   if (joinPolicy === "request_to_join") {
-    let existingRequestResult = await supabase
+    const existingRequestResult = await supabase
       .from("group_join_requests")
       .select("id, status")
       .eq("group_id", group.id)
       .eq("user_id", user.id)
       .maybeSingle();
-
-    if (isRlsError(existingRequestResult.error) && adminClient) {
-      existingRequestResult = await adminClient
-        .from("group_join_requests")
-        .select("id, status")
-        .eq("group_id", group.id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-    }
 
     if (existingRequestResult.error) {
       return { error: existingRequestResult.error.message, success: false, groupId: null, mode: null };
@@ -197,10 +168,7 @@ export async function joinGroupAction(
         reviewed_by: null,
         reviewed_at: null
       };
-      let insertResult = await supabase.from("group_join_requests").insert(insertPayload);
-      if (isRlsError(insertResult.error) && adminClient) {
-        insertResult = await adminClient.from("group_join_requests").insert(insertPayload);
-      }
+      const insertResult = await supabase.from("group_join_requests").insert(insertPayload);
       if (insertResult.error) {
         return { error: insertResult.error.message, success: false, groupId: null, mode: null };
       }
@@ -210,13 +178,10 @@ export async function joinGroupAction(
         reviewed_by: null,
         reviewed_at: null
       };
-      let updateResult = await supabase
+      const updateResult = await supabase
         .from("group_join_requests")
         .update(updatePayload)
         .eq("id", existingRequestResult.data.id);
-      if (isRlsError(updateResult.error) && adminClient) {
-        updateResult = await adminClient.from("group_join_requests").update(updatePayload).eq("id", existingRequestResult.data.id);
-      }
       if (updateResult.error) {
         return { error: updateResult.error.message, success: false, groupId: null, mode: null };
       }

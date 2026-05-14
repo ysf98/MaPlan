@@ -36,13 +36,13 @@ describe("places server actions", () => {
     getCurrentUserMock.mockResolvedValue({ id: "user-1" });
 
     const formData = new FormData();
-    formData.set("groupId", "");
+    formData.set("groupId", "not-a-uuid");
     formData.set("name", "");
     formData.set("address", "");
 
     const result = await addPlaceAction({ error: null, success: false }, formData);
     expect(result.success).toBe(false);
-    expect(result.error).toBe("Grupo invalido.");
+    expect(result.error).toBe("Identificador invalido.");
   });
 
   it("updatePlaceStatusAction updates and revalidates", async () => {
@@ -51,8 +51,8 @@ describe("places server actions", () => {
     updatePlaceStatusMock.mockResolvedValue({ error: null });
 
     const formData = new FormData();
-    formData.set("groupId", "group-1");
-    formData.set("placeId", "place-1");
+    formData.set("groupId", "11111111-1111-4111-8111-111111111111");
+    formData.set("placeId", "22222222-2222-4222-8222-222222222222");
     formData.set("status", "visited");
 
     const result = await updatePlaceStatusAction({ error: null, success: false }, formData);
@@ -60,11 +60,11 @@ describe("places server actions", () => {
     expect(result).toEqual({ error: null, success: true });
     expect(updatePlaceStatusMock).toHaveBeenCalledWith({
       userId: "user-1",
-      groupId: "group-1",
-      placeId: "place-1",
+      groupId: "11111111-1111-4111-8111-111111111111",
+      placeId: "22222222-2222-4222-8222-222222222222",
       status: "visited"
     });
-    expect(revalidatePathMock).toHaveBeenCalledWith("/groups/group-1");
+    expect(revalidatePathMock).toHaveBeenCalledWith("/groups/11111111-1111-4111-8111-111111111111");
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
   });
 });

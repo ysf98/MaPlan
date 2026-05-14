@@ -1,19 +1,12 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GroupDetail, GroupJoinRequestItem, GroupListItem } from "@/lib/groups/types";
 
 export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   const supabase = await createSupabaseServerClient();
-  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
-
-  let membershipsResult = await supabase
+  const membershipsResult = await supabase
     .from("group_members")
     .select("group_id, role")
     .eq("user_id", userId);
-
-  if (membershipsResult.error?.code === "42501" && adminClient) {
-    membershipsResult = await adminClient.from("group_members").select("group_id, role").eq("user_id", userId);
-  }
   const { data: memberships, error: membershipsError } = membershipsResult;
 
   if (membershipsError || !memberships || memberships.length === 0) {
@@ -23,19 +16,11 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   const roleByGroupId = new Map(memberships.map((membership) => [membership.group_id, membership.role]));
   const groupIds = memberships.map((membership) => membership.group_id);
 
-  let groupsResult = await supabase
+  const groupsResult = await supabase
     .from("groups")
     .select("id, name, description, created_at, place_edit_policy, join_policy")
     .in("id", groupIds)
     .order("created_at", { ascending: false });
-
-  if (groupsResult.error?.code === "42501" && adminClient) {
-    groupsResult = await adminClient
-      .from("groups")
-      .select("id, name, description, created_at, place_edit_policy, join_policy")
-      .in("id", groupIds)
-      .order("created_at", { ascending: false });
-  }
   const { data: groups, error: groupsError } = groupsResult;
 
   if (groupsError || !groups) {
@@ -55,42 +40,23 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
 
 export async function getGroupDetailForUser(userId: string, groupId: string): Promise<GroupDetail | null> {
   const supabase = await createSupabaseServerClient();
-  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
-
-  let membershipResult = await supabase
+  const membershipResult = await supabase
     .from("group_members")
     .select("role")
     .eq("user_id", userId)
     .eq("group_id", groupId)
     .maybeSingle();
-
-  if (membershipResult.error?.code === "42501" && adminClient) {
-    membershipResult = await adminClient
-      .from("group_members")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("group_id", groupId)
-      .maybeSingle();
-  }
   const { data: membership, error: membershipError } = membershipResult;
 
   if (membershipError || !membership) {
     return null;
   }
 
-  let groupResult = await supabase
+  const groupResult = await supabase
     .from("groups")
     .select("id, name, description, join_code, created_at, place_edit_policy, join_policy")
     .eq("id", groupId)
     .maybeSingle();
-
-  if (groupResult.error?.code === "42501" && adminClient) {
-    groupResult = await adminClient
-      .from("groups")
-      .select("id, name, description, join_code, created_at, place_edit_policy, join_policy")
-      .eq("id", groupId)
-      .maybeSingle();
-  }
   const { data: group, error: groupError } = groupResult;
 
   if (groupError || !group) {
@@ -112,9 +78,7 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
 
 export async function getPendingJoinRequestsForOwner(userId: string, groupId: string): Promise<GroupJoinRequestItem[]> {
   const supabase = await createSupabaseServerClient();
-  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
-
-  let ownerMembershipResult = await supabase
+  const ownerMembershipResult = await supabase
     .from("group_members")
     .select("id")
     .eq("group_id", groupId)
@@ -122,46 +86,24 @@ export async function getPendingJoinRequestsForOwner(userId: string, groupId: st
     .eq("role", "owner")
     .maybeSingle();
 
-  if (ownerMembershipResult.error?.code === "42501" && adminClient) {
-    ownerMembershipResult = await adminClient
-      .from("group_members")
-      .select("id")
-      .eq("group_id", groupId)
-      .eq("user_id", userId)
-      .eq("role", "owner")
-      .maybeSingle();
-  }
-
   if (ownerMembershipResult.error || !ownerMembershipResult.data) {
     return [];
   }
 
-  let requestsResult = await supabase
+  const requestsResult = await supabase
     .from("group_join_requests")
     .select("id, group_id, user_id, message, status, created_at, updated_at, reviewed_at, reviewed_by")
     .eq("group_id", groupId)
     .eq("status", "pending")
     .order("created_at", { ascending: true });
 
-  if (requestsResult.error?.code === "42501" && adminClient) {
-    requestsResult = await adminClient
-      .from("group_join_requests")
-      .select("id, group_id, user_id, message, status, created_at, updated_at, reviewed_at, reviewed_by")
-      .eq("group_id", groupId)
-      .eq("status", "pending")
-      .order("created_at", { ascending: true });
-  }
 
   if (requestsResult.error || !requestsResult.data || requestsResult.data.length === 0) {
     return [];
   }
 
   const userIds = requestsResult.data.map((request) => request.user_id);
-  let profilesResult = await supabase.from("profiles").select("id, username").in("id", userIds);
-
-  if (profilesResult.error?.code === "42501" && adminClient) {
-    profilesResult = await adminClient.from("profiles").select("id, username").in("id", userIds);
-  }
+  const profilesResult = await supabase.from("profiles").select("id, username").in("id", userIds);
 
   const usernameByUserId = new Map<string, string | null>();
   (profilesResult.data || []).forEach((profile) => {
@@ -186,9 +128,7 @@ export async function getPendingJoinRequestsForOwner(userId: string, groupId: st
 
 export async function getReviewedJoinRequestsForOwner(userId: string, groupId: string): Promise<GroupJoinRequestItem[]> {
   const supabase = await createSupabaseServerClient();
-  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
-
-  let ownerMembershipResult = await supabase
+  const ownerMembershipResult = await supabase
     .from("group_members")
     .select("id")
     .eq("group_id", groupId)
@@ -196,21 +136,12 @@ export async function getReviewedJoinRequestsForOwner(userId: string, groupId: s
     .eq("role", "owner")
     .maybeSingle();
 
-  if (ownerMembershipResult.error?.code === "42501" && adminClient) {
-    ownerMembershipResult = await adminClient
-      .from("group_members")
-      .select("id")
-      .eq("group_id", groupId)
-      .eq("user_id", userId)
-      .eq("role", "owner")
-      .maybeSingle();
-  }
 
   if (ownerMembershipResult.error || !ownerMembershipResult.data) {
     return [];
   }
 
-  let requestsResult = await supabase
+  const requestsResult = await supabase
     .from("group_join_requests")
     .select("id, group_id, user_id, message, status, created_at, updated_at, reviewed_at, reviewed_by")
     .eq("group_id", groupId)
@@ -218,15 +149,6 @@ export async function getReviewedJoinRequestsForOwner(userId: string, groupId: s
     .order("updated_at", { ascending: false })
     .limit(8);
 
-  if (requestsResult.error?.code === "42501" && adminClient) {
-    requestsResult = await adminClient
-      .from("group_join_requests")
-      .select("id, group_id, user_id, message, status, created_at, updated_at, reviewed_at, reviewed_by")
-      .eq("group_id", groupId)
-      .in("status", ["approved", "rejected"])
-      .order("updated_at", { ascending: false })
-      .limit(8);
-  }
 
   if (requestsResult.error || !requestsResult.data || requestsResult.data.length === 0) {
     return [];
@@ -239,10 +161,7 @@ export async function getReviewedJoinRequestsForOwner(userId: string, groupId: s
     )
   );
 
-  let profilesResult = await supabase.from("profiles").select("id, username").in("id", relatedUserIds);
-  if (profilesResult.error?.code === "42501" && adminClient) {
-    profilesResult = await adminClient.from("profiles").select("id, username").in("id", relatedUserIds);
-  }
+  const profilesResult = await supabase.from("profiles").select("id, username").in("id", relatedUserIds);
 
   const usernameByUserId = new Map<string, string | null>();
   (profilesResult.data || []).forEach((profile) => {

@@ -28,9 +28,12 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 
 function createGroupsActionClient({
-  createdGroupId = "group-1",
+  createdGroupId = "11111111-1111-4111-8111-111111111111",
   existingMembership = null as { id: string } | null,
-  foundGroup = { id: "group-by-code", join_policy: "open_by_code" } as { id: string; join_policy: string } | null
+  foundGroup = { id: "22222222-2222-4222-8222-222222222222", join_policy: "open_by_code" } as {
+    id: string;
+    join_policy: string;
+  } | null
 }) {
   return {
     from(table: string) {
@@ -136,7 +139,7 @@ describe("group server actions", () => {
   it("createGroupAction creates group and owner membership", async () => {
     const { createGroupAction } = await import("@/app/groups/actions");
     getCurrentUserMock.mockResolvedValue({ id: "user-1" });
-    createSupabaseServerClientMock.mockResolvedValue(createGroupsActionClient({ createdGroupId: "group-123" }));
+    createSupabaseServerClientMock.mockResolvedValue(createGroupsActionClient({ createdGroupId: "33333333-3333-4333-8333-333333333333" }));
 
     const formData = new FormData();
     formData.set("name", "My Group");
@@ -146,7 +149,7 @@ describe("group server actions", () => {
 
     const result = await createGroupAction({ error: null, success: false, groupId: null }, formData);
 
-    expect(result).toEqual({ error: null, success: true, groupId: "group-123" });
+    expect(result).toEqual({ error: null, success: true, groupId: "33333333-3333-4333-8333-333333333333" });
     expect(revalidatePathMock).toHaveBeenCalledWith("/groups");
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
   });
@@ -156,7 +159,7 @@ describe("group server actions", () => {
     getCurrentUserMock.mockResolvedValue({ id: "user-1" });
     createSupabaseServerClientMock.mockResolvedValue(
       createGroupsActionClient({
-        foundGroup: { id: "group-xyz", join_policy: "open_by_code" },
+        foundGroup: { id: "44444444-4444-4444-8444-444444444444", join_policy: "open_by_code" },
         existingMembership: null
       })
     );
@@ -166,7 +169,7 @@ describe("group server actions", () => {
 
     const result = await joinGroupAction({ error: null, success: false, groupId: null, mode: null }, formData);
 
-    expect(result).toEqual({ error: null, success: true, groupId: "group-xyz", mode: "joined" });
+    expect(result).toEqual({ error: null, success: true, groupId: "44444444-4444-4444-8444-444444444444", mode: "joined" });
     expect(revalidatePathMock).toHaveBeenCalledWith("/groups");
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
   });
@@ -176,7 +179,7 @@ describe("group server actions", () => {
     getCurrentUserMock.mockResolvedValue({ id: "user-1" });
     createSupabaseServerClientMock.mockResolvedValue(
       createGroupsActionClient({
-        foundGroup: { id: "group-xyz", join_policy: "request_to_join" },
+        foundGroup: { id: "55555555-5555-4555-8555-555555555555", join_policy: "request_to_join" },
         existingMembership: null
       })
     );
@@ -186,6 +189,6 @@ describe("group server actions", () => {
 
     const result = await joinGroupAction({ error: null, success: false, groupId: null, mode: null }, formData);
 
-    expect(result).toEqual({ error: null, success: true, groupId: "group-xyz", mode: "requested" });
+    expect(result).toEqual({ error: null, success: true, groupId: "55555555-5555-4555-8555-555555555555", mode: "requested" });
   });
 });

@@ -177,12 +177,28 @@ on public.group_members
 for select to authenticated
 using (user_id = auth.uid());
 
-create policy group_members_insert_self_only
+create policy group_members_insert_self_join_allowed
 on public.group_members
 for insert to authenticated
 with check (
   auth.uid() is not null
   and user_id = auth.uid()
+  and role = 'member'
+  and (
+    exists (
+      select 1
+      from public.groups g
+      where g.id = group_members.group_id
+        and g.join_policy = 'open_by_code'
+    )
+    or exists (
+      select 1
+      from public.group_join_requests r
+      where r.group_id = group_members.group_id
+        and r.user_id = auth.uid()
+        and r.status = 'approved'
+    )
+  )
 );
 
 create policy group_members_insert_owner_manage

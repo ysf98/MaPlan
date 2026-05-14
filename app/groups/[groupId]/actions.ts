@@ -184,22 +184,12 @@ export async function reviewJoinRequestAction(
   }
 
   const supabase = await createSupabaseServerClient();
-  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
-  let requestResult = await supabase
+  const requestResult = await supabase
     .from("group_join_requests")
     .select("id, user_id, group_id, status")
     .eq("id", requestId)
     .eq("group_id", groupId)
     .maybeSingle();
-
-  if (requestResult.error?.code === "42501" && adminClient) {
-    requestResult = await adminClient
-      .from("group_join_requests")
-      .select("id, user_id, group_id, status")
-      .eq("id", requestId)
-      .eq("group_id", groupId)
-      .maybeSingle();
-  }
 
   const { data: request, error: requestError } = requestResult;
   if (requestError || !request) {
@@ -212,11 +202,7 @@ export async function reviewJoinRequestAction(
       user_id: request.user_id,
       role: "member" as const
     };
-    let membershipResult = await supabase.from("group_members").upsert(membershipPayload, { onConflict: "group_id,user_id" });
-
-    if (membershipResult.error?.code === "42501" && adminClient) {
-      membershipResult = await adminClient.from("group_members").upsert(membershipPayload, { onConflict: "group_id,user_id" });
-    }
+    const membershipResult = await supabase.from("group_members").upsert(membershipPayload, { onConflict: "group_id,user_id" });
 
     if (membershipResult.error) {
       return { error: membershipResult.error.message, success: false };
@@ -228,11 +214,7 @@ export async function reviewJoinRequestAction(
     reviewed_by: user.id,
     reviewed_at: new Date().toISOString()
   };
-  let updateResult = await supabase.from("group_join_requests").update(updatePayload).eq("id", requestId);
-
-  if (updateResult.error?.code === "42501" && adminClient) {
-    updateResult = await adminClient.from("group_join_requests").update(updatePayload).eq("id", requestId);
-  }
+  const updateResult = await supabase.from("group_join_requests").update(updatePayload).eq("id", requestId);
 
   if (updateResult.error) {
     return { error: updateResult.error.message, success: false };
@@ -271,16 +253,12 @@ export async function updateGroupSettingsAction(
   }
 
   const supabase = await createSupabaseServerClient();
-  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
   const payload = {
     place_edit_policy: placeEditPolicy,
     join_policy: joinPolicy
   };
 
-  let updateResult = await supabase.from("groups").update(payload).eq("id", groupId);
-  if (updateResult.error?.code === "42501" && adminClient) {
-    updateResult = await adminClient.from("groups").update(payload).eq("id", groupId);
-  }
+  const updateResult = await supabase.from("groups").update(payload).eq("id", groupId);
 
   if (updateResult.error) {
     return { error: updateResult.error.message, success: false };
@@ -313,12 +291,7 @@ export async function leaveGroupAction(
   }
 
   const supabase = await createSupabaseServerClient();
-  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
-  let deleteResult = await supabase.from("group_members").delete().eq("group_id", groupId).eq("user_id", user.id);
-
-  if (deleteResult.error?.code === "42501" && adminClient) {
-    deleteResult = await adminClient.from("group_members").delete().eq("group_id", groupId).eq("user_id", user.id);
-  }
+  const deleteResult = await supabase.from("group_members").delete().eq("group_id", groupId).eq("user_id", user.id);
 
   if (deleteResult.error) {
     return { error: deleteResult.error.message, success: false };
@@ -350,6 +323,9 @@ export async function deleteGroupAction(
     return { error: "Solo el propietario puede eliminar este grupo.", success: false };
   }
 
+  // Strictly required privileged operation:
+  // deleting a group must cascade across all memberships/places/requests,
+  // and we do not expose broad DELETE policies for groups to regular users.
   const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
   if (!adminClient) {
     return { error: "Falta SUPABASE_SERVICE_ROLE_KEY para eliminar grupos de forma segura.", success: false };

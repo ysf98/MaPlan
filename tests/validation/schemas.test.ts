@@ -32,8 +32,8 @@ describe("createGroupSchema", () => {
 describe("reviewJoinRequestSchema", () => {
   it("accepts review payload", () => {
     const result = reviewJoinRequestSchema.safeParse({
-      groupId: "group-1",
-      requestId: "request-1",
+      groupId: "11111111-1111-4111-8111-111111111111",
+      requestId: "22222222-2222-4222-8222-222222222222",
       decision: "approved"
     });
 
@@ -42,8 +42,8 @@ describe("reviewJoinRequestSchema", () => {
 
   it("rejects invalid decision", () => {
     const result = reviewJoinRequestSchema.safeParse({
-      groupId: "group-1",
-      requestId: "request-1",
+      groupId: "11111111-1111-4111-8111-111111111111",
+      requestId: "22222222-2222-4222-8222-222222222222",
       decision: "pending"
     });
 
@@ -66,7 +66,7 @@ describe("joinGroupSchema", () => {
 describe("createPlaceSchema", () => {
   it("accepts valid payload and normalizes optional fields", () => {
     const result = createPlaceSchema.parse({
-      groupId: "group-1",
+      groupId: "11111111-1111-4111-8111-111111111111",
       name: "La Bicicleta",
       address: "Madrid",
       notes: "  ",
@@ -79,7 +79,7 @@ describe("createPlaceSchema", () => {
 
   it("rejects missing required fields", () => {
     const result = createPlaceSchema.safeParse({
-      groupId: "",
+      groupId: "not-a-uuid",
       name: "",
       address: ""
     });
@@ -91,8 +91,8 @@ describe("createPlaceSchema", () => {
 describe("updatePlaceStatusSchema", () => {
   it("accepts allowed status values", () => {
     const result = updatePlaceStatusSchema.safeParse({
-      groupId: "group-1",
-      placeId: "place-1",
+      groupId: "11111111-1111-4111-8111-111111111111",
+      placeId: "22222222-2222-4222-8222-222222222222",
       status: "visited"
     });
 
@@ -101,8 +101,8 @@ describe("updatePlaceStatusSchema", () => {
 
   it("rejects invalid status", () => {
     const result = updatePlaceStatusSchema.safeParse({
-      groupId: "group-1",
-      placeId: "place-1",
+      groupId: "11111111-1111-4111-8111-111111111111",
+      placeId: "22222222-2222-4222-8222-222222222222",
       status: "archived"
     });
 
