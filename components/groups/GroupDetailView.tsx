@@ -22,7 +22,7 @@ type DetailTab = "list" | "map";
 
 export function GroupDetailView({ group, groupId, places, pendingRequests }: GroupDetailViewProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>("list");
-  const [showAddPlaceForm, setShowAddPlaceForm] = useState(places.length === 0 && group.canEditPlaces);
+  const [showAddPlaceForm, setShowAddPlaceForm] = useState(false);
 
   return (
     <section className="space-y-4">

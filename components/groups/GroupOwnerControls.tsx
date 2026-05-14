@@ -151,21 +151,17 @@ export function GroupOwnerControls({ groupId, groupName, role, placeEditPolicy, 
             </div>
           ) : null}
 
-          <div className="rounded-xl border border-slate-200 bg-white p-3">
-            <h3 className="text-sm font-semibold text-slate-900">{role === "owner" ? "Zona de peligro" : "Membresia"}</h3>
+          <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
             {role === "owner" ? (
               <>
-                <p className="mt-2 text-xs text-slate-500">Eliminar el grupo lo borrara para todos los miembros.</p>
                 {confirmMode !== "delete" ? (
-                  <div className="mt-3">
-                    <Button onClick={() => setConfirmMode("delete")} size="sm" type="button" variant="danger">
-                      Eliminar grupo
-                    </Button>
-                  </div>
+                  <Button onClick={() => setConfirmMode("delete")} size="sm" type="button" variant="danger">
+                    Eliminar grupo
+                  </Button>
                 ) : (
-                  <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3">
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-center">
                     <p className="text-xs text-rose-800">Estas seguro que quieres eliminar ({groupName})?</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="mt-2 flex flex-wrap justify-center gap-2">
                       <form action={deleteAction}>
                         <input name="groupId" type="hidden" value={groupId} />
                         <Button disabled={isDeleting} size="sm" type="submit" variant="danger">
@@ -182,17 +178,14 @@ export function GroupOwnerControls({ groupId, groupName, role, placeEditPolicy, 
               </>
             ) : (
               <>
-                <p className="mt-2 text-xs text-slate-500">Si sales del grupo dejaras de ver sus lugares y actividad.</p>
                 {confirmMode !== "leave" ? (
-                  <div className="mt-3">
-                    <Button onClick={() => setConfirmMode("leave")} size="sm" type="button" variant="secondary">
-                      Salir del grupo
-                    </Button>
-                  </div>
+                  <Button onClick={() => setConfirmMode("leave")} size="sm" type="button" variant="secondary">
+                    Salir del grupo
+                  </Button>
                 ) : (
-                  <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center">
                     <p className="text-xs text-amber-800">Estas seguro que quieres salir de ({groupName})?</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="mt-2 flex flex-wrap justify-center gap-2">
                       <form action={leaveAction}>
                         <input name="groupId" type="hidden" value={groupId} />
                         <Button disabled={isLeaving} size="sm" type="submit" variant="secondary">
