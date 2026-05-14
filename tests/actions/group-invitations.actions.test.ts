@@ -49,6 +49,32 @@ describe("group invitations actions", () => {
     );
   });
 
+  it("inviteFriendToGroupAction returns domain security error (no owner/no friend)", async () => {
+    const { inviteFriendToGroupAction } = await import("@/app/groups/[groupId]/invitations/actions");
+    getCurrentUserMock.mockResolvedValue({ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
+    inviteFriendToGroupMock.mockResolvedValue({ error: "Solo el owner puede invitar amigos." });
+
+    const formData = new FormData();
+    formData.set("groupId", "11111111-1111-4111-8111-111111111111");
+    formData.set("friendUserId", "22222222-2222-4222-8222-222222222222");
+
+    const result = await inviteFriendToGroupAction({ error: null, success: false }, formData);
+    expect(result).toEqual({ error: "Solo el owner puede invitar amigos.", success: false });
+  });
+
+  it("inviteFriendToGroupAction rejects invalid ids", async () => {
+    const { inviteFriendToGroupAction } = await import("@/app/groups/[groupId]/invitations/actions");
+    getCurrentUserMock.mockResolvedValue({ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
+
+    const formData = new FormData();
+    formData.set("groupId", "invalid");
+    formData.set("friendUserId", "invalid");
+
+    const result = await inviteFriendToGroupAction({ error: null, success: false }, formData);
+    expect(result.success).toBe(false);
+    expect(inviteFriendToGroupMock).not.toHaveBeenCalled();
+  });
+
   it("respondGroupInvitationAction calls domain", async () => {
     const { respondGroupInvitationAction } = await import("@/app/invitations/actions");
     getCurrentUserMock.mockResolvedValue({ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" });
@@ -67,5 +93,30 @@ describe("group invitations actions", () => {
     );
     expect(revalidatePathMock).toHaveBeenCalledWith("/invitations");
   });
-});
 
+  it("respondGroupInvitationAction rejects invalid decision", async () => {
+    const { respondGroupInvitationAction } = await import("@/app/invitations/actions");
+    getCurrentUserMock.mockResolvedValue({ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" });
+
+    const formData = new FormData();
+    formData.set("invitationId", "33333333-3333-4333-8333-333333333333");
+    formData.set("decision", "pending");
+
+    const result = await respondGroupInvitationAction({ error: null, success: false }, formData);
+    expect(result.success).toBe(false);
+    expect(respondGroupInvitationMock).not.toHaveBeenCalled();
+  });
+
+  it("respondGroupInvitationAction returns domain security error", async () => {
+    const { respondGroupInvitationAction } = await import("@/app/invitations/actions");
+    getCurrentUserMock.mockResolvedValue({ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" });
+    respondGroupInvitationMock.mockResolvedValue({ error: "No tienes permisos para responder esta invitacion." });
+
+    const formData = new FormData();
+    formData.set("invitationId", "33333333-3333-4333-8333-333333333333");
+    formData.set("decision", "accepted");
+
+    const result = await respondGroupInvitationAction({ error: null, success: false }, formData);
+    expect(result).toEqual({ error: "No tienes permisos para responder esta invitacion.", success: false });
+  });
+});

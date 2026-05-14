@@ -52,13 +52,13 @@ En `.env`:
 
 ## SQL a ejecutar en Supabase
 
-Ejecuta en SQL Editor (puedes usar una query nueva por archivo):
+Ejecuta en SQL Editor (una query nueva por archivo) en este orden:
 
 1. `supabase/rls_groups.sql`
 2. `supabase/rls_places.sql`
 3. `supabase/places_links.sql`
 4. `supabase/rls_friends.sql`
-5. `supabase/rls_group_invitations.sql`
+5. `supabase/rls_group_invitations.sql` (depende de groups + friends)
 
 Notas:
 - Los scripts son idempotentes en lo posible (`if exists` / `if not exists`).
@@ -81,6 +81,16 @@ Cobertura actual:
 - Schemas Zod (groups, places, friends, invitations).
 - Server actions principales.
 - Casos de seguridad en capa de acciones/permisos.
+
+## Checklist de release interna (pre-mapa)
+
+1. `pnpm test` en verde.
+2. Crear grupo nuevo y verificar default `join_policy = invite_only`.
+3. Owner puede invitar a un amigo y el invitado puede aceptar/rechazar.
+4. Usuario no owner no puede cambiar settings ni borrar grupo.
+5. Usuario no miembro no puede crear/leer lugares de grupos ajenos.
+6. Join por codigo solo funciona para `open_by_code` (y request flow para `request_to_join`).
+7. Verificar que no se usa `SUPABASE_SERVICE_ROLE_KEY` como bypass de RLS en flujos de usuario.
 
 ## Flujo principal de producto (actual)
 
