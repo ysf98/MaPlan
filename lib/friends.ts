@@ -183,9 +183,17 @@ export async function respondFriendRequest(
   decision: "accepted" | "rejected"
 ): Promise<{ error: string | null }> {
   const supabase = await createSupabaseServerClient();
+  if (decision === "accepted") {
+    const { error } = await supabase.rpc("accept_friend_request", { request_id: requestId });
+    if (error) {
+      return { error: error.message };
+    }
+    return { error: null };
+  }
+
   const { data: request, error: requestError } = await supabase
     .from("friend_requests")
-    .select("id, sender_id, receiver_id, status")
+    .select("id, receiver_id, status")
     .eq("id", requestId)
     .maybeSingle();
 
@@ -201,17 +209,9 @@ export async function respondFriendRequest(
     return { error: "Esta solicitud ya fue respondida." };
   }
 
-  const { error: updateError } = await supabase.from("friend_requests").update({ status: decision }).eq("id", requestId);
+  const { error: updateError } = await supabase.from("friend_requests").update({ status: "rejected" }).eq("id", requestId);
   if (updateError) {
     return { error: updateError.message };
-  }
-
-  if (decision === "accepted") {
-    const pair = normalizeFriendPair(request.sender_id, request.receiver_id);
-    const { error: friendshipError } = await supabase.from("friendships").insert(pair);
-    if (friendshipError && friendshipError.code !== "23505") {
-      return { error: friendshipError.message };
-    }
   }
 
   return { error: null };

@@ -190,9 +190,17 @@ export async function respondGroupInvitation(
   decision: "accepted" | "rejected"
 ): Promise<{ error: string | null }> {
   const supabase = await createSupabaseServerClient();
+  if (decision === "accepted") {
+    const { error } = await supabase.rpc("accept_group_invitation", { invitation_id: invitationId });
+    if (error) {
+      return { error: error.message };
+    }
+    return { error: null };
+  }
+
   const { data: invitation, error: invitationError } = await supabase
     .from("group_invitations")
-    .select("id, group_id, invited_user_id, status")
+    .select("id, invited_user_id, status")
     .eq("id", invitationId)
     .maybeSingle();
 
@@ -208,23 +216,9 @@ export async function respondGroupInvitation(
     return { error: "Esta invitacion ya fue respondida." };
   }
 
-  const { error: updateError } = await supabase.from("group_invitations").update({ status: decision }).eq("id", invitationId);
+  const { error: updateError } = await supabase.from("group_invitations").update({ status: "rejected" }).eq("id", invitationId);
   if (updateError) {
     return { error: updateError.message };
-  }
-
-  if (decision === "accepted") {
-    const { error: memberError } = await supabase.from("group_members").upsert(
-      {
-        group_id: invitation.group_id,
-        user_id: userId,
-        role: "member"
-      },
-      { onConflict: "group_id,user_id" }
-    );
-    if (memberError) {
-      return { error: memberError.message };
-    }
   }
 
   return { error: null };

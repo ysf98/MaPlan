@@ -1,0 +1,22 @@
+import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+describe("RLS policies baseline", () => {
+  it("includes owner visibility policy for group members", () => {
+    const sql = readFileSync(resolve(process.cwd(), "supabase/rls_groups.sql"), "utf8");
+    expect(sql).toContain("create policy group_members_select_owner_group");
+  });
+
+  it("includes atomic RPC for friend acceptance with friendship insert", () => {
+    const sql = readFileSync(resolve(process.cwd(), "supabase/rls_friends.sql"), "utf8");
+    expect(sql).toContain("create or replace function public.accept_friend_request");
+    expect(sql).toContain("insert into public.friendships");
+  });
+
+  it("includes atomic RPC for invitation acceptance with membership insert", () => {
+    const sql = readFileSync(resolve(process.cwd(), "supabase/rls_group_invitations.sql"), "utf8");
+    expect(sql).toContain("create or replace function public.accept_group_invitation");
+    expect(sql).toContain("insert into public.group_members");
+  });
+});

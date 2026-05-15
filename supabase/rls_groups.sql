@@ -210,6 +210,19 @@ on public.group_members
 for select to authenticated
 using (user_id = auth.uid());
 
+create policy group_members_select_owner_group
+on public.group_members
+for select to authenticated
+using (
+  exists (
+    select 1
+    from public.group_members gm
+    where gm.group_id = group_members.group_id
+      and gm.user_id = auth.uid()
+      and gm.role = 'owner'
+  )
+);
+
 create policy group_members_insert_self_join_allowed
 on public.group_members
 for insert to authenticated

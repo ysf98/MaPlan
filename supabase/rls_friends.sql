@@ -180,3 +180,45 @@ using (
   and username is not null
   and btrim(username) <> ''
 );
+
+-- Atomic acceptance: request -> accepted + friendship insert in one transaction.
+create or replace function public.accept_friend_request(request_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_sender_id uuid;
+  v_receiver_id uuid;
+  v_status text;
+begin
+  select sender_id, receiver_id, status
+  into v_sender_id, v_receiver_id, v_status
+  from public.friend_requests
+  where id = request_id
+  for update;
+
+  if v_sender_id is null then
+    raise exception 'Solicitud no encontrada.';
+  end if;
+
+  if v_receiver_id <> auth.uid() then
+    raise exception 'No tienes permisos para responder esta solicitud.';
+  end if;
+
+  if v_status <> 'pending' then
+    raise exception 'Esta solicitud ya fue respondida.';
+  end if;
+
+  update public.friend_requests
+  set status = 'accepted'
+  where id = request_id;
+
+  insert into public.friendships (user_a_id, user_b_id)
+  values (least(v_sender_id, v_receiver_id), greatest(v_sender_id, v_receiver_id))
+  on conflict (user_a_id, user_b_id) do nothing;
+end;
+$$;
+
+grant execute on function public.accept_friend_request(uuid) to authenticated;

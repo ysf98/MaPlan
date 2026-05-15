@@ -60,6 +60,7 @@ alter table public.group_invitations enable row level security;
 drop policy if exists group_invitations_select_invited_or_owner on public.group_invitations;
 drop policy if exists group_invitations_insert_owner_only on public.group_invitations;
 drop policy if exists group_invitations_update_invited_decision on public.group_invitations;
+drop policy if exists group_invitations_update_owner_reinvite on public.group_invitations;
 drop policy if exists group_members_insert_self_invitation_accepted on public.group_members;
 drop policy if exists groups_select_invited_user on public.groups;
 
@@ -111,6 +112,38 @@ with check (
   and status in ('accepted', 'rejected')
 );
 
+-- Allow owner to reactivate a previous invitation (re-invite flow).
+create policy group_invitations_update_owner_reinvite
+on public.group_invitations
+for update to authenticated
+using (
+  exists (
+    select 1
+    from public.group_members gm
+    where gm.group_id = group_invitations.group_id
+      and gm.user_id = auth.uid()
+      and gm.role = 'owner'
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.group_members gm
+    where gm.group_id = group_invitations.group_id
+      and gm.user_id = auth.uid()
+      and gm.role = 'owner'
+  )
+  and invited_by = auth.uid()
+  and invited_by <> invited_user_id
+  and status = 'pending'
+  and exists (
+    select 1
+    from public.friendships f
+    where f.user_a_id = least(group_invitations.invited_by, group_invitations.invited_user_id)
+      and f.user_b_id = greatest(group_invitations.invited_by, group_invitations.invited_user_id)
+  )
+);
+
 create policy group_members_insert_self_invitation_accepted
 on public.group_members
 for insert to authenticated
@@ -138,3 +171,45 @@ using (
       and gi.status in ('pending', 'accepted')
   )
 );
+
+-- Atomic acceptance: invitation -> accepted + group membership insert in one transaction.
+create or replace function public.accept_group_invitation(invitation_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_group_id uuid;
+  v_invited_user_id uuid;
+  v_status text;
+begin
+  select group_id, invited_user_id, status
+  into v_group_id, v_invited_user_id, v_status
+  from public.group_invitations
+  where id = invitation_id
+  for update;
+
+  if v_group_id is null then
+    raise exception 'Invitacion no encontrada.';
+  end if;
+
+  if v_invited_user_id <> auth.uid() then
+    raise exception 'No tienes permisos para responder esta invitacion.';
+  end if;
+
+  if v_status <> 'pending' then
+    raise exception 'Esta invitacion ya fue respondida.';
+  end if;
+
+  update public.group_invitations
+  set status = 'accepted'
+  where id = invitation_id;
+
+  insert into public.group_members (group_id, user_id, role)
+  values (v_group_id, v_invited_user_id, 'member')
+  on conflict (group_id, user_id) do nothing;
+end;
+$$;
+
+grant execute on function public.accept_group_invitation(uuid) to authenticated;
