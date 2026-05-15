@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AddPlaceForm } from "@/components/places/AddPlaceForm";
-import { PlacesList } from "@/components/places/PlacesList";
+import { PlaceCard } from "@/components/places/PlaceCard";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -27,8 +27,6 @@ type GroupDetailViewProps = {
   totalFriendsCount: number;
 };
 
-type DetailTab = "list" | "map";
-
 function getInitial(name: string | null): string {
   const value = (name || "").trim();
   if (!value) return "?";
@@ -51,13 +49,12 @@ export function GroupDetailView({
   groupInvitations,
   totalFriendsCount
 }: GroupDetailViewProps) {
-  const [activeTab, setActiveTab] = useState<DetailTab>("list");
   const [showAddPlaceForm, setShowAddPlaceForm] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
-  const placesWithCoordinates = places.filter((place) => hasValidCoordinates(place)).length;
-  const placesPendingLocation = places.length - placesWithCoordinates;
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const useStackedMembers = membersPreview.length >= 4;
   const hiddenMembersCount = Math.max(0, totalMembersCount - membersPreview.length);
+  const selectedPlace = places.find((place) => place.id === selectedPlaceId) ?? null;
 
   return (
     <section className="space-y-4">
@@ -114,27 +111,10 @@ export function GroupDetailView({
 
       <Card className="rounded-3xl">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1">
-            <button
-              className={`h-10 rounded-lg px-4 text-sm font-medium transition ${
-                activeTab === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"
-              }`}
-              onClick={() => setActiveTab("list")}
-              type="button"
-            >
-              Lista
-            </button>
-            <button
-              className={`h-10 rounded-lg px-4 text-sm font-medium transition ${
-                activeTab === "map" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"
-              }`}
-              onClick={() => setActiveTab("map")}
-              type="button"
-            >
-              Mapa
-            </button>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Mapa del grupo</h2>
+            <p className="mt-1 text-sm text-slate-500">Visualiza lugares con coordenadas y selecciona marcadores para ver detalle.</p>
           </div>
-
           {group.canEditPlaces ? (
             <Button onClick={() => setShowAddPlaceForm((value) => !value)} type="button">
               {showAddPlaceForm ? "Cerrar formulario" : "Anadir lugar"}
@@ -145,38 +125,47 @@ export function GroupDetailView({
 
       {showAddPlaceForm && group.canEditPlaces ? <AddPlaceForm groupId={groupId} /> : null}
 
-      {activeTab === "list" ? (
-        places.length > 0 ? (
-          <PlacesList canDelete={group.role === "owner"} canEdit={group.canEditPlaces} groupId={groupId} places={places} />
-        ) : (
-          <EmptyState
-            title="Todavia no hay lugares"
-            description={
-              group.canEditPlaces
-                ? "Empieza agregando el primer sitio recomendado para que tu grupo pueda verlo en lista."
-                : "Aun no hay lugares. Solo el propietario puede agregar el primer sitio en este grupo."
-            }
-          />
-        )
-      ) : (
+      <Card className="rounded-3xl">
+        <div>
+          <GroupMap canEdit={group.canEditPlaces} groupId={groupId} places={places} />
+        </div>
+      </Card>
+
+      {places.length > 0 ? (
         <Card className="rounded-3xl">
-          <h2 className="text-lg font-semibold text-slate-900">Mapa del grupo</h2>
-          <p className="mt-2 text-sm text-slate-500">Visualiza lugares con coordenadas y selecciona marcadores para ver detalle.</p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-              <p className="text-xs text-slate-500">Lugares con coordenadas</p>
-              <p className="text-lg font-semibold text-slate-900">{placesWithCoordinates}</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-              <p className="text-xs text-slate-500">Pendientes de ubicacion</p>
-              <p className="text-lg font-semibold text-slate-900">{placesPendingLocation}</p>
-            </div>
-          </div>
-          <div className="mt-4">
-            <GroupMap canEdit={group.canEditPlaces} groupId={groupId} places={places} />
-          </div>
+          <h3 className="text-sm font-semibold text-slate-900">Lugares guardados</h3>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {places.map((place) => (
+              <li key={place.id}>
+                <button
+                  className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition ${
+                    selectedPlaceId === place.id
+                      ? "border-teal-300 bg-teal-50 text-teal-900"
+                      : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                  }`}
+                  onClick={() => setSelectedPlaceId(place.id)}
+                  type="button"
+                >
+                  {place.name}
+                </button>
+              </li>
+            ))}
+          </ul>
         </Card>
+      ) : (
+        <EmptyState
+          title="Todavia no hay lugares"
+          description={
+            group.canEditPlaces
+              ? "Empieza agregando el primer sitio recomendado para que tu grupo pueda verlo en el mapa."
+              : "Aun no hay lugares. Solo el propietario puede agregar el primer sitio en este grupo."
+          }
+        />
       )}
+
+      {selectedPlace ? (
+        <PlaceCard canDelete={group.role === "owner"} canEdit={group.canEditPlaces} groupId={groupId} place={selectedPlace} />
+      ) : null}
 
       {isMembersModalOpen ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4">

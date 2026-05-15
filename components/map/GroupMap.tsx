@@ -170,8 +170,12 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; fullAddress: string; latitude: number; longitude: number }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
   const [draftSelection, setDraftSelection] = useState<{
     latitude: number;
@@ -197,6 +201,106 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
       setDraftSelection(null);
     }
   }, [addPlaceState.success]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    const query = searchQuery.trim();
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    searchAbortRef.current?.abort();
+    searchAbortRef.current = controller;
+
+    const runSearch = async () => {
+      try {
+        setIsSearching(true);
+        const params = new URLSearchParams({
+          q: query,
+          access_token: token,
+          limit: "6",
+          language: "es",
+          autocomplete: "true",
+          types: "poi,address,street,place,locality"
+        });
+        const center = mapRef.current?.getCenter();
+        if (center) {
+          params.set("proximity", `${center.lng},${center.lat}`);
+        }
+        const bounds = mapRef.current?.getBounds();
+        if (bounds) {
+          params.set("bbox", `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`);
+        }
+        let response = await fetch(`https://api.mapbox.com/search/geocode/v6/forward?${params.toString()}`, {
+          signal: controller.signal
+        });
+        if (!response.ok) {
+          const fallbackParams = new URLSearchParams({
+            q: query,
+            access_token: token,
+            limit: "6",
+            language: "es",
+            autocomplete: "true"
+          });
+          response = await fetch(`https://api.mapbox.com/search/geocode/v6/forward?${fallbackParams.toString()}`, {
+            signal: controller.signal
+          });
+        }
+        if (!response.ok) {
+          setSearchResults([]);
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          features?: Array<{
+            id?: string;
+            geometry?: { coordinates?: [number, number] };
+            properties?: { name?: string; full_address?: string; place_formatted?: string };
+          }>;
+        };
+
+        const results =
+          payload.features
+            ?.map((feature) => {
+              const coordinates = feature.geometry?.coordinates;
+              if (!coordinates || coordinates.length < 2) return null;
+              const longitude = coordinates[0];
+              const latitude = coordinates[1];
+              const name = (feature.properties?.name || "").trim();
+              const fullAddress = (feature.properties?.full_address || feature.properties?.place_formatted || "").trim();
+              return {
+                id: feature.id || `${longitude}-${latitude}`,
+                name: name || "Resultado",
+                fullAddress: fullAddress || "Sin direccion",
+                latitude,
+                longitude
+              };
+            })
+            .filter((value): value is { id: string; name: string; fullAddress: string; latitude: number; longitude: number } => Boolean(value)) || [];
+
+        setSearchResults(results);
+      } catch {
+        if (!controller.signal.aborted) {
+          setSearchResults([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsSearching(false);
+        }
+      }
+    };
+
+    const timeout = setTimeout(runSearch, 250);
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [searchQuery, token]);
 
   useEffect(() => {
     if (!mapContainerRef.current || !token) {
@@ -330,6 +434,46 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
 
   return (
     <div className="space-y-3">
+      <div className="relative">
+        <input
+          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Buscar bares, restaurantes, poblaciones..."
+          value={searchQuery}
+        />
+        {searchQuery.trim().length >= 2 ? (
+          <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+            {isSearching ? (
+              <p className="px-3 py-2 text-xs text-slate-500">Buscando...</p>
+            ) : searchResults.length === 0 ? (
+              <p className="px-3 py-2 text-xs text-slate-500">Sin resultados.</p>
+            ) : (
+              <ul className="max-h-72 overflow-y-auto">
+                {searchResults.map((result) => (
+                  <li key={result.id}>
+                    <button
+                      className="w-full border-b border-slate-100 px-3 py-2 text-left hover:bg-slate-50"
+                      onClick={() => {
+                        mapRef.current?.flyTo({
+                          center: [result.longitude, result.latitude],
+                          zoom: Math.max(mapRef.current?.getZoom() || 0, 14),
+                          essential: true
+                        });
+                        setSearchQuery(result.name);
+                        setSearchResults([]);
+                      }}
+                      type="button"
+                    >
+                      <p className="text-sm font-medium text-slate-900">{result.name}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">{result.fullAddress}</p>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
+      </div>
       <div className="relative h-[420px] w-full overflow-hidden rounded-2xl border border-slate-200">
         <div className="h-full w-full" ref={mapContainerRef} />
         {canEdit && isResolvingLocation ? (
