@@ -8,10 +8,13 @@ type CreatePlaceInput = {
   groupId: string;
   name: string;
   address: string;
+  city?: string | null;
   notes?: string | null;
   category?: string | null;
   originalUrl?: string | null;
   source?: PlaceSource | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 type UpdatePlaceStatusInput = {
@@ -26,6 +29,7 @@ type UpdatePlaceLocationInput = {
   groupId: string;
   placeId: string;
   address: string;
+  city?: string | null;
   latitude: number;
   longitude: number;
 };
@@ -82,7 +86,7 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
   const supabase = await createSupabaseServerClient();
   const { data: places, error } = await supabase
     .from("places")
-    .select("id, name, address, notes, status, created_at, category_id, original_url, source, latitude, longitude")
+    .select("id, name, address, city, notes, status, created_at, category_id, original_url, source, latitude, longitude")
     .eq("group_id", groupId)
     .order("created_at", { ascending: false });
 
@@ -110,6 +114,7 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
       id: place.id,
       name: place.name,
       address: place.address,
+      city: place.city,
       notes: place.notes,
       originalUrl: place.original_url,
       source: place.source,
@@ -130,6 +135,7 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
 
   const name = input.name.trim();
   const address = input.address.trim();
+  const city = input.city?.trim() || null;
   if (!name) {
     return { error: "El nombre del lugar es obligatorio." };
   }
@@ -140,6 +146,23 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
   const category = normalizeCategory(input.category);
   const categoryId = await resolveCategoryId(input.groupId, category);
   const supabase = await createSupabaseServerClient();
+  let existingPlaceQuery = supabase
+    .from("places")
+    .select("id")
+    .eq("group_id", input.groupId)
+    .ilike("name", name)
+    .ilike("address", address);
+
+  existingPlaceQuery = city ? existingPlaceQuery.ilike("city", city) : existingPlaceQuery.is("city", null);
+  const existingPlaceResult = await existingPlaceQuery.maybeSingle();
+
+  if (existingPlaceResult.error) {
+    return { error: existingPlaceResult.error.message };
+  }
+
+  if (existingPlaceResult.data) {
+    return { error: "Ese sitio ya esta guardado en este grupo." };
+  }
 
   const { error } = await supabase.from("places").insert({
     group_id: input.groupId,
@@ -147,15 +170,19 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
     category_id: categoryId,
     name,
     address,
+    city,
     original_url: input.originalUrl?.trim() || null,
     source: input.source || null,
-    latitude: null,
-    longitude: null,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
     notes: input.notes?.trim() || null,
     status: "pending"
   });
 
   if (error) {
+    if (error.code === "23505") {
+      return { error: "Ese sitio ya esta guardado en este grupo." };
+    }
     return { error: error.message };
   }
 
@@ -202,6 +229,7 @@ export async function updatePlaceLocation(input: UpdatePlaceLocationInput): Prom
   }
 
   const address = input.address.trim();
+  const city = input.city?.trim() || null;
   if (!address) {
     return { error: "La direccion del lugar es obligatoria." };
   }
@@ -222,6 +250,7 @@ export async function updatePlaceLocation(input: UpdatePlaceLocationInput): Prom
     .from("places")
     .update({
       address,
+      city,
       latitude: input.latitude,
       longitude: input.longitude,
       updated_at: new Date().toISOString()

@@ -52,6 +52,7 @@ export function PlaceCard({ groupId, place, canEdit }: PlaceCardProps) {
 
       <h3 className="mt-3 text-lg font-semibold text-slate-900">{place.name}</h3>
       <p className="mt-1 text-sm text-slate-600">{place.address}</p>
+      {place.city ? <p className="mt-1 text-sm text-slate-500">{place.city}</p> : null}
       {place.notes ? <p className="mt-2 text-sm text-slate-500">{place.notes}</p> : null}
       {place.originalUrl ? (
         <a
@@ -108,6 +109,15 @@ export function PlaceCard({ groupId, place, canEdit }: PlaceCardProps) {
                 maxLength={220}
                 name="address"
                 required
+              />
+            </label>
+            <label className="space-y-1 sm:col-span-3">
+              <span className="text-xs font-medium text-slate-700">Ciudad / poblacion</span>
+              <input
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                defaultValue={place.city ?? ""}
+                maxLength={120}
+                name="city"
               />
             </label>
             <label className="space-y-1">

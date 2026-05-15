@@ -5,6 +5,10 @@ grant select, insert, update, delete on table public.places to authenticated;
 grant select, insert, update, delete on table public.categories to authenticated;
 grant select, update on table public.profiles to authenticated;
 
+drop index if exists public.idx_places_group_name_address_unique;
+create unique index if not exists idx_places_group_name_address_city_unique
+  on public.places (group_id, lower(name), lower(address), lower(coalesce(city, '')));
+
 alter table public.places enable row level security;
 alter table public.categories enable row level security;
 alter table public.profiles enable row level security;

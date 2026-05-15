@@ -89,10 +89,13 @@ export async function addPlaceAction(
     groupId: String(formData.get("groupId") || ""),
     name: String(formData.get("name") || ""),
     address: String(formData.get("address") || ""),
+    city: String(formData.get("city") || ""),
     notes: String(formData.get("notes") || ""),
     category: String(formData.get("category") || ""),
     originalUrl: String(formData.get("originalUrl") || ""),
-    source: String(formData.get("source") || "")
+    source: String(formData.get("source") || ""),
+    latitude: formData.get("latitude"),
+    longitude: formData.get("longitude")
   });
 
   if (!parsedInput.success) {
@@ -102,17 +105,20 @@ export async function addPlaceAction(
     };
   }
 
-  const { groupId, name, address, notes, category, originalUrl, source } = parsedInput.data;
+  const { groupId, name, address, city, notes, category, originalUrl, source, latitude, longitude } = parsedInput.data;
 
   const result = await createPlace({
     userId: user.id,
     groupId,
     name,
     address,
+    city: city || null,
     notes: notes || null,
     category: category || null,
     originalUrl: originalUrl || null,
-    source: source || null
+    source: source || null,
+    latitude: typeof latitude === "number" ? latitude : null,
+    longitude: typeof longitude === "number" ? longitude : null
   });
 
   if (result.error) {
@@ -171,6 +177,7 @@ export async function updatePlaceLocationAction(
     groupId: String(formData.get("groupId") || ""),
     placeId: String(formData.get("placeId") || ""),
     address: String(formData.get("address") || ""),
+    city: String(formData.get("city") || ""),
     latitude: String(formData.get("latitude") || ""),
     longitude: String(formData.get("longitude") || "")
   });
@@ -179,12 +186,13 @@ export async function updatePlaceLocationAction(
     return { error: getValidationErrorMessage(parsedInput.error), success: false };
   }
 
-  const { groupId, placeId, address, latitude, longitude } = parsedInput.data;
+  const { groupId, placeId, address, city, latitude, longitude } = parsedInput.data;
   const result = await updatePlaceLocation({
     userId: user.id,
     groupId,
     placeId,
     address,
+    city: city || null,
     latitude,
     longitude
   });

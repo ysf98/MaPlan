@@ -34,7 +34,8 @@ export function AddPlaceForm({ groupId }: AddPlaceFormProps) {
         <fieldset className="space-y-4" disabled={isPending}>
           <input name="groupId" type="hidden" value={groupId} />
           <Input label="Nombre" name="name" placeholder="Ej. La Bicicleta Cafe" required />
-          <Input label="Direccion" name="address" placeholder="Ej. Malasana, Madrid" required />
+          <Input label="Direccion" name="address" placeholder="Ej. Calle del Pez, 12" required />
+          <Input label="Ciudad / poblacion (opcional)" name="city" placeholder="Ej. Madrid" />
           <Input
             label="Enlace original (opcional)"
             name="originalUrl"

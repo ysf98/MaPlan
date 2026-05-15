@@ -18,6 +18,7 @@ export type GroupPlace = {
   id: string;
   name: string;
   address: string;
+  city: string | null;
   notes: string | null;
   originalUrl: string | null;
   source: PlaceSource | null;

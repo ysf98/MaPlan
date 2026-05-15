@@ -130,7 +130,7 @@ export function GroupDetailView({ group, groupId, places, pendingRequests, invit
             </div>
           </div>
           <div className="mt-4">
-            <GroupMap places={places} />
+            <GroupMap canEdit={group.canEditPlaces} groupId={groupId} places={places} />
           </div>
         </Card>
       )}

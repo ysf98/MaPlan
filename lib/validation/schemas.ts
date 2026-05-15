@@ -56,6 +56,12 @@ export const createPlaceSchema = z.object({
     .trim()
     .min(1, "La direccion del lugar es obligatoria.")
     .max(220, "La direccion es demasiado larga."),
+  city: z
+    .string()
+    .trim()
+    .max(120, "La ciudad es demasiado larga.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
   notes: z
     .string()
     .trim()
@@ -81,7 +87,19 @@ export const createPlaceSchema = z.object({
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine((value): value is (typeof PLACE_SOURCE_VALUES)[number] | null => {
       return value === null || PLACE_SOURCE_VALUES.includes(value as never);
-    }, "Fuente invalida.")
+    }, "Fuente invalida."),
+  latitude: z
+    .preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida.")
+    )
+    .optional(),
+  longitude: z
+    .preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
+    )
+    .optional()
 });
 
 export const updatePlaceStatusSchema = z.object({
@@ -102,6 +120,12 @@ export const updatePlaceLocationSchema = z.object({
     .trim()
     .min(1, "La direccion del lugar es obligatoria.")
     .max(220, "La direccion es demasiado larga."),
+  city: z
+    .string()
+    .trim()
+    .max(120, "La ciudad es demasiado larga.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
   latitude: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
   longitude: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
 });
