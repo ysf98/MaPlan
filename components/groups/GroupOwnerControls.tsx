@@ -19,6 +19,7 @@ import type { GroupInvitationItem } from "@/lib/groupInvitations";
 type GroupOwnerControlsProps = {
   groupId: string;
   groupName: string;
+  joinCode: string;
   role: "owner" | "member";
   placeEditPolicy: GroupPlaceEditPolicy;
   joinPolicy: GroupJoinPolicy;
@@ -64,6 +65,7 @@ function formatDate(value: string | null) {
 export function GroupOwnerControls({
   groupId,
   groupName,
+  joinCode,
   role,
   placeEditPolicy,
   joinPolicy,
@@ -96,17 +98,6 @@ export function GroupOwnerControls({
           {expanded ? "Ocultar" : "Desplegar"}
         </Button>
       </div>
-
-      {role === "owner" ? (
-        <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-slate-900">Solicitudes</p>
-            <span className="inline-flex min-w-7 justify-center rounded-full bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-800">
-              {pendingRequests.length}
-            </span>
-          </div>
-        </div>
-      ) : null}
 
       {expanded ? (
         <div className="mt-4 space-y-4">
@@ -144,9 +135,19 @@ export function GroupOwnerControls({
             </form>
           ) : null}
 
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <p className="text-xs font-medium text-slate-700">Codigo de invitacion</p>
+            <p className="mt-1 text-sm font-semibold tracking-wide text-slate-900">{joinCode}</p>
+          </div>
+
           {role === "owner" ? (
             <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <h3 className="text-sm font-semibold text-slate-900">Solicitudes pendientes</h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold text-slate-900">Solicitudes pendientes</h3>
+                <span className="inline-flex min-w-7 justify-center rounded-full bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-800">
+                  {pendingRequests.length}
+                </span>
+              </div>
               {pendingRequests.length === 0 ? (
                 <p className="mt-2 text-xs text-slate-500">No hay solicitudes pendientes.</p>
               ) : (
@@ -202,11 +203,14 @@ export function GroupOwnerControls({
               {inviteState.error ? <p className="mt-2 text-xs text-rose-600">{inviteState.error}</p> : null}
               {inviteState.success ? <p className="mt-2 text-xs text-emerald-600">Invitacion enviada.</p> : null}
 
-              {groupInvitations.length > 0 ? (
+              {groupInvitations.filter((invitation) => invitation.status !== "accepted").length > 0 ? (
                 <div className="mt-3 border-t border-slate-200 pt-3">
                   <h4 className="text-xs font-semibold text-slate-900">Invitaciones del grupo</h4>
                   <ul className="mt-2 space-y-2">
-                    {groupInvitations.slice(0, 8).map((invitation) => (
+                    {groupInvitations
+                      .filter((invitation) => invitation.status !== "accepted")
+                      .slice(0, 8)
+                      .map((invitation) => (
                       <li key={invitation.id} className="rounded-lg border border-slate-200 p-2">
                         <p className="text-xs text-slate-900">
                           @{invitation.invitedUsername || "sin-username"} -{" "}

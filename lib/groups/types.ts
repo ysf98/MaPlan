@@ -36,3 +36,15 @@ export type GroupJoinRequestItem = {
   reviewedByUserId: string | null;
   reviewedByUsername: string | null;
 };
+
+export type GroupMemberPreview = {
+  userId: string;
+  username: string | null;
+  avatarUrl: string | null;
+  role: "owner" | "member";
+};
+
+export type GroupMembersPreviewResult = {
+  members: GroupMemberPreview[];
+  total: number;
+};

@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
-import { getGroupDetailForUser, getPendingJoinRequestsForOwner } from "@/lib/groups";
+import { getGroupDetailForUser, getGroupMembersPreviewForUser, getPendingJoinRequestsForOwner } from "@/lib/groups";
 import { getGroupInvitationsForGroup, getInvitableFriendsForGroup } from "@/lib/groupInvitations";
 import { getFriends } from "@/lib/friends";
 import { getGroupPlacesForUser } from "@/lib/places";
@@ -23,6 +23,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   const { groupId } = await params;
   const group = await getGroupDetailForUser(user.id, groupId);
   const places = await getGroupPlacesForUser(user.id, groupId);
+  const membersPreviewResult = await getGroupMembersPreviewForUser(user.id, groupId);
 
   if (!group) {
     notFound();
@@ -40,6 +41,8 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
         groupId={groupId}
         pendingRequests={pendingRequests}
         places={places}
+        membersPreview={membersPreviewResult.members}
+        totalMembersCount={membersPreviewResult.total}
         invitableFriends={invitableFriends}
         groupInvitations={groupInvitations}
         totalFriendsCount={totalFriendsCount}

@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
 import { GroupMap } from "@/components/map/GroupMap";
 import type { GroupDetail, GroupJoinRequestItem } from "@/lib/groups/types";
+import type { GroupMemberPreview } from "@/lib/groups/types";
 import type { GroupInvitationItem } from "@/lib/groupInvitations";
 import { hasValidCoordinates, type GroupPlace } from "@/lib/places/shared";
 
@@ -17,6 +18,8 @@ type GroupDetailViewProps = {
   group: GroupDetail;
   groupId: string;
   places: GroupPlace[];
+  membersPreview: GroupMemberPreview[];
+  totalMembersCount: number;
   pendingRequests: GroupJoinRequestItem[];
   invitableFriends: Array<{ id: string; username: string | null }>;
   groupInvitations: GroupInvitationItem[];
@@ -25,11 +28,33 @@ type GroupDetailViewProps = {
 
 type DetailTab = "list" | "map";
 
-export function GroupDetailView({ group, groupId, places, pendingRequests, invitableFriends, groupInvitations, totalFriendsCount }: GroupDetailViewProps) {
+function getInitial(name: string | null): string {
+  const value = (name || "").trim();
+  if (!value) return "?";
+  return value.charAt(0).toUpperCase();
+}
+
+function getRoleLabel(role: "owner" | "member"): string {
+  return role === "owner" ? "Admin" : "Miembro";
+}
+
+export function GroupDetailView({
+  group,
+  groupId,
+  places,
+  membersPreview,
+  totalMembersCount,
+  pendingRequests,
+  invitableFriends,
+  groupInvitations,
+  totalFriendsCount
+}: GroupDetailViewProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>("list");
   const [showAddPlaceForm, setShowAddPlaceForm] = useState(false);
   const placesWithCoordinates = places.filter((place) => hasValidCoordinates(place)).length;
   const placesPendingLocation = places.length - placesWithCoordinates;
+  const useStackedMembers = membersPreview.length >= 4;
+  const hiddenMembersCount = Math.max(0, totalMembersCount - membersPreview.length);
 
   return (
     <section className="space-y-4">
@@ -38,26 +63,39 @@ export function GroupDetailView({ group, groupId, places, pendingRequests, invit
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <CategoryBadge label={group.role === "owner" ? "Admin" : "Member"} tone="visit" />
-              <CategoryBadge label="Grupo" tone="plan" />
-              <CategoryBadge label={group.placeEditPolicy === "owner_only" ? "Edicion: solo owner" : "Edicion: miembros"} tone="food" />
-              <CategoryBadge
-                label={
-                  group.joinPolicy === "invite_only"
-                    ? "Acceso: solo invitacion"
-                    : group.joinPolicy === "request_to_join"
-                      ? "Acceso: por solicitud"
-                      : "Acceso: por codigo"
-                }
-                tone="coffee"
-              />
+              <div className={`flex items-center ${useStackedMembers ? "-space-x-2" : "gap-2"}`}>
+                {membersPreview.map((member) => (
+                  <div
+                    key={member.userId}
+                    className="h-8 w-8 overflow-hidden rounded-full border border-slate-200 bg-slate-100"
+                    title={`@${member.username || "sin-username"} · ${getRoleLabel(member.role)}`}
+                  >
+                    {member.avatarUrl ? (
+                      <img alt={member.username || "Avatar"} className="h-full w-full object-cover" src={member.avatarUrl} />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-700">
+                        {getInitial(member.username)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {hiddenMembersCount > 0 ? (
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-slate-900 text-[10px] font-semibold text-white"
+                    title={`${hiddenMembersCount} miembro(s) mas`}
+                  >
+                    +{hiddenMembersCount}
+                  </div>
+                ) : null}
+              </div>
             </div>
             <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{group.name}</h1>
             <p className="mt-2 text-sm text-slate-500">{group.description || "Grupo sin descripcion"}</p>
-            <p className="mt-3 text-xs text-slate-500">Codigo de invitacion: {group.joinCode}</p>
           </div>
           <GroupOwnerControls
             groupId={groupId}
             groupName={group.name}
+            joinCode={group.joinCode}
             joinPolicy={group.joinPolicy}
             pendingRequests={pendingRequests}
             placeEditPolicy={group.placeEditPolicy}

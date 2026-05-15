@@ -1,5 +1,11 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { GroupDetail, GroupJoinRequestItem, GroupListItem } from "@/lib/groups/types";
+import type {
+  GroupDetail,
+  GroupJoinRequestItem,
+  GroupListItem,
+  GroupMemberPreview,
+  GroupMembersPreviewResult
+} from "@/lib/groups/types";
 
 export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   const supabase = await createSupabaseServerClient();
@@ -196,4 +202,58 @@ export async function getReviewedJoinRequestsForOwner(userId: string, groupId: s
     reviewedByUserId: request.reviewed_by,
     reviewedByUsername: request.reviewed_by ? (usernameByUserId.get(request.reviewed_by) ?? null) : null
   }));
+}
+
+export async function getGroupMembersPreviewForUser(userId: string, groupId: string): Promise<GroupMembersPreviewResult> {
+  const supabase = await createSupabaseServerClient();
+  const membershipResult = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (membershipResult.error || !membershipResult.data) {
+    return { members: [], total: 0 };
+  }
+
+  const countResult = await supabase
+    .from("group_members")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", groupId);
+  const total = countResult.count ?? 0;
+
+  const membersResult = await supabase
+    .from("group_members")
+    .select("user_id, role, created_at")
+    .eq("group_id", groupId)
+    .order("created_at", { ascending: true })
+    .limit(8);
+
+  if (membersResult.error || !membersResult.data || membersResult.data.length === 0) {
+    return { members: [], total };
+  }
+
+  const memberIds = membersResult.data.map((member) => member.user_id);
+  const profilesResult = await supabase.rpc("get_profiles_by_ids", { p_ids: memberIds });
+
+  const profileById = new Map<string, { username: string | null; avatar_url: string | null }>();
+  (profilesResult.data || []).forEach((profile) => {
+    profileById.set(profile.id, {
+      username: profile.username,
+      avatar_url: profile.avatar_url
+    });
+  });
+
+  const members = membersResult.data.map((member) => {
+    const profile = profileById.get(member.user_id);
+    return {
+      userId: member.user_id,
+      username: profile?.username ?? null,
+      avatarUrl: profile?.avatar_url ?? null,
+      role: member.role
+    };
+  });
+
+  return { members, total };
 }
