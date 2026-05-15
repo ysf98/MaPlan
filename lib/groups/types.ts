@@ -46,5 +46,6 @@ export type GroupMemberPreview = {
 
 export type GroupMembersPreviewResult = {
   members: GroupMemberPreview[];
+  allMembers: GroupMemberPreview[];
   total: number;
 };

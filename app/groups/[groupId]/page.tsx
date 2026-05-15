@@ -42,6 +42,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
         pendingRequests={pendingRequests}
         places={places}
         membersPreview={membersPreviewResult.members}
+        allMembers={membersPreviewResult.allMembers}
         totalMembersCount={membersPreviewResult.total}
         invitableFriends={invitableFriends}
         groupInvitations={groupInvitations}
