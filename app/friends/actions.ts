@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
 import { removeFriend, respondFriendRequest, sendFriendRequest } from "@/lib/friends";
 import { removeFriendSchema, respondFriendRequestSchema, sendFriendRequestSchema } from "@/lib/validation/schemas";
 
@@ -20,17 +19,14 @@ export async function sendFriendRequestAction(
   _previousState: FriendActionState = INITIAL_STATE,
   formData: FormData
 ): Promise<FriendActionState> {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login?next=/friends");
-  }
+  const user = await requireAuthenticatedUser("/friends");
 
   const parsed = sendFriendRequestSchema.safeParse({
     receiverId: String(formData.get("receiverId") || "")
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos invalidos.", success: false };
+    return { error: getValidationErrorMessage(parsed.error), success: false };
   }
 
   const result = await sendFriendRequest(user.id, parsed.data.receiverId);
@@ -47,10 +43,7 @@ export async function respondFriendRequestAction(
   _previousState: FriendActionState = INITIAL_STATE,
   formData: FormData
 ): Promise<FriendActionState> {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login?next=/friends");
-  }
+  const user = await requireAuthenticatedUser("/friends");
 
   const parsed = respondFriendRequestSchema.safeParse({
     requestId: String(formData.get("requestId") || ""),
@@ -58,7 +51,7 @@ export async function respondFriendRequestAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos invalidos.", success: false };
+    return { error: getValidationErrorMessage(parsed.error), success: false };
   }
 
   const result = await respondFriendRequest(user.id, parsed.data.requestId, parsed.data.decision);
@@ -75,17 +68,14 @@ export async function removeFriendAction(
   _previousState: FriendActionState = INITIAL_STATE,
   formData: FormData
 ): Promise<FriendActionState> {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login?next=/friends");
-  }
+  const user = await requireAuthenticatedUser("/friends");
 
   const parsed = removeFriendSchema.safeParse({
     friendUserId: String(formData.get("friendUserId") || "")
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos invalidos.", success: false };
+    return { error: getValidationErrorMessage(parsed.error), success: false };
   }
 
   const result = await removeFriend(user.id, parsed.data.friendUserId);

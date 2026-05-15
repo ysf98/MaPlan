@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
 import { createPlace, updatePlaceStatus } from "@/lib/places";
 import { createPlaceSchema, reviewJoinRequestSchema, updateGroupSettingsSchema, updatePlaceStatusSchema } from "@/lib/validation/schemas";
 import type { PlaceStatus } from "@/types/supabase";
@@ -73,11 +73,7 @@ export async function addPlaceAction(
   _previousState: AddPlaceActionState = ADD_PLACE_INITIAL_STATE,
   formData: FormData
 ): Promise<AddPlaceActionState> {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login?next=/groups");
-  }
+  const user = await requireAuthenticatedUser("/groups");
 
   const parsedInput = createPlaceSchema.safeParse({
     groupId: String(formData.get("groupId") || ""),
@@ -91,7 +87,7 @@ export async function addPlaceAction(
 
   if (!parsedInput.success) {
     return {
-      error: parsedInput.error.issues[0]?.message ?? "Datos invalidos.",
+      error: getValidationErrorMessage(parsedInput.error),
       success: false
     };
   }
@@ -121,11 +117,7 @@ export async function updatePlaceStatusAction(
   _previousState: UpdatePlaceStatusActionState = UPDATE_PLACE_STATUS_INITIAL_STATE,
   formData: FormData
 ): Promise<UpdatePlaceStatusActionState> {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login?next=/groups");
-  }
+  const user = await requireAuthenticatedUser("/groups");
 
   const parsedInput = updatePlaceStatusSchema.safeParse({
     groupId: String(formData.get("groupId") || ""),
@@ -135,7 +127,7 @@ export async function updatePlaceStatusAction(
 
   if (!parsedInput.success) {
     return {
-      error: parsedInput.error.issues[0]?.message ?? "Datos invalidos.",
+      error: getValidationErrorMessage(parsedInput.error),
       success: false
     };
   }
@@ -163,11 +155,7 @@ export async function reviewJoinRequestAction(
   _previousState: ReviewJoinRequestActionState = REVIEW_JOIN_REQUEST_INITIAL_STATE,
   formData: FormData
 ): Promise<ReviewJoinRequestActionState> {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login?next=/groups");
-  }
+  const user = await requireAuthenticatedUser("/groups");
 
   const parsedInput = reviewJoinRequestSchema.safeParse({
     groupId: String(formData.get("groupId") || ""),
@@ -176,7 +164,7 @@ export async function reviewJoinRequestAction(
   });
 
   if (!parsedInput.success) {
-    return { error: parsedInput.error.issues[0]?.message ?? "Datos invalidos.", success: false };
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
   }
 
   const { groupId, requestId, decision } = parsedInput.data;
@@ -229,11 +217,7 @@ export async function updateGroupSettingsAction(
   _previousState: UpdateGroupSettingsActionState = UPDATE_GROUP_SETTINGS_INITIAL_STATE,
   formData: FormData
 ): Promise<UpdateGroupSettingsActionState> {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login?next=/groups");
-  }
+  const user = await requireAuthenticatedUser("/groups");
 
   const parsedInput = updateGroupSettingsSchema.safeParse({
     groupId: String(formData.get("groupId") || ""),
@@ -242,7 +226,7 @@ export async function updateGroupSettingsAction(
   });
 
   if (!parsedInput.success) {
-    return { error: parsedInput.error.issues[0]?.message ?? "Datos invalidos.", success: false };
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
   }
 
   const { groupId, placeEditPolicy, joinPolicy } = parsedInput.data;
@@ -274,11 +258,7 @@ export async function leaveGroupAction(
   _previousState: LeaveGroupActionState = LEAVE_GROUP_INITIAL_STATE,
   formData: FormData
 ): Promise<LeaveGroupActionState> {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login?next=/groups");
-  }
+  const user = await requireAuthenticatedUser("/groups");
 
   const groupId = String(formData.get("groupId") || "").trim();
   if (!groupId) {
@@ -307,11 +287,7 @@ export async function deleteGroupAction(
   _previousState: DeleteGroupActionState = DELETE_GROUP_INITIAL_STATE,
   formData: FormData
 ): Promise<DeleteGroupActionState> {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login?next=/groups");
-  }
+  const user = await requireAuthenticatedUser("/groups");
 
   const groupId = String(formData.get("groupId") || "").trim();
   if (!groupId) {

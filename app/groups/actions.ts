@@ -2,8 +2,7 @@
 
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
 import { createGroupSchema, joinGroupSchema } from "@/lib/validation/schemas";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GroupJoinPolicy } from "@/types/supabase";
@@ -48,11 +47,7 @@ export async function createGroupAction(
   _previousState: CreateGroupActionState = INITIAL_STATE,
   formData: FormData
 ): Promise<CreateGroupActionState> {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login?next=/groups");
-  }
+  const user = await requireAuthenticatedUser("/groups");
 
   const parsedInput = createGroupSchema.safeParse({
     name: String(formData.get("name") || ""),
@@ -62,7 +57,7 @@ export async function createGroupAction(
   });
 
   if (!parsedInput.success) {
-    return { error: parsedInput.error.issues[0]?.message ?? "Datos invalidos.", success: false, groupId: null };
+    return { error: getValidationErrorMessage(parsedInput.error), success: false, groupId: null };
   }
 
   const { name, description, placeEditPolicy, joinPolicy } = parsedInput.data;
@@ -123,11 +118,7 @@ export async function joinGroupAction(
   _previousState: JoinGroupActionState = JOIN_INITIAL_STATE,
   formData: FormData
 ): Promise<JoinGroupActionState> {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login?next=/groups");
-  }
+  const user = await requireAuthenticatedUser("/groups");
 
   const parsedInput = joinGroupSchema.safeParse({
     joinCode: String(formData.get("joinCode") || "")
@@ -135,7 +126,7 @@ export async function joinGroupAction(
 
   if (!parsedInput.success) {
     return {
-      error: parsedInput.error.issues[0]?.message ?? "Datos invalidos.",
+      error: getValidationErrorMessage(parsedInput.error),
       success: false,
       groupId: null,
       mode: null

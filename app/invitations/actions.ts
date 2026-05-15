@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
 import { respondGroupInvitation } from "@/lib/groupInvitations";
 import { respondGroupInvitationSchema } from "@/lib/validation/schemas";
 
@@ -20,10 +19,7 @@ export async function respondGroupInvitationAction(
   _previousState: RespondGroupInvitationActionState = INITIAL_STATE,
   formData: FormData
 ): Promise<RespondGroupInvitationActionState> {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login?next=/invitations");
-  }
+  const user = await requireAuthenticatedUser("/invitations");
 
   const parsed = respondGroupInvitationSchema.safeParse({
     invitationId: String(formData.get("invitationId") || ""),
@@ -31,7 +27,7 @@ export async function respondGroupInvitationAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos invalidos.", success: false };
+    return { error: getValidationErrorMessage(parsed.error), success: false };
   }
 
   const result = await respondGroupInvitation(user.id, parsed.data.invitationId, parsed.data.decision);
@@ -44,4 +40,3 @@ export async function respondGroupInvitationAction(
   revalidatePath("/groups");
   return { error: null, success: true };
 }
-
