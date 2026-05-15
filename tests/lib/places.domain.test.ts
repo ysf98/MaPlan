@@ -95,4 +95,57 @@ describe("places domain", () => {
     expect(result).toEqual({ error: null });
     expect(insertMock).toHaveBeenCalled();
   });
+
+  it("usuario sin permiso no puede actualizar ubicacion", async () => {
+    canEditPlacesMock.mockResolvedValue(false);
+    const { updatePlaceLocation } = await import("@/lib/places");
+    const result = await updatePlaceLocation({
+      userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      groupId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      placeId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      address: "Madrid",
+      latitude: 40.4,
+      longitude: -3.7
+    });
+
+    expect(result).toEqual({ error: "No tienes permisos para editar lugares en este grupo." });
+  });
+
+  it("usuario con permiso puede actualizar ubicacion", async () => {
+    canEditPlacesMock.mockResolvedValue(true);
+    const updateEqMock = vi.fn().mockResolvedValue({ error: null });
+    createSupabaseServerClientMock.mockResolvedValue({
+      from: vi.fn((table: string) => {
+        if (table === "places") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: "place-1" }, error: null })
+                }))
+              }))
+            })),
+            update: vi.fn(() => ({
+              eq: updateEqMock
+            }))
+          };
+        }
+
+        throw new Error(`Unexpected table ${table}`);
+      })
+    });
+
+    const { updatePlaceLocation } = await import("@/lib/places");
+    const result = await updatePlaceLocation({
+      userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      groupId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      placeId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      address: "Madrid Centro",
+      latitude: 40.4,
+      longitude: -3.7
+    });
+
+    expect(result).toEqual({ error: null });
+    expect(updateEqMock).toHaveBeenCalledWith("id", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+  });
 });

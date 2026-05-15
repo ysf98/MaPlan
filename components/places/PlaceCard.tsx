@@ -4,8 +4,8 @@ import { useActionState } from "react";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { updatePlaceStatusAction } from "@/app/groups/[groupId]/actions";
-import type { UpdatePlaceStatusActionState } from "@/app/groups/[groupId]/actions";
+import { updatePlaceLocationAction, updatePlaceStatusAction } from "@/app/groups/[groupId]/actions";
+import type { UpdatePlaceLocationActionState, UpdatePlaceStatusActionState } from "@/app/groups/[groupId]/actions";
 import { hasValidCoordinates, type GroupPlace } from "@/lib/places/shared";
 import type { PlaceStatus } from "@/types/supabase";
 
@@ -26,6 +26,11 @@ const updatePlaceStatusInitialState: UpdatePlaceStatusActionState = {
   success: false
 };
 
+const updatePlaceLocationInitialState: UpdatePlaceLocationActionState = {
+  error: null,
+  success: false
+};
+
 function statusLabel(status: PlaceStatus) {
   if (status === "visited") return "Visitado";
   if (status === "favorite") return "Favorito";
@@ -33,7 +38,8 @@ function statusLabel(status: PlaceStatus) {
 }
 
 export function PlaceCard({ groupId, place, canEdit }: PlaceCardProps) {
-  const [state, formAction, isPending] = useActionState(updatePlaceStatusAction, updatePlaceStatusInitialState);
+  const [statusState, statusFormAction, isStatusPending] = useActionState(updatePlaceStatusAction, updatePlaceStatusInitialState);
+  const [locationState, locationFormAction, isLocationPending] = useActionState(updatePlaceLocationAction, updatePlaceLocationInitialState);
   const hasCoords = hasValidCoordinates(place);
 
   return (
@@ -59,8 +65,8 @@ export function PlaceCard({ groupId, place, canEdit }: PlaceCardProps) {
       ) : null}
 
       {canEdit ? (
-        <form action={formAction} className="mt-4">
-          <fieldset className="flex flex-wrap gap-2" disabled={isPending}>
+        <form action={statusFormAction} className="mt-4">
+          <fieldset className="flex flex-wrap gap-2" disabled={isStatusPending}>
             <input name="groupId" type="hidden" value={groupId} />
             <input name="placeId" type="hidden" value={place.id} />
             <label className="sr-only" htmlFor={`status-${place.id}`}>
@@ -78,16 +84,64 @@ export function PlaceCard({ groupId, place, canEdit }: PlaceCardProps) {
                 </option>
               ))}
             </select>
-            <Button disabled={isPending} size="sm" type="submit" variant="secondary">
-              {isPending ? "Guardando..." : "Cambiar estado"}
+            <Button disabled={isStatusPending} size="sm" type="submit" variant="secondary">
+              {isStatusPending ? "Guardando..." : "Cambiar estado"}
             </Button>
           </fieldset>
         </form>
       ) : (
         <p className="mt-4 text-sm text-slate-500">Solo el propietario puede editar lugares en este grupo.</p>
       )}
-      {state.error ? <p className="mt-2 text-sm text-rose-600">{state.error}</p> : null}
-      {state.success ? <p className="mt-2 text-sm text-emerald-600">Estado actualizado.</p> : null}
+      {statusState.error ? <p className="mt-2 text-sm text-rose-600">{statusState.error}</p> : null}
+      {statusState.success ? <p className="mt-2 text-sm text-emerald-600">Estado actualizado.</p> : null}
+
+      {canEdit ? (
+        <form action={locationFormAction} className="mt-4 rounded-2xl border border-slate-200 p-3">
+          <input name="groupId" type="hidden" value={groupId} />
+          <input name="placeId" type="hidden" value={place.id} />
+          <div className="grid gap-2 sm:grid-cols-3">
+            <label className="space-y-1 sm:col-span-3">
+              <span className="text-xs font-medium text-slate-700">Direccion</span>
+              <input
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                defaultValue={place.address}
+                maxLength={220}
+                name="address"
+                required
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-slate-700">Latitud</span>
+              <input
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                defaultValue={place.latitude ?? ""}
+                name="latitude"
+                required
+                step="any"
+                type="number"
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-slate-700">Longitud</span>
+              <input
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                defaultValue={place.longitude ?? ""}
+                name="longitude"
+                required
+                step="any"
+                type="number"
+              />
+            </label>
+            <div className="flex items-end">
+              <Button disabled={isLocationPending} size="sm" type="submit" variant="secondary">
+                {isLocationPending ? "Guardando..." : "Guardar ubicacion"}
+              </Button>
+            </div>
+          </div>
+          {locationState.error ? <p className="mt-2 text-sm text-rose-600">{locationState.error}</p> : null}
+          {locationState.success ? <p className="mt-2 text-sm text-emerald-600">Ubicacion actualizada.</p> : null}
+        </form>
+      ) : null}
     </Card>
   );
 }

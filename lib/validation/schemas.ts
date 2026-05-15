@@ -94,6 +94,18 @@ export const updatePlaceStatusSchema = z.object({
     })
 });
 
+export const updatePlaceLocationSchema = z.object({
+  groupId: uuidSchema,
+  placeId: uuidSchema,
+  address: z
+    .string()
+    .trim()
+    .min(1, "La direccion del lugar es obligatoria.")
+    .max(220, "La direccion es demasiado larga."),
+  latitude: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
+  longitude: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
+});
+
 export const reviewJoinRequestSchema = z.object({
   groupId: uuidSchema,
   requestId: uuidSchema,
@@ -153,6 +165,7 @@ export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;
 export type UpdatePlaceStatusInput = z.infer<typeof updatePlaceStatusSchema>;
+export type UpdatePlaceLocationInput = z.infer<typeof updatePlaceLocationSchema>;
 export type ReviewJoinRequestInput = z.infer<typeof reviewJoinRequestSchema>;
 export type UpdateGroupSettingsInput = z.infer<typeof updateGroupSettingsSchema>;
 export type SendFriendRequestInput = z.infer<typeof sendFriendRequestSchema>;

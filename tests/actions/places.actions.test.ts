@@ -5,6 +5,7 @@ const revalidatePathMock = vi.fn();
 const getCurrentUserMock = vi.fn();
 const createPlaceMock = vi.fn();
 const updatePlaceStatusMock = vi.fn();
+const updatePlaceLocationMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   redirect: redirectMock
@@ -20,7 +21,8 @@ vi.mock("@/lib/auth/getCurrentUser", () => ({
 
 vi.mock("@/lib/places", () => ({
   createPlace: createPlaceMock,
-  updatePlaceStatus: updatePlaceStatusMock
+  updatePlaceStatus: updatePlaceStatusMock,
+  updatePlaceLocation: updatePlaceLocationMock
 }));
 
 describe("places server actions", () => {
@@ -66,5 +68,31 @@ describe("places server actions", () => {
     });
     expect(revalidatePathMock).toHaveBeenCalledWith("/groups/11111111-1111-4111-8111-111111111111");
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("updatePlaceLocationAction updates and revalidates", async () => {
+    const { updatePlaceLocationAction } = await import("@/app/groups/[groupId]/actions");
+    getCurrentUserMock.mockResolvedValue({ id: "user-1" });
+    updatePlaceLocationMock.mockResolvedValue({ error: null });
+
+    const formData = new FormData();
+    formData.set("groupId", "11111111-1111-4111-8111-111111111111");
+    formData.set("placeId", "22222222-2222-4222-8222-222222222222");
+    formData.set("address", "Madrid Centro");
+    formData.set("latitude", "40.4168");
+    formData.set("longitude", "-3.7038");
+
+    const result = await updatePlaceLocationAction({ error: null, success: false }, formData);
+
+    expect(result).toEqual({ error: null, success: true });
+    expect(updatePlaceLocationMock).toHaveBeenCalledWith({
+      userId: "user-1",
+      groupId: "11111111-1111-4111-8111-111111111111",
+      placeId: "22222222-2222-4222-8222-222222222222",
+      address: "Madrid Centro",
+      latitude: 40.4168,
+      longitude: -3.7038
+    });
+    expect(revalidatePathMock).toHaveBeenCalledWith("/groups/11111111-1111-4111-8111-111111111111");
   });
 });

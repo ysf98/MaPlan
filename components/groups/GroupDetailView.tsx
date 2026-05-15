@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
+import { GroupMap } from "@/components/map/GroupMap";
 import type { GroupDetail, GroupJoinRequestItem } from "@/lib/groups/types";
 import type { GroupInvitationItem } from "@/lib/groupInvitations";
-import type { GroupPlace } from "@/lib/places/shared";
+import { hasValidCoordinates, type GroupPlace } from "@/lib/places/shared";
 
 type GroupDetailViewProps = {
   group: GroupDetail;
@@ -27,6 +28,8 @@ type DetailTab = "list" | "map";
 export function GroupDetailView({ group, groupId, places, pendingRequests, invitableFriends, groupInvitations, totalFriendsCount }: GroupDetailViewProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>("list");
   const [showAddPlaceForm, setShowAddPlaceForm] = useState(false);
+  const placesWithCoordinates = places.filter((place) => hasValidCoordinates(place)).length;
+  const placesPendingLocation = places.length - placesWithCoordinates;
 
   return (
     <section className="space-y-4">
@@ -115,11 +118,19 @@ export function GroupDetailView({ group, groupId, places, pendingRequests, invit
       ) : (
         <Card className="rounded-3xl">
           <h2 className="text-lg font-semibold text-slate-900">Mapa del grupo</h2>
-          <p className="mt-2 text-sm text-slate-500">
-            Vista de mapa en preparacion. Aqui mostraremos marcadores, filtros y navegacion geografica del grupo.
-          </p>
-          <div className="mt-4 flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50">
-            <p className="px-4 text-center text-sm text-slate-500">Placeholder de mapa para integracion futura.</p>
+          <p className="mt-2 text-sm text-slate-500">Visualiza lugares con coordenadas y selecciona marcadores para ver detalle.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+              <p className="text-xs text-slate-500">Lugares con coordenadas</p>
+              <p className="text-lg font-semibold text-slate-900">{placesWithCoordinates}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+              <p className="text-xs text-slate-500">Pendientes de ubicacion</p>
+              <p className="text-lg font-semibold text-slate-900">{placesPendingLocation}</p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <GroupMap places={places} />
           </div>
         </Card>
       )}

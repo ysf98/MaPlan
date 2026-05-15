@@ -8,6 +8,7 @@ import {
   respondFriendRequestSchema,
   reviewJoinRequestSchema,
   sendFriendRequestSchema,
+  updatePlaceLocationSchema,
   updatePlaceStatusSchema
 } from "@/lib/validation/schemas";
 
@@ -136,6 +137,32 @@ describe("updatePlaceStatusSchema", () => {
       groupId: "11111111-1111-4111-8111-111111111111",
       placeId: "22222222-2222-4222-8222-222222222222",
       status: "archived"
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("updatePlaceLocationSchema", () => {
+  it("rejects invalid latitude", () => {
+    const result = updatePlaceLocationSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      placeId: "22222222-2222-4222-8222-222222222222",
+      address: "Madrid",
+      latitude: 100,
+      longitude: -3.7
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid longitude", () => {
+    const result = updatePlaceLocationSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      placeId: "22222222-2222-4222-8222-222222222222",
+      address: "Madrid",
+      latitude: 40.4,
+      longitude: 200
     });
 
     expect(result.success).toBe(false);

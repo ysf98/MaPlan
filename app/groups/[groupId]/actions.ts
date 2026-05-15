@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
-import { createPlace, updatePlaceStatus } from "@/lib/places";
-import { createPlaceSchema, reviewJoinRequestSchema, updateGroupSettingsSchema, updatePlaceStatusSchema } from "@/lib/validation/schemas";
+import { createPlace, updatePlaceLocation, updatePlaceStatus } from "@/lib/places";
+import { createPlaceSchema, reviewJoinRequestSchema, updateGroupSettingsSchema, updatePlaceLocationSchema, updatePlaceStatusSchema } from "@/lib/validation/schemas";
 import type { PlaceStatus } from "@/types/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
@@ -15,6 +15,11 @@ export type AddPlaceActionState = {
 };
 
 export type UpdatePlaceStatusActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type UpdatePlaceLocationActionState = {
   error: string | null;
   success: boolean;
 };
@@ -45,6 +50,11 @@ const ADD_PLACE_INITIAL_STATE: AddPlaceActionState = {
 };
 
 const UPDATE_PLACE_STATUS_INITIAL_STATE: UpdatePlaceStatusActionState = {
+  error: null,
+  success: false
+};
+
+const UPDATE_PLACE_LOCATION_INITIAL_STATE: UpdatePlaceLocationActionState = {
   error: null,
   success: false
 };
@@ -148,6 +158,42 @@ export async function updatePlaceStatusAction(
 
   revalidatePath(`/groups/${groupId}`);
   revalidatePath("/dashboard");
+  return { error: null, success: true };
+}
+
+export async function updatePlaceLocationAction(
+  _previousState: UpdatePlaceLocationActionState = UPDATE_PLACE_LOCATION_INITIAL_STATE,
+  formData: FormData
+): Promise<UpdatePlaceLocationActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const parsedInput = updatePlaceLocationSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    placeId: String(formData.get("placeId") || ""),
+    address: String(formData.get("address") || ""),
+    latitude: String(formData.get("latitude") || ""),
+    longitude: String(formData.get("longitude") || "")
+  });
+
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
+  }
+
+  const { groupId, placeId, address, latitude, longitude } = parsedInput.data;
+  const result = await updatePlaceLocation({
+    userId: user.id,
+    groupId,
+    placeId,
+    address,
+    latitude,
+    longitude
+  });
+
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
   return { error: null, success: true };
 }
 

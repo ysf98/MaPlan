@@ -21,6 +21,15 @@ type UpdatePlaceStatusInput = {
   status: PlaceStatus;
 };
 
+type UpdatePlaceLocationInput = {
+  userId: string;
+  groupId: string;
+  placeId: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+};
+
 function normalizeCategory(category: string | null | undefined): PlaceCategory {
   const cleaned = (category || "").trim();
   if (!cleaned) {
@@ -175,6 +184,46 @@ export async function updatePlaceStatus(input: UpdatePlaceStatusInput): Promise<
     .from("places")
     .update({
       status: input.status,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", input.placeId);
+
+  if (updateError) {
+    return { error: updateError.message };
+  }
+
+  return { error: null };
+}
+
+export async function updatePlaceLocation(input: UpdatePlaceLocationInput): Promise<{ error: string | null }> {
+  const canEdit = await canEditPlaces(input.userId, input.groupId);
+  if (!canEdit) {
+    return { error: "No tienes permisos para editar lugares en este grupo." };
+  }
+
+  const address = input.address.trim();
+  if (!address) {
+    return { error: "La direccion del lugar es obligatoria." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: place, error: placeError } = await supabase
+    .from("places")
+    .select("id")
+    .eq("id", input.placeId)
+    .eq("group_id", input.groupId)
+    .maybeSingle();
+
+  if (placeError || !place) {
+    return { error: "No se encontro el lugar." };
+  }
+
+  const { error: updateError } = await supabase
+    .from("places")
+    .update({
+      address,
+      latitude: input.latitude,
+      longitude: input.longitude,
       updated_at: new Date().toISOString()
     })
     .eq("id", input.placeId);
