@@ -50,6 +50,7 @@ function extractAreaLabel(feature: mapboxgl.MapboxGeoJSONFeature | undefined): s
 
 type ReverseGeocodeItem = {
   name?: string;
+  name_preferred?: string;
   feature_type?: string;
   place_formatted?: string;
   full_address?: string;
@@ -59,6 +60,41 @@ type ReverseGeocodeItem = {
   place?: string;
   region?: string;
 };
+
+function splitAddressParts(rawValue: string | undefined): { street: string; city: string } {
+  const raw = (rawValue || "").trim();
+  if (!raw) {
+    return { street: "", city: "" };
+  }
+
+  const parts = raw
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) {
+    return { street: "", city: "" };
+  }
+
+  if (parts.length === 1) {
+    return { street: parts[0], city: "" };
+  }
+
+  return {
+    street: parts[0],
+    city: parts[1]
+  };
+}
+
+function pickFirstNonEmpty(...values: Array<string | undefined>): string {
+  for (const value of values) {
+    const cleaned = value?.trim();
+    if (cleaned) {
+      return cleaned;
+    }
+  }
+  return "";
+}
 
 async function reverseGeocodePlace(token: string, latitude: number, longitude: number): Promise<{
   name: string;
@@ -78,22 +114,56 @@ async function reverseGeocodePlace(token: string, latitude: number, longitude: n
 
   const payload = (await response.json()) as { features?: Array<{ properties?: ReverseGeocodeItem }> };
   const features = payload.features ?? [];
-  const byType = (featureType: string) =>
-    features.find((item) => item.properties?.feature_type === featureType)?.properties;
+  const byType = (types: string[]) =>
+    features.find((item) => item.properties?.feature_type && types.includes(item.properties.feature_type))?.properties;
 
-  const poi = byType("poi");
-  const addressFeature = byType("address") ?? features[0]?.properties;
-  const localityFeature = byType("locality") ?? byType("place") ?? addressFeature;
+  const poi = byType(["poi"]);
+  const streetFeature = byType(["address", "street", "block"]) ?? features[0]?.properties;
+  const localityFeature = byType(["locality", "place", "district", "region"]) ?? streetFeature;
 
-  const name = poi?.name?.trim() || addressFeature?.name?.trim() || "Sitio en mapa";
-  const address = addressFeature?.address?.trim() || addressFeature?.name?.trim() || "Punto en mapa";
-  const city =
-    localityFeature?.locality?.trim() ||
-    localityFeature?.place?.trim() ||
-    localityFeature?.context?.split(",")[0]?.trim() ||
-    "";
+  const name = pickFirstNonEmpty(poi?.name, poi?.name_preferred, "Sitio en mapa");
+
+  const streetFromStructured = pickFirstNonEmpty(
+    streetFeature?.address,
+    streetFeature?.name_preferred,
+    streetFeature?.name
+  );
+  const streetFromFormatted = splitAddressParts(
+    pickFirstNonEmpty(streetFeature?.full_address, streetFeature?.place_formatted)
+  ).street;
+  const address = pickFirstNonEmpty(streetFromStructured, streetFromFormatted, "Punto en mapa");
+
+  const cityFromStructured = pickFirstNonEmpty(
+    localityFeature?.locality,
+    localityFeature?.place,
+    localityFeature?.name_preferred,
+    localityFeature?.name
+  );
+  const cityFromFormatted = splitAddressParts(
+    pickFirstNonEmpty(localityFeature?.place_formatted, localityFeature?.full_address, localityFeature?.context)
+  ).city;
+  const city = pickFirstNonEmpty(cityFromStructured, cityFromFormatted);
 
   return { name, address, city };
+}
+
+async function resolvePlaceFromMapClick(
+  token: string,
+  latitude: number,
+  longitude: number,
+  fallbackName?: string
+): Promise<{ name: string; address: string; city: string }> {
+  const resolved = await reverseGeocodePlace(token, latitude, longitude);
+  const safeFallbackName = (fallbackName || "").trim();
+
+  if (resolved.name === "Sitio en mapa" && safeFallbackName) {
+    return {
+      ...resolved,
+      name: safeFallbackName
+    };
+  }
+
+  return resolved;
 }
 
 export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
@@ -149,12 +219,16 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
       if (!canEdit) {
         return;
       }
+      const renderedFeatures = map.queryRenderedFeatures(event.point);
+      const renderedName = renderedFeatures
+        .map((feature) => (feature.properties?.name as string | undefined)?.trim())
+        .find((value) => Boolean(value));
       const latitude = Number(event.lngLat.lat.toFixed(6));
       const longitude = Number(event.lngLat.lng.toFixed(6));
       setIsResolvingLocation(true);
 
       try {
-        const resolved = await reverseGeocodePlace(token, latitude, longitude);
+        const resolved = await resolvePlaceFromMapClick(token, latitude, longitude, renderedName);
         setDraftSelection({
           latitude,
           longitude,
@@ -163,7 +237,7 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
           city: resolved.city
         });
       } catch {
-        const features = map.queryRenderedFeatures(event.point);
+        const features = renderedFeatures;
         const featureWithName = features.find((feature) => {
           const name = (feature.properties?.name as string | undefined)?.trim();
           return Boolean(name);
@@ -174,13 +248,17 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
           (featureWithName?.properties?.["address"] as string | undefined)?.trim() ||
           (featureWithName?.properties?.["name_preferred"] as string | undefined)?.trim() ||
           "Punto en mapa";
-        const fallbackCity = areaLabel.split(",")[0]?.trim() || "";
+        const parsedArea = splitAddressParts(areaLabel);
+        const fallbackCity =
+          (featureWithName?.properties?.["place"] as string | undefined)?.trim() ||
+          parsedArea.city ||
+          "";
 
         setDraftSelection({
           latitude,
           longitude,
           name: featureName || "Sitio en mapa",
-          address: fallbackAddress,
+          address: parsedArea.street || fallbackAddress,
           city: fallbackCity
         });
       } finally {

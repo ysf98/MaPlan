@@ -104,7 +104,7 @@ export function GroupDetailView({ group, groupId, places, pendingRequests, invit
 
       {activeTab === "list" ? (
         places.length > 0 ? (
-          <PlacesList canEdit={group.canEditPlaces} groupId={groupId} places={places} />
+          <PlacesList canDelete={group.role === "owner"} canEdit={group.canEditPlaces} groupId={groupId} places={places} />
         ) : (
           <EmptyState
             title="Todavia no hay lugares"

@@ -6,6 +6,7 @@ const getCurrentUserMock = vi.fn();
 const createPlaceMock = vi.fn();
 const updatePlaceStatusMock = vi.fn();
 const updatePlaceLocationMock = vi.fn();
+const deletePlaceMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   redirect: redirectMock
@@ -22,7 +23,8 @@ vi.mock("@/lib/auth/getCurrentUser", () => ({
 vi.mock("@/lib/places", () => ({
   createPlace: createPlaceMock,
   updatePlaceStatus: updatePlaceStatusMock,
-  updatePlaceLocation: updatePlaceLocationMock
+  updatePlaceLocation: updatePlaceLocationMock,
+  deletePlace: deletePlaceMock
 }));
 
 describe("places server actions", () => {

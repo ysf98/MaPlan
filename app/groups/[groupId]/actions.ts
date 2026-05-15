@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
-import { createPlace, updatePlaceLocation, updatePlaceStatus } from "@/lib/places";
+import { createPlace, deletePlace, updatePlaceLocation, updatePlaceStatus } from "@/lib/places";
 import { createPlaceSchema, reviewJoinRequestSchema, updateGroupSettingsSchema, updatePlaceLocationSchema, updatePlaceStatusSchema } from "@/lib/validation/schemas";
 import type { PlaceStatus } from "@/types/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -44,6 +44,11 @@ export type UpdateGroupSettingsActionState = {
   success: boolean;
 };
 
+export type DeletePlaceActionState = {
+  error: string | null;
+  success: boolean;
+};
+
 const ADD_PLACE_INITIAL_STATE: AddPlaceActionState = {
   error: null,
   success: false
@@ -75,6 +80,11 @@ const DELETE_GROUP_INITIAL_STATE: DeleteGroupActionState = {
 };
 
 const UPDATE_GROUP_SETTINGS_INITIAL_STATE: UpdateGroupSettingsActionState = {
+  error: null,
+  success: false
+};
+
+const DELETE_PLACE_INITIAL_STATE: DeletePlaceActionState = {
   error: null,
   success: false
 };
@@ -202,6 +212,33 @@ export async function updatePlaceLocationAction(
   }
 
   revalidatePath(`/groups/${groupId}`);
+  return { error: null, success: true };
+}
+
+export async function deletePlaceAction(
+  _previousState: DeletePlaceActionState = DELETE_PLACE_INITIAL_STATE,
+  formData: FormData
+): Promise<DeletePlaceActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const groupId = String(formData.get("groupId") || "");
+  const placeId = String(formData.get("placeId") || "");
+  if (!groupId || !placeId) {
+    return { error: "Lugar invalido.", success: false };
+  }
+
+  const result = await deletePlace({
+    userId: user.id,
+    groupId,
+    placeId
+  });
+
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/dashboard");
   return { error: null, success: true };
 }
 

@@ -4,8 +4,12 @@ import { useActionState } from "react";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { updatePlaceLocationAction, updatePlaceStatusAction } from "@/app/groups/[groupId]/actions";
-import type { UpdatePlaceLocationActionState, UpdatePlaceStatusActionState } from "@/app/groups/[groupId]/actions";
+import { deletePlaceAction, updatePlaceLocationAction, updatePlaceStatusAction } from "@/app/groups/[groupId]/actions";
+import type {
+  DeletePlaceActionState,
+  UpdatePlaceLocationActionState,
+  UpdatePlaceStatusActionState
+} from "@/app/groups/[groupId]/actions";
 import { hasValidCoordinates, type GroupPlace } from "@/lib/places/shared";
 import type { PlaceStatus } from "@/types/supabase";
 
@@ -13,6 +17,7 @@ type PlaceCardProps = {
   groupId: string;
   place: GroupPlace;
   canEdit: boolean;
+  canDelete: boolean;
 };
 
 const STATUS_OPTIONS: { value: PlaceStatus; label: string }[] = [
@@ -31,15 +36,21 @@ const updatePlaceLocationInitialState: UpdatePlaceLocationActionState = {
   success: false
 };
 
+const deletePlaceInitialState: DeletePlaceActionState = {
+  error: null,
+  success: false
+};
+
 function statusLabel(status: PlaceStatus) {
   if (status === "visited") return "Visitado";
   if (status === "favorite") return "Favorito";
   return "Pendiente";
 }
 
-export function PlaceCard({ groupId, place, canEdit }: PlaceCardProps) {
+export function PlaceCard({ groupId, place, canEdit, canDelete }: PlaceCardProps) {
   const [statusState, statusFormAction, isStatusPending] = useActionState(updatePlaceStatusAction, updatePlaceStatusInitialState);
   const [locationState, locationFormAction, isLocationPending] = useActionState(updatePlaceLocationAction, updatePlaceLocationInitialState);
+  const [deleteState, deleteFormAction, isDeletePending] = useActionState(deletePlaceAction, deletePlaceInitialState);
   const hasCoords = hasValidCoordinates(place);
 
   return (
@@ -96,7 +107,7 @@ export function PlaceCard({ groupId, place, canEdit }: PlaceCardProps) {
       {statusState.error ? <p className="mt-2 text-sm text-rose-600">{statusState.error}</p> : null}
       {statusState.success ? <p className="mt-2 text-sm text-emerald-600">Estado actualizado.</p> : null}
 
-      {canEdit ? (
+      {canEdit && !hasCoords ? (
         <form action={locationFormAction} className="mt-4 rounded-2xl border border-slate-200 p-3">
           <input name="groupId" type="hidden" value={groupId} />
           <input name="placeId" type="hidden" value={place.id} />
@@ -150,6 +161,25 @@ export function PlaceCard({ groupId, place, canEdit }: PlaceCardProps) {
           </div>
           {locationState.error ? <p className="mt-2 text-sm text-rose-600">{locationState.error}</p> : null}
           {locationState.success ? <p className="mt-2 text-sm text-emerald-600">Ubicacion actualizada.</p> : null}
+        </form>
+      ) : null}
+      {canDelete ? (
+        <form
+          action={deleteFormAction}
+          className="mt-4"
+          onSubmit={(event) => {
+            const confirmed = window.confirm(`Estas seguro de que quieres eliminar "${place.name}"?`);
+            if (!confirmed) {
+              event.preventDefault();
+            }
+          }}
+        >
+          <input name="groupId" type="hidden" value={groupId} />
+          <input name="placeId" type="hidden" value={place.id} />
+          <Button disabled={isDeletePending} size="sm" type="submit" variant="danger">
+            {isDeletePending ? "Eliminando..." : "Eliminar lugar"}
+          </Button>
+          {deleteState.error ? <p className="mt-2 text-sm text-rose-600">{deleteState.error}</p> : null}
         </form>
       ) : null}
     </Card>

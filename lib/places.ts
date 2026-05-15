@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { canEditPlaces, isGroupMember } from "@/lib/groupPermissions";
+import { canEditPlaces, isGroupMember, isGroupOwner } from "@/lib/groupPermissions";
 import { INITIAL_PLACE_CATEGORIES, type GroupPlace, type PlaceCategory } from "@/lib/places/shared";
 import type { PlaceSource, PlaceStatus } from "@/types/supabase";
 
@@ -32,6 +32,12 @@ type UpdatePlaceLocationInput = {
   city?: string | null;
   latitude: number;
   longitude: number;
+};
+
+type DeletePlaceInput = {
+  userId: string;
+  groupId: string;
+  placeId: string;
 };
 
 function normalizeCategory(category: string | null | undefined): PlaceCategory {
@@ -259,6 +265,32 @@ export async function updatePlaceLocation(input: UpdatePlaceLocationInput): Prom
 
   if (updateError) {
     return { error: updateError.message };
+  }
+
+  return { error: null };
+}
+
+export async function deletePlace(input: DeletePlaceInput): Promise<{ error: string | null }> {
+  const isOwner = await isGroupOwner(input.userId, input.groupId);
+  if (!isOwner) {
+    return { error: "Solo el propietario puede eliminar lugares en este grupo." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: place, error: placeError } = await supabase
+    .from("places")
+    .select("id")
+    .eq("id", input.placeId)
+    .eq("group_id", input.groupId)
+    .maybeSingle();
+
+  if (placeError || !place) {
+    return { error: "No se encontro el lugar." };
+  }
+
+  const { error: deleteError } = await supabase.from("places").delete().eq("id", input.placeId);
+  if (deleteError) {
+    return { error: deleteError.message };
   }
 
   return { error: null };

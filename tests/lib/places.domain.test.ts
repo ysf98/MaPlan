@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const createSupabaseServerClientMock = vi.fn();
 const canEditPlacesMock = vi.fn();
 const isGroupMemberMock = vi.fn();
+const isGroupOwnerMock = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: createSupabaseServerClientMock
@@ -10,7 +11,8 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/groupPermissions", () => ({
   canEditPlaces: canEditPlacesMock,
-  isGroupMember: isGroupMemberMock
+  isGroupMember: isGroupMemberMock,
+  isGroupOwner: isGroupOwnerMock
 }));
 
 describe("places domain", () => {

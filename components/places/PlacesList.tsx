@@ -9,9 +9,10 @@ type PlacesListProps = {
   groupId: string;
   places: GroupPlace[];
   canEdit: boolean;
+  canDelete: boolean;
 };
 
-export function PlacesList({ groupId, places, canEdit }: PlacesListProps) {
+export function PlacesList({ groupId, places, canEdit, canDelete }: PlacesListProps) {
   const [statusFilter, setStatusFilter] = useState<PlaceStatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<PlaceCategoryFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<PlaceSourceFilter>("all");
@@ -45,7 +46,7 @@ export function PlacesList({ groupId, places, canEdit }: PlacesListProps) {
         <ul className="grid gap-3 sm:grid-cols-2">
           {filteredPlaces.map((place) => (
             <li key={place.id}>
-              <PlaceCard canEdit={canEdit} groupId={groupId} place={place} />
+              <PlaceCard canDelete={canDelete} canEdit={canEdit} groupId={groupId} place={place} />
             </li>
           ))}
         </ul>
