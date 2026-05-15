@@ -10,7 +10,7 @@ export default async function InvitationsPage() {
     redirect("/login?next=/invitations");
   }
 
-  const invitations = (await getGroupInvitationsForUser(user.id)).filter((invitation) => invitation.status === "pending");
+  const invitations = await getGroupInvitationsForUser(user.id);
 
   return (
     <AppShell>
@@ -18,4 +18,3 @@ export default async function InvitationsPage() {
     </AppShell>
   );
 }
-

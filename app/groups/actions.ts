@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
@@ -34,7 +35,13 @@ const JOIN_INITIAL_STATE: JoinGroupActionState = {
 };
 
 function createJoinCode() {
-  return Math.random().toString(36).slice(2, 10).toUpperCase();
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const values = randomBytes(8);
+  let code = "";
+  for (const value of values) {
+    code += alphabet[value % alphabet.length];
+  }
+  return code;
 }
 
 export async function createGroupAction(

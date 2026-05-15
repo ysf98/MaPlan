@@ -3,39 +3,53 @@ import type { GroupDetail, GroupJoinRequestItem, GroupListItem } from "@/lib/gro
 
 export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   const supabase = await createSupabaseServerClient();
-  const membershipsResult = await supabase
-    .from("group_members")
-    .select("group_id, role")
-    .eq("user_id", userId);
-  const { data: memberships, error: membershipsError } = membershipsResult;
+  const [membershipsResult, createdGroupsResult] = await Promise.all([
+    supabase.from("group_members").select("group_id, role").eq("user_id", userId),
+    supabase
+      .from("groups")
+      .select("id, name, description, created_at, place_edit_policy, join_policy")
+      .eq("created_by", userId)
+      .order("created_at", { ascending: false })
+  ]);
 
-  if (membershipsError || !memberships || memberships.length === 0) {
-    return [];
-  }
-
+  const memberships = membershipsResult.data || [];
   const roleByGroupId = new Map(memberships.map((membership) => [membership.group_id, membership.role]));
-  const groupIds = memberships.map((membership) => membership.group_id);
+  const memberGroupIds = memberships.map((membership) => membership.group_id);
 
-  const groupsResult = await supabase
-    .from("groups")
-    .select("id, name, description, created_at, place_edit_policy, join_policy")
-    .in("id", groupIds)
-    .order("created_at", { ascending: false });
-  const { data: groups, error: groupsError } = groupsResult;
+  const memberGroupsResult =
+    memberGroupIds.length > 0
+      ? await supabase
+          .from("groups")
+          .select("id, name, description, created_at, place_edit_policy, join_policy")
+          .in("id", memberGroupIds)
+      : { data: [], error: null };
 
-  if (groupsError || !groups) {
-    return [];
-  }
+  const mergedById = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      description: string | null;
+      created_at: string;
+      place_edit_policy: GroupListItem["placeEditPolicy"];
+      join_policy: GroupListItem["joinPolicy"];
+    }
+  >();
 
-  return groups.map((group) => ({
-    id: group.id,
-    name: group.name,
-    description: group.description,
-    createdAt: group.created_at,
-    role: roleByGroupId.get(group.id) ?? "member",
-    placeEditPolicy: group.place_edit_policy,
-    joinPolicy: group.join_policy
-  }));
+  (memberGroupsResult.data || []).forEach((group) => mergedById.set(group.id, group));
+  (createdGroupsResult.data || []).forEach((group) => mergedById.set(group.id, group));
+
+  return Array.from(mergedById.values())
+    .map((group) => ({
+      id: group.id,
+      name: group.name,
+      description: group.description,
+      createdAt: group.created_at,
+      role: roleByGroupId.get(group.id) ?? "owner",
+      placeEditPolicy: group.place_edit_policy,
+      joinPolicy: group.join_policy
+    }))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export async function getGroupDetailForUser(userId: string, groupId: string): Promise<GroupDetail | null> {

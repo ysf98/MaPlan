@@ -1,21 +1,24 @@
 "use client";
 
 import { INITIAL_PLACE_CATEGORIES, type PlaceCategory } from "@/lib/places/shared";
-import type { PlaceStatus } from "@/types/supabase";
+import type { PlaceSource, PlaceStatus } from "@/types/supabase";
 
 export type PlaceStatusFilter = PlaceStatus | "all";
 export type PlaceCategoryFilter = PlaceCategory | "all";
+export type PlaceSourceFilter = PlaceSource | "none" | "all";
 
 type PlaceFiltersProps = {
   status: PlaceStatusFilter;
   category: PlaceCategoryFilter;
+  source: PlaceSourceFilter;
   onStatusChange: (value: PlaceStatusFilter) => void;
   onCategoryChange: (value: PlaceCategoryFilter) => void;
+  onSourceChange: (value: PlaceSourceFilter) => void;
 };
 
-export function PlaceFilters({ status, category, onStatusChange, onCategoryChange }: PlaceFiltersProps) {
+export function PlaceFilters({ status, category, source, onStatusChange, onCategoryChange, onSourceChange }: PlaceFiltersProps) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid gap-3 sm:grid-cols-3">
       <label className="block space-y-2">
         <span className="text-sm font-medium text-slate-700">Filtrar por estado</span>
         <select
@@ -43,6 +46,23 @@ export function PlaceFilters({ status, category, onStatusChange, onCategoryChang
               {item}
             </option>
           ))}
+        </select>
+      </label>
+
+      <label className="block space-y-2">
+        <span className="text-sm font-medium text-slate-700">Filtrar por fuente</span>
+        <select
+          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+          onChange={(event) => onSourceChange(event.target.value as PlaceSourceFilter)}
+          value={source}
+        >
+          <option value="all">Todas</option>
+          <option value="none">Sin fuente</option>
+          <option value="manual">Manual</option>
+          <option value="google_maps">Google Maps</option>
+          <option value="tiktok">TikTok</option>
+          <option value="instagram">Instagram</option>
+          <option value="website">Web</option>
         </select>
       </label>
     </div>

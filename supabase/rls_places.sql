@@ -221,3 +221,14 @@ for update to authenticated
 using (id = auth.uid())
 with check (id = auth.uid());
 
+-- Keep friend search resilient even if SQL files are executed in different order.
+drop policy if exists profiles_select_for_friend_search on public.profiles;
+
+create policy profiles_select_for_friend_search
+on public.profiles
+for select to authenticated
+using (
+  auth.uid() is not null
+  and username is not null
+  and btrim(username) <> ''
+);

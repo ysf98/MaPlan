@@ -135,6 +135,23 @@ begin
   end loop;
 end $$;
 
+-- Helper to avoid RLS recursion between groups <-> group_members policies.
+create or replace function public.is_group_creator(p_group_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.groups g
+    where g.id = p_group_id
+      and g.created_by = auth.uid()
+  );
+$$;
+
+grant execute on function public.is_group_creator(uuid) to authenticated;
+
 -- 7) GROUPS policies
 -- Important: the creator must be able to read the newly created group row
 -- right after INSERT (before group_members owner row exists), otherwise
@@ -214,13 +231,7 @@ create policy group_members_select_owner_group
 on public.group_members
 for select to authenticated
 using (
-  exists (
-    select 1
-    from public.group_members gm
-    where gm.group_id = group_members.group_id
-      and gm.user_id = auth.uid()
-      and gm.role = 'owner'
-  )
+  public.is_group_creator(group_members.group_id)
 );
 
 create policy group_members_insert_self_join_allowed
@@ -323,3 +334,86 @@ with check (
   user_id = auth.uid()
   and status = 'pending'
 );
+
+-- Atomic approval for request_to_join:
+-- updates request status and membership in a single transaction.
+create or replace function public.approve_group_join_request(p_group_id uuid, p_request_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_request_user_id uuid;
+  v_request_group_id uuid;
+  v_request_status text;
+begin
+  select r.user_id, r.group_id, r.status
+  into v_request_user_id, v_request_group_id, v_request_status
+  from public.group_join_requests r
+  where r.id = p_request_id
+  for update;
+
+  if v_request_user_id is null then
+    raise exception 'No se encontro la solicitud.';
+  end if;
+
+  if v_request_group_id <> p_group_id then
+    raise exception 'La solicitud no pertenece al grupo indicado.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.group_members gm
+    where gm.group_id = p_group_id
+      and gm.user_id = auth.uid()
+      and gm.role = 'owner'
+  ) then
+    raise exception 'No tienes permisos para gestionar solicitudes de este grupo.';
+  end if;
+
+  if v_request_status <> 'pending' then
+    raise exception 'La solicitud ya fue revisada.';
+  end if;
+
+  insert into public.group_members (group_id, user_id, role)
+  values (p_group_id, v_request_user_id, 'member')
+  on conflict (group_id, user_id) do nothing;
+
+  update public.group_join_requests
+  set
+    status = 'approved',
+    reviewed_by = auth.uid(),
+    reviewed_at = now()
+  where id = p_request_id;
+end;
+$$;
+
+grant execute on function public.approve_group_join_request(uuid, uuid) to authenticated;
+
+-- If invitations table exists, keep visibility for invited users on groups
+-- so invitation UIs can show group names (not only IDs) after re-running this file.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.tables
+    where table_schema = 'public'
+      and table_name = 'group_invitations'
+  ) then
+    drop policy if exists groups_select_invited_user on public.groups;
+
+    create policy groups_select_invited_user
+    on public.groups
+    for select to authenticated
+    using (
+      exists (
+        select 1
+        from public.group_invitations gi
+        where gi.group_id = groups.id
+          and gi.invited_user_id = auth.uid()
+          and gi.status in ('pending', 'accepted')
+      )
+    );
+  end if;
+end $$;

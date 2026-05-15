@@ -31,7 +31,7 @@ export async function getGroupInvitationsForUser(userId: string): Promise<GroupI
 
   const [{ data: groups }, { data: profiles }] = await Promise.all([
     supabase.from("groups").select("id, name").in("id", groupIds),
-    supabase.from("profiles").select("id, username").in("id", inviterIds)
+    supabase.rpc("get_profiles_by_ids", { p_ids: inviterIds })
   ]);
 
   const groupNameById = new Map((groups || []).map((group) => [group.id, group.name]));
@@ -76,7 +76,7 @@ export async function getGroupInvitationsForGroup(ownerId: string, groupId: stri
   }
 
   const invitedIds = invitations.map((item) => item.invited_user_id);
-  const { data: profiles } = await supabase.from("profiles").select("id, username").in("id", invitedIds);
+  const { data: profiles } = await supabase.rpc("get_profiles_by_ids", { p_ids: invitedIds });
   const invitedNameById = new Map((profiles || []).map((profile) => [profile.id, profile.username]));
 
   return invitations.map((invitation) => ({

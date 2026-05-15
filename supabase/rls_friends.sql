@@ -222,3 +222,49 @@ end;
 $$;
 
 grant execute on function public.accept_friend_request(uuid) to authenticated;
+
+-- Stable user search endpoint for authenticated users.
+create or replace function public.search_profiles_by_username(p_query text)
+returns table(id uuid, username text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    return;
+  end if;
+
+  return query
+  select p.id, p.username
+  from public.profiles p
+  where p.id <> auth.uid()
+    and p.username is not null
+    and btrim(p.username) <> ''
+    and p.username ilike ('%' || coalesce(p_query, '') || '%')
+  order by p.username asc
+  limit 20;
+end;
+$$;
+
+grant execute on function public.search_profiles_by_username(text) to authenticated;
+
+create or replace function public.get_profiles_by_ids(p_ids uuid[])
+returns table(id uuid, username text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    return;
+  end if;
+
+  return query
+  select p.id, p.username
+  from public.profiles p
+  where p.id = any(coalesce(p_ids, '{}'));
+end;
+$$;
+
+grant execute on function public.get_profiles_by_ids(uuid[]) to authenticated;

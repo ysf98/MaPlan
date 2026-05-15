@@ -25,6 +25,7 @@ type GroupOwnerControlsProps = {
   pendingRequests: GroupJoinRequestItem[];
   invitableFriends: Array<{ id: string; username: string | null }>;
   groupInvitations: GroupInvitationItem[];
+  totalFriendsCount: number;
 };
 
 const settingsInitialState: UpdateGroupSettingsActionState = {
@@ -68,7 +69,8 @@ export function GroupOwnerControls({
   joinPolicy,
   pendingRequests,
   invitableFriends,
-  groupInvitations
+  groupInvitations,
+  totalFriendsCount
 }: GroupOwnerControlsProps) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
@@ -176,7 +178,11 @@ export function GroupOwnerControls({
             <div className="rounded-xl border border-slate-200 bg-white p-3">
               <h3 className="text-sm font-semibold text-slate-900">Invitar amigos</h3>
               {invitableFriends.length === 0 ? (
-                <p className="mt-2 text-xs text-slate-500">No hay amigos disponibles para invitar ahora mismo.</p>
+                <p className="mt-2 text-xs text-slate-500">
+                  {totalFriendsCount === 0
+                    ? "Anade amigos primero para poder invitarlos al grupo."
+                    : "Todos tus amigos ya estan invitados o ya son miembros de este grupo."}
+                </p>
               ) : (
                 <ul className="mt-3 space-y-2">
                   {invitableFriends.map((friend) => (
@@ -204,7 +210,17 @@ export function GroupOwnerControls({
                       <li key={invitation.id} className="rounded-lg border border-slate-200 p-2">
                         <p className="text-xs text-slate-900">
                           @{invitation.invitedUsername || "sin-username"} -{" "}
-                          <span className={invitation.status === "pending" ? "text-amber-700" : "text-slate-600"}>{invitation.status}</span>
+                          <span
+                            className={
+                              invitation.status === "pending"
+                                ? "text-amber-700"
+                                : invitation.status === "accepted"
+                                  ? "text-emerald-700"
+                                  : "text-rose-700"
+                            }
+                          >
+                            {invitation.status}
+                          </span>
                         </p>
                       </li>
                     ))}

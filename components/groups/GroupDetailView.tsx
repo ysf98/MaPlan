@@ -19,11 +19,12 @@ type GroupDetailViewProps = {
   pendingRequests: GroupJoinRequestItem[];
   invitableFriends: Array<{ id: string; username: string | null }>;
   groupInvitations: GroupInvitationItem[];
+  totalFriendsCount: number;
 };
 
 type DetailTab = "list" | "map";
 
-export function GroupDetailView({ group, groupId, places, pendingRequests, invitableFriends, groupInvitations }: GroupDetailViewProps) {
+export function GroupDetailView({ group, groupId, places, pendingRequests, invitableFriends, groupInvitations, totalFriendsCount }: GroupDetailViewProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>("list");
   const [showAddPlaceForm, setShowAddPlaceForm] = useState(false);
 
@@ -60,6 +61,7 @@ export function GroupDetailView({ group, groupId, places, pendingRequests, invit
             role={group.role}
             invitableFriends={invitableFriends}
             groupInvitations={groupInvitations}
+            totalFriendsCount={totalFriendsCount}
           />
         </div>
       </Card>

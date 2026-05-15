@@ -27,3 +27,11 @@ export type GroupPlace = {
   category: PlaceCategory;
   createdAt: string;
 };
+
+export function hasValidCoordinates(place: Pick<GroupPlace, "latitude" | "longitude">): boolean {
+  if (typeof place.latitude !== "number" || typeof place.longitude !== "number") {
+    return false;
+  }
+
+  return place.latitude >= -90 && place.latitude <= 90 && place.longitude >= -180 && place.longitude <= 180;
+}

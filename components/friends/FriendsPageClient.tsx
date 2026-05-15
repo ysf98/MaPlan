@@ -29,6 +29,8 @@ export function FriendsPageClient({
   const [respondState, respondAction, isResponding] = useActionState(respondFriendRequestAction, initialState);
   const [removeState, removeAction, isRemoving] = useActionState(removeFriendAction, initialState);
 
+  const hasQuery = query.trim().length >= 2;
+
   return (
     <section className="space-y-4">
       <Card className="rounded-3xl">
@@ -51,8 +53,10 @@ export function FriendsPageClient({
 
       <Card className="rounded-3xl">
         <h2 className="text-lg font-semibold text-slate-900">Resultados</h2>
-        {searchResults.length === 0 ? (
+        {!hasQuery ? (
           <p className="mt-2 text-sm text-slate-500">Escribe al menos 2 caracteres para buscar usuarios.</p>
+        ) : searchResults.length === 0 ? (
+          <p className="mt-2 text-sm text-slate-500">No encontramos usuarios para esa busqueda.</p>
         ) : (
           <ul className="mt-3 space-y-2">
             {searchResults.map((user) => (
@@ -66,7 +70,7 @@ export function FriendsPageClient({
                   <form action={sendAction}>
                     <input name="receiverId" type="hidden" value={user.id} />
                     <Button disabled={isSending} size="sm" type="submit" variant="secondary">
-                      {isSending ? "Enviando..." : "Enviar solicitud"}
+                      {isSending ? "Enviando..." : "Anadir"}
                     </Button>
                   </form>
                 )}
@@ -74,6 +78,7 @@ export function FriendsPageClient({
             ))}
           </ul>
         )}
+        {sendState.success ? <p className="mt-2 text-sm text-emerald-600">Solicitud enviada.</p> : null}
       </Card>
 
       {receivedRequests.length > 0 ? (
@@ -133,7 +138,14 @@ export function FriendsPageClient({
               <li key={friend.userId} className="rounded-xl border border-slate-200 p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium text-slate-900">@{friend.username || "sin-username"}</p>
-                  <form action={removeAction}>
+                  <form
+                    action={removeAction}
+                    onSubmit={(event) => {
+                      if (!window.confirm(`Seguro que quieres eliminar a @${friend.username || "sin-username"} de tus amigos?`)) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
                     <input name="friendUserId" type="hidden" value={friend.userId} />
                     <Button disabled={isRemoving} size="sm" type="submit" variant="secondary">
                       {isRemoving ? "Eliminando..." : "Eliminar amigo"}

@@ -8,7 +8,6 @@ import { createPlaceSchema, reviewJoinRequestSchema, updateGroupSettingsSchema, 
 import type { PlaceStatus } from "@/types/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export type AddPlaceActionState = {
   error: string | null;
@@ -201,27 +200,24 @@ export async function reviewJoinRequestAction(
   }
 
   if (decision === "approved") {
-    const membershipPayload = {
-      group_id: groupId,
-      user_id: request.user_id,
-      role: "member" as const
-    };
-    const membershipResult = await supabase.from("group_members").upsert(membershipPayload, { onConflict: "group_id,user_id" });
-
-    if (membershipResult.error) {
-      return { error: membershipResult.error.message, success: false };
+    const approveResult = await supabase.rpc("approve_group_join_request", {
+      p_group_id: groupId,
+      p_request_id: requestId
+    });
+    if (approveResult.error) {
+      return { error: approveResult.error.message, success: false };
     }
-  }
+  } else {
+    const updatePayload = {
+      status: decision,
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString()
+    };
+    const updateResult = await supabase.from("group_join_requests").update(updatePayload).eq("id", requestId);
 
-  const updatePayload = {
-    status: decision,
-    reviewed_by: user.id,
-    reviewed_at: new Date().toISOString()
-  };
-  const updateResult = await supabase.from("group_join_requests").update(updatePayload).eq("id", requestId);
-
-  if (updateResult.error) {
-    return { error: updateResult.error.message, success: false };
+    if (updateResult.error) {
+      return { error: updateResult.error.message, success: false };
+    }
   }
 
   revalidatePath(`/groups/${groupId}`);
@@ -327,15 +323,8 @@ export async function deleteGroupAction(
     return { error: "Solo el propietario puede eliminar este grupo.", success: false };
   }
 
-  // Strictly required privileged operation:
-  // deleting a group must cascade across all memberships/places/requests,
-  // and we do not expose broad DELETE policies for groups to regular users.
-  const adminClient = process.env.SUPABASE_SERVICE_ROLE_KEY ? createSupabaseAdminClient() : null;
-  if (!adminClient) {
-    return { error: "Falta SUPABASE_SERVICE_ROLE_KEY para eliminar grupos de forma segura.", success: false };
-  }
-
-  const deleteResult = await adminClient.from("groups").delete().eq("id", groupId);
+  const supabase = await createSupabaseServerClient();
+  const deleteResult = await supabase.from("groups").delete().eq("id", groupId);
 
   if (deleteResult.error) {
     return { error: deleteResult.error.message, success: false };

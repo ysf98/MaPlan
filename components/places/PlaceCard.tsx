@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { updatePlaceStatusAction } from "@/app/groups/[groupId]/actions";
 import type { UpdatePlaceStatusActionState } from "@/app/groups/[groupId]/actions";
-import type { GroupPlace } from "@/lib/places/shared";
+import { hasValidCoordinates, type GroupPlace } from "@/lib/places/shared";
 import type { PlaceStatus } from "@/types/supabase";
 
 type PlaceCardProps = {
@@ -34,12 +34,14 @@ function statusLabel(status: PlaceStatus) {
 
 export function PlaceCard({ groupId, place, canEdit }: PlaceCardProps) {
   const [state, formAction, isPending] = useActionState(updatePlaceStatusAction, updatePlaceStatusInitialState);
+  const hasCoords = hasValidCoordinates(place);
 
   return (
     <Card className="rounded-3xl">
       <div className="flex flex-wrap items-center gap-2">
         <CategoryBadge label={place.category} tone="plan" />
         <CategoryBadge label={statusLabel(place.status)} tone="visit" />
+        <CategoryBadge label={hasCoords ? "Con coordenadas" : "Sin coordenadas"} tone={hasCoords ? "coffee" : "food"} />
       </div>
 
       <h3 className="mt-3 text-lg font-semibold text-slate-900">{place.name}</h3>

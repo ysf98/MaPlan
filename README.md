@@ -107,3 +107,16 @@ Cobertura actual:
 - Endurecer más tests de seguridad RLS extremo a extremo.
 - Mejorar observabilidad/errores de acciones.
 - Integración de mapa real (siguiente gran bloque).
+
+## Siguiente fase (mapa)
+
+Preparado en MVP social:
+- `places` con `latitude` y `longitude` nullable.
+- `places` con `original_url` y `source`.
+- Helper `hasValidCoordinates(place)` para diferenciar lugares geolocalizados.
+- Filtros de lista por estado, categoria y fuente.
+
+Pendiente de implementar:
+- Integracion Mapbox/Google Maps.
+- Geocoding desde direccion/enlace.
+- Marcadores y vista de mapa enlazada a detalle de lugar.

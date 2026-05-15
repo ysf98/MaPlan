@@ -29,6 +29,16 @@ function normalizeFriendPair(userAId: string, userBId: string) {
   return userAId < userBId ? { user_a_id: userAId, user_b_id: userBId } : { user_a_id: userBId, user_b_id: userAId };
 }
 
+async function getProfileUsernameMap(ids: string[]): Promise<Map<string, string | null>> {
+  if (ids.length === 0) {
+    return new Map();
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.rpc("get_profiles_by_ids", { p_ids: ids });
+  return new Map((data || []).map((profile) => [profile.id, profile.username]));
+}
+
 export async function areFriends(userAId: string, userBId: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const pair = normalizeFriendPair(userAId, userBId);
@@ -49,8 +59,7 @@ export async function getFriends(userId: string): Promise<FriendItem[]> {
   }
 
   const friendIds = friendships.map((f) => (f.user_a_id === userId ? f.user_b_id : f.user_a_id));
-  const { data: profiles } = await supabase.from("profiles").select("id, username").in("id", friendIds);
-  const usernameById = new Map((profiles || []).map((p) => [p.id, p.username]));
+  const usernameById = await getProfileUsernameMap(friendIds);
 
   return friendships.map((f) => {
     const friendId = f.user_a_id === userId ? f.user_b_id : f.user_a_id;
@@ -78,8 +87,7 @@ export async function getFriendRequests(userId: string): Promise<{
   }
 
   const profileIds = Array.from(new Set(requests.flatMap((r) => [r.sender_id, r.receiver_id])));
-  const { data: profiles } = await supabase.from("profiles").select("id, username").in("id", profileIds);
-  const usernameById = new Map((profiles || []).map((p) => [p.id, p.username]));
+  const usernameById = await getProfileUsernameMap(profileIds);
 
   const mapped = requests.map((request) => ({
     id: request.id,
@@ -105,13 +113,9 @@ export async function searchUsers(query: string, currentUserId: string): Promise
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: profiles, error } = await supabase
-    .from("profiles")
-    .select("id, username")
-    .ilike("username", `%${term}%`)
-    .neq("id", currentUserId)
-    .order("username", { ascending: true })
-    .limit(12);
+  const rpcResult = await supabase.rpc("search_profiles_by_username", { p_query: term });
+  const profiles = (rpcResult.data || []).slice(0, 12);
+  const error = rpcResult.error;
 
   if (error || !profiles || profiles.length === 0) {
     return [];

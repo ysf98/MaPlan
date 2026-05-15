@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { PlaceCard } from "@/components/places/PlaceCard";
-import { PlaceFilters, type PlaceCategoryFilter, type PlaceStatusFilter } from "@/components/places/PlaceFilters";
+import { PlaceFilters, type PlaceCategoryFilter, type PlaceSourceFilter, type PlaceStatusFilter } from "@/components/places/PlaceFilters";
 import type { GroupPlace } from "@/lib/places/shared";
 
 type PlacesListProps = {
@@ -14,21 +14,30 @@ type PlacesListProps = {
 export function PlacesList({ groupId, places, canEdit }: PlacesListProps) {
   const [statusFilter, setStatusFilter] = useState<PlaceStatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<PlaceCategoryFilter>("all");
+  const [sourceFilter, setSourceFilter] = useState<PlaceSourceFilter>("all");
 
   const filteredPlaces = useMemo(() => {
     return places.filter((place) => {
       const matchesStatus = statusFilter === "all" || place.status === statusFilter;
       const matchesCategory = categoryFilter === "all" || place.category === categoryFilter;
-      return matchesStatus && matchesCategory;
+      const matchesSource =
+        sourceFilter === "all"
+          ? true
+          : sourceFilter === "none"
+            ? place.source === null
+            : place.source === sourceFilter;
+      return matchesStatus && matchesCategory && matchesSource;
     });
-  }, [categoryFilter, places, statusFilter]);
+  }, [categoryFilter, places, sourceFilter, statusFilter]);
 
   return (
     <section className="space-y-4">
       <PlaceFilters
         category={categoryFilter}
         onCategoryChange={setCategoryFilter}
+        onSourceChange={setSourceFilter}
         onStatusChange={setStatusFilter}
+        source={sourceFilter}
         status={statusFilter}
       />
 
