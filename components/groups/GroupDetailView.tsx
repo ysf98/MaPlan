@@ -12,7 +12,7 @@ import { GroupMap } from "@/components/map/GroupMap";
 import type { GroupDetail, GroupJoinRequestItem } from "@/lib/groups/types";
 import type { GroupMemberPreview } from "@/lib/groups/types";
 import type { GroupInvitationItem } from "@/lib/groupInvitations";
-import { hasValidCoordinates, type GroupPlace } from "@/lib/places/shared";
+import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupDetailViewProps = {
   group: GroupDetail;
@@ -127,7 +127,13 @@ export function GroupDetailView({
 
       <Card className="rounded-3xl">
         <div>
-          <GroupMap canEdit={group.canEditPlaces} groupId={groupId} places={places} />
+          <GroupMap
+            canEdit={group.canEditPlaces}
+            groupId={groupId}
+            onSelectPlace={setSelectedPlaceId}
+            places={places}
+            selectedPlaceId={selectedPlaceId}
+          />
         </div>
       </Card>
 

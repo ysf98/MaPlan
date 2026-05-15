@@ -1,18 +1,28 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useCallback, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { addPlaceAction } from "@/app/groups/[groupId]/actions";
 import type { AddPlaceActionState } from "@/app/groups/[groupId]/actions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { hasValidCoordinates, type GroupPlace } from "@/lib/places/shared";
+import {
+  buildDraftFromRenderedFeature,
+  extractFallbackNameFromRenderedFeatures,
+  resolvePlaceFromMapClick,
+  type GeocodeSearchResult,
+  type MapDraftPlace
+} from "@/lib/map/geocoding";
+import { MapSearchBox } from "@/components/map/MapSearchBox";
+import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 
 type GroupMapProps = {
   groupId: string;
   canEdit: boolean;
   places: GroupPlace[];
+  selectedPlaceId?: string | null;
+  onSelectPlace?: (placeId: string) => void;
 };
 
 const addPlaceInitialState: AddPlaceActionState = {
@@ -20,178 +30,55 @@ const addPlaceInitialState: AddPlaceActionState = {
   success: false
 };
 
-function buildPopupHtml(place: GroupPlace) {
-  return `
-    <div style="min-width: 180px">
-      <p style="margin:0 0 4px;font-weight:600;color:#0f172a;">${place.name}</p>
-      <p style="margin:0;font-size:12px;color:#64748b;">${place.address}</p>
-    </div>
-  `;
+function createPopupNode(place: GroupPlace): HTMLElement {
+  const root = document.createElement("div");
+  root.style.minWidth = "180px";
+
+  const name = document.createElement("p");
+  name.style.margin = "0 0 4px";
+  name.style.fontWeight = "600";
+  name.style.color = "#0f172a";
+  name.textContent = place.name;
+
+  const address = document.createElement("p");
+  address.style.margin = "0";
+  address.style.fontSize = "12px";
+  address.style.color = "#64748b";
+  address.textContent = place.address;
+
+  root.appendChild(name);
+  root.appendChild(address);
+  if (place.city) {
+    const city = document.createElement("p");
+    city.style.margin = "2px 0 0";
+    city.style.fontSize = "12px";
+    city.style.color = "#64748b";
+    city.textContent = place.city;
+    root.appendChild(city);
+  }
+  if (place.category) {
+    const category = document.createElement("p");
+    category.style.margin = "2px 0 0";
+    category.style.fontSize = "11px";
+    category.style.color = "#94a3b8";
+    category.textContent = place.category;
+    root.appendChild(category);
+  }
+
+  return root;
 }
 
-function extractAreaLabel(feature: mapboxgl.MapboxGeoJSONFeature | undefined): string {
-  if (!feature) {
-    return "";
-  }
-
-  const placeFormatted = (feature.properties?.["place_formatted"] as string | undefined)?.trim();
-  if (placeFormatted) {
-    return placeFormatted;
-  }
-
-  const fullAddress = (feature.properties?.["full_address"] as string | undefined)?.trim();
-  if (fullAddress) {
-    return fullAddress;
-  }
-
-  const context = (feature.properties?.["context"] as string | undefined)?.trim();
-  return context || "";
-}
-
-type ReverseGeocodeItem = {
-  name?: string;
-  name_preferred?: string;
-  feature_type?: string;
-  place_formatted?: string;
-  full_address?: string;
-  context?: string;
-  address?: string;
-  locality?: string;
-  place?: string;
-  region?: string;
-};
-
-function splitAddressParts(rawValue: string | undefined): { street: string; city: string } {
-  const raw = (rawValue || "").trim();
-  if (!raw) {
-    return { street: "", city: "" };
-  }
-
-  const parts = raw
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  if (parts.length === 0) {
-    return { street: "", city: "" };
-  }
-
-  if (parts.length === 1) {
-    return { street: parts[0], city: "" };
-  }
-
-  return {
-    street: parts[0],
-    city: parts[1]
-  };
-}
-
-function pickFirstNonEmpty(...values: Array<string | undefined>): string {
-  for (const value of values) {
-    const cleaned = value?.trim();
-    if (cleaned) {
-      return cleaned;
-    }
-  }
-  return "";
-}
-
-async function reverseGeocodePlace(token: string, latitude: number, longitude: number): Promise<{
-  name: string;
-  address: string;
-  city: string;
-}> {
-  const params = new URLSearchParams({
-    longitude: String(longitude),
-    latitude: String(latitude),
-    access_token: token
-  });
-
-  const response = await fetch(`https://api.mapbox.com/search/geocode/v6/reverse?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error("No se pudo obtener informacion del lugar.");
-  }
-
-  const payload = (await response.json()) as { features?: Array<{ properties?: ReverseGeocodeItem }> };
-  const features = payload.features ?? [];
-  const byType = (types: string[]) =>
-    features.find((item) => item.properties?.feature_type && types.includes(item.properties.feature_type))?.properties;
-
-  const poi = byType(["poi"]);
-  const streetFeature = byType(["address", "street", "block"]) ?? features[0]?.properties;
-  const localityFeature = byType(["locality", "place", "district", "region"]) ?? streetFeature;
-
-  const name = pickFirstNonEmpty(poi?.name, poi?.name_preferred, "Sitio en mapa");
-
-  const streetFromStructured = pickFirstNonEmpty(
-    streetFeature?.address,
-    streetFeature?.name_preferred,
-    streetFeature?.name
-  );
-  const streetFromFormatted = splitAddressParts(
-    pickFirstNonEmpty(streetFeature?.full_address, streetFeature?.place_formatted)
-  ).street;
-  const address = pickFirstNonEmpty(streetFromStructured, streetFromFormatted, "Punto en mapa");
-
-  const cityFromStructured = pickFirstNonEmpty(
-    localityFeature?.locality,
-    localityFeature?.place,
-    localityFeature?.name_preferred,
-    localityFeature?.name
-  );
-  const cityFromFormatted = splitAddressParts(
-    pickFirstNonEmpty(localityFeature?.place_formatted, localityFeature?.full_address, localityFeature?.context)
-  ).city;
-  const city = pickFirstNonEmpty(cityFromStructured, cityFromFormatted);
-
-  return { name, address, city };
-}
-
-async function resolvePlaceFromMapClick(
-  token: string,
-  latitude: number,
-  longitude: number,
-  fallbackName?: string
-): Promise<{ name: string; address: string; city: string }> {
-  const resolved = await reverseGeocodePlace(token, latitude, longitude);
-  const safeFallbackName = (fallbackName || "").trim();
-
-  if (resolved.name === "Sitio en mapa" && safeFallbackName) {
-    return {
-      ...resolved,
-      name: safeFallbackName
-    };
-  }
-
-  return resolved;
-}
-
-export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
+export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onSelectPlace }: GroupMapProps) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const searchAbortRef = useRef<AbortController | null>(null);
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; fullAddress: string; latitude: number; longitude: number }>>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
-  const [draftSelection, setDraftSelection] = useState<{
-    latitude: number;
-    longitude: number;
-    name: string;
-    address: string;
-    city: string;
-  } | null>(null);
+  const [draftSelection, setDraftSelection] = useState<MapDraftPlace | null>(null);
   const [addPlaceState, addPlaceFormAction, isAddPlacePending] = useActionState(addPlaceAction, addPlaceInitialState);
 
-  const placesWithCoordinates = useMemo(
-    () => places.filter((place) => hasValidCoordinates(place)),
-    [places]
-  );
-
-  const selectedPlace = useMemo(
+  const placesWithCoordinates = useMemo(() => places.filter((place) => hasValidCoordinates(place)), [places]);
+  const internalSelectedPlace = useMemo(
     () => placesWithCoordinates.find((place) => place.id === selectedPlaceId) ?? null,
     [placesWithCoordinates, selectedPlaceId]
   );
@@ -201,106 +88,6 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
       setDraftSelection(null);
     }
   }, [addPlaceState.success]);
-
-  useEffect(() => {
-    if (!token) {
-      return;
-    }
-
-    const query = searchQuery.trim();
-    if (query.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    const controller = new AbortController();
-    searchAbortRef.current?.abort();
-    searchAbortRef.current = controller;
-
-    const runSearch = async () => {
-      try {
-        setIsSearching(true);
-        const params = new URLSearchParams({
-          q: query,
-          access_token: token,
-          limit: "6",
-          language: "es",
-          autocomplete: "true",
-          types: "poi,address,street,place,locality"
-        });
-        const center = mapRef.current?.getCenter();
-        if (center) {
-          params.set("proximity", `${center.lng},${center.lat}`);
-        }
-        const bounds = mapRef.current?.getBounds();
-        if (bounds) {
-          params.set("bbox", `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`);
-        }
-        let response = await fetch(`https://api.mapbox.com/search/geocode/v6/forward?${params.toString()}`, {
-          signal: controller.signal
-        });
-        if (!response.ok) {
-          const fallbackParams = new URLSearchParams({
-            q: query,
-            access_token: token,
-            limit: "6",
-            language: "es",
-            autocomplete: "true"
-          });
-          response = await fetch(`https://api.mapbox.com/search/geocode/v6/forward?${fallbackParams.toString()}`, {
-            signal: controller.signal
-          });
-        }
-        if (!response.ok) {
-          setSearchResults([]);
-          return;
-        }
-
-        const payload = (await response.json()) as {
-          features?: Array<{
-            id?: string;
-            geometry?: { coordinates?: [number, number] };
-            properties?: { name?: string; full_address?: string; place_formatted?: string };
-          }>;
-        };
-
-        const results =
-          payload.features
-            ?.map((feature) => {
-              const coordinates = feature.geometry?.coordinates;
-              if (!coordinates || coordinates.length < 2) return null;
-              const longitude = coordinates[0];
-              const latitude = coordinates[1];
-              const name = (feature.properties?.name || "").trim();
-              const fullAddress = (feature.properties?.full_address || feature.properties?.place_formatted || "").trim();
-              return {
-                id: feature.id || `${longitude}-${latitude}`,
-                name: name || "Resultado",
-                fullAddress: fullAddress || "Sin direccion",
-                latitude,
-                longitude
-              };
-            })
-            .filter((value): value is { id: string; name: string; fullAddress: string; latitude: number; longitude: number } => Boolean(value)) || [];
-
-        setSearchResults(results);
-      } catch {
-        if (!controller.signal.aborted) {
-          setSearchResults([]);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsSearching(false);
-        }
-      }
-    };
-
-    const timeout = setTimeout(runSearch, 250);
-    return () => {
-      clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [searchQuery, token]);
 
   useEffect(() => {
     if (!mapContainerRef.current || !token) {
@@ -323,10 +110,9 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
       if (!canEdit) {
         return;
       }
-      const renderedFeatures = map.queryRenderedFeatures(event.point);
-      const renderedName = renderedFeatures
-        .map((feature) => (feature.properties?.name as string | undefined)?.trim())
-        .find((value) => Boolean(value));
+
+      const renderedFeatures = map.queryRenderedFeatures(event.point) as Array<{ properties?: Record<string, unknown> }>;
+      const renderedName = extractFallbackNameFromRenderedFeatures(renderedFeatures);
       const latitude = Number(event.lngLat.lat.toFixed(6));
       const longitude = Number(event.lngLat.lng.toFixed(6));
       setIsResolvingLocation(true);
@@ -341,30 +127,11 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
           city: resolved.city
         });
       } catch {
-        const features = renderedFeatures;
-        const featureWithName = features.find((feature) => {
-          const name = (feature.properties?.name as string | undefined)?.trim();
+        const featureWithName = renderedFeatures.find((feature) => {
+          const name = ((feature.properties?.name as string | undefined) || "").trim();
           return Boolean(name);
         });
-        const featureName = (featureWithName?.properties?.name as string | undefined)?.trim();
-        const areaLabel = extractAreaLabel(featureWithName);
-        const fallbackAddress =
-          (featureWithName?.properties?.["address"] as string | undefined)?.trim() ||
-          (featureWithName?.properties?.["name_preferred"] as string | undefined)?.trim() ||
-          "Punto en mapa";
-        const parsedArea = splitAddressParts(areaLabel);
-        const fallbackCity =
-          (featureWithName?.properties?.["place"] as string | undefined)?.trim() ||
-          parsedArea.city ||
-          "";
-
-        setDraftSelection({
-          latitude,
-          longitude,
-          name: featureName || "Sitio en mapa",
-          address: parsedArea.street || fallbackAddress,
-          city: fallbackCity
-        });
+        setDraftSelection(buildDraftFromRenderedFeature(featureWithName, latitude, longitude));
       } finally {
         setIsResolvingLocation(false);
       }
@@ -375,20 +142,17 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
     });
 
     const bounds = new mapboxgl.LngLatBounds();
-
     placesWithCoordinates.forEach((place) => {
       const latitude = place.latitude as number;
       const longitude = place.longitude as number;
-
       const marker = new mapboxgl.Marker({ color: "#14b8a6" })
         .setLngLat([longitude, latitude])
-        .setPopup(new mapboxgl.Popup({ offset: 20 }).setHTML(buildPopupHtml(place)))
+        .setPopup(new mapboxgl.Popup({ offset: 20 }).setDOMContent(createPopupNode(place)))
         .addTo(map);
 
       marker.getElement().addEventListener("click", () => {
-        setSelectedPlaceId(place.id);
+        onSelectPlace?.(place.id);
       });
-
       bounds.extend([longitude, latitude]);
     });
 
@@ -400,80 +164,55 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
       map.remove();
       mapRef.current = null;
     };
-  }, [canEdit, placesWithCoordinates, token]);
+  }, [canEdit, onSelectPlace, placesWithCoordinates, token]);
 
   useEffect(() => {
-    if (!selectedPlace || !mapRef.current) {
+    if (!internalSelectedPlace || !mapRef.current) {
       return;
     }
 
     mapRef.current.flyTo({
-      center: [selectedPlace.longitude as number, selectedPlace.latitude as number],
+      center: [internalSelectedPlace.longitude as number, internalSelectedPlace.latitude as number],
       zoom: Math.max(mapRef.current.getZoom(), 13),
       essential: true
     });
-  }, [selectedPlace]);
+  }, [internalSelectedPlace]);
+
+  const handleSelectSearchResult = useCallback((result: GeocodeSearchResult) => {
+    mapRef.current?.flyTo({
+      center: [result.longitude, result.latitude],
+      zoom: Math.max(mapRef.current?.getZoom() || 0, 14),
+      essential: true
+    });
+  }, []);
+
+  const getMapContext = useCallback(() => {
+    const center = mapRef.current?.getCenter() ?? null;
+    const bounds = mapRef.current?.getBounds() ?? null;
+    return {
+      center: center ? { lng: center.lng, lat: center.lat } : null,
+      bbox: bounds
+        ? {
+            west: bounds.getWest(),
+            south: bounds.getSouth(),
+            east: bounds.getEast(),
+            north: bounds.getNorth()
+          }
+        : null
+    };
+  }, []);
 
   if (!token) {
-    return (
-      <EmptyState
-        title="Falta configurar Mapbox"
-        description="Define NEXT_PUBLIC_MAPBOX_TOKEN para habilitar el mapa."
-      />
-    );
+    return <EmptyState description="Define NEXT_PUBLIC_MAPBOX_TOKEN para habilitar el mapa." title="Falta configurar Mapbox" />;
   }
 
   if (mapError) {
-    return (
-      <EmptyState
-        title="Error cargando el mapa"
-        description={mapError}
-      />
-    );
+    return <EmptyState description={mapError} title="Error cargando el mapa" />;
   }
 
   return (
     <div className="space-y-3">
-      <div className="relative">
-        <input
-          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Buscar bares, restaurantes, poblaciones..."
-          value={searchQuery}
-        />
-        {searchQuery.trim().length >= 2 ? (
-          <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-            {isSearching ? (
-              <p className="px-3 py-2 text-xs text-slate-500">Buscando...</p>
-            ) : searchResults.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-slate-500">Sin resultados.</p>
-            ) : (
-              <ul className="max-h-72 overflow-y-auto">
-                {searchResults.map((result) => (
-                  <li key={result.id}>
-                    <button
-                      className="w-full border-b border-slate-100 px-3 py-2 text-left hover:bg-slate-50"
-                      onClick={() => {
-                        mapRef.current?.flyTo({
-                          center: [result.longitude, result.latitude],
-                          zoom: Math.max(mapRef.current?.getZoom() || 0, 14),
-                          essential: true
-                        });
-                        setSearchQuery(result.name);
-                        setSearchResults([]);
-                      }}
-                      type="button"
-                    >
-                      <p className="text-sm font-medium text-slate-900">{result.name}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{result.fullAddress}</p>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ) : null}
-      </div>
+      <MapSearchBox getMapContext={getMapContext} onSelectResult={handleSelectSearchResult} token={token} />
       <div className="relative h-[420px] w-full overflow-hidden rounded-2xl border border-slate-200">
         <div className="h-full w-full" ref={mapContainerRef} />
         {canEdit && isResolvingLocation ? (
@@ -485,47 +224,22 @@ export function GroupMap({ groupId, canEdit, places }: GroupMapProps) {
         ) : null}
         {canEdit && draftSelection ? (
           <div className="pointer-events-none absolute left-3 right-3 top-3 z-10">
-            <Card className="pointer-events-auto rounded-2xl border-slate-300 bg-white/95 shadow-lg backdrop-blur">
-              <p className="text-sm font-semibold text-slate-900">Quieres guardar este sitio en tu lista?</p>
-              <p className="mt-1 text-xs text-slate-600">{draftSelection.name}</p>
-              <p className="mt-1 text-xs text-slate-500">{draftSelection.address}</p>
-              {draftSelection.city ? <p className="mt-1 text-xs text-slate-500">{draftSelection.city}</p> : null}
-              <form action={addPlaceFormAction} className="mt-3">
-                <input name="groupId" type="hidden" value={groupId} />
-                <input name="latitude" type="hidden" value={String(draftSelection.latitude)} />
-                <input name="longitude" type="hidden" value={String(draftSelection.longitude)} />
-                <input name="source" type="hidden" value="manual" />
-                <input name="name" type="hidden" value={draftSelection.name} />
-                <input name="address" type="hidden" value={draftSelection.address} />
-                <input name="city" type="hidden" value={draftSelection.city} />
-                <div className="flex gap-2">
-                  <Button disabled={isAddPlacePending} size="sm" type="submit">
-                    {isAddPlacePending ? "Guardando..." : "Si, guardar"}
-                  </Button>
-                  <Button onClick={() => setDraftSelection(null)} size="sm" type="button" variant="secondary">
-                    Cancelar
-                  </Button>
-                </div>
-                {addPlaceState.error ? <p className="mt-2 text-sm text-rose-600">{addPlaceState.error}</p> : null}
-              </form>
-            </Card>
+            <MapSaveDraftCard
+              draft={draftSelection}
+              formAction={addPlaceFormAction}
+              groupId={groupId}
+              isPending={isAddPlacePending}
+              onCancel={() => setDraftSelection(null)}
+              state={addPlaceState}
+            />
           </div>
         ) : null}
       </div>
       {placesWithCoordinates.length === 0 ? (
         <Card className="rounded-2xl">
-          <p className="text-sm text-slate-600">
-            El mapa ya esta activo. Cuando anadas lugares con coordenadas, apareceran marcados aqui.
-          </p>
+          <p className="text-sm text-slate-600">El mapa ya esta activo. Cuando anadas lugares con coordenadas, apareceran marcados aqui.</p>
         </Card>
       ) : null}
-      {selectedPlace ? (
-        <Card className="rounded-2xl">
-          <p className="text-sm font-semibold text-slate-900">{selectedPlace.name}</p>
-          <p className="mt-1 text-sm text-slate-500">{selectedPlace.address}</p>
-        </Card>
-      ) : null}
-      {/* No success banner here: the floating confirmation is closed after save */}
     </div>
   );
 }
