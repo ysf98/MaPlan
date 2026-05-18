@@ -217,73 +217,51 @@ export async function getGroupMembersPreviewForUser(userId: string, groupId: str
     return { members: [], allMembers: [], total: 0 };
   }
 
+  const previewRpc = await supabase.rpc("get_group_members_with_profiles", { p_group_id: groupId, p_limit: 8 });
+  const allRpc = await supabase.rpc("get_group_members_with_profiles", { p_group_id: groupId, p_limit: null });
+
+  if (!previewRpc.error && !allRpc.error) {
+    const members =
+      (previewRpc.data || []).map((member) => ({
+        userId: member.user_id,
+        username: member.username ?? null,
+        avatarUrl: member.avatar_url ?? null,
+        role: member.role as "owner" | "member"
+      })) || [];
+
+    const allMembers =
+      (allRpc.data || []).map((member) => ({
+        userId: member.user_id,
+        username: member.username ?? null,
+        avatarUrl: member.avatar_url ?? null,
+        role: member.role as "owner" | "member"
+      })) || [];
+
+    return { members, allMembers, total: allMembers.length };
+  }
+
   const countResult = await supabase
     .from("group_members")
     .select("id", { count: "exact", head: true })
     .eq("group_id", groupId);
   const total = countResult.count ?? 0;
-
-  const membersResult = await supabase
+  const ownMemberResult = await supabase
     .from("group_members")
-    .select("user_id, role, created_at")
+    .select("user_id, role")
     .eq("group_id", groupId)
-    .order("created_at", { ascending: true })
-    .limit(8);
-
-  if (membersResult.error || !membersResult.data || membersResult.data.length === 0) {
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (ownMemberResult.error || !ownMemberResult.data) {
     return { members: [], allMembers: [], total };
   }
 
-  const memberIds = membersResult.data.map((member) => member.user_id);
-  const profilesResult = await supabase.rpc("get_profiles_by_ids", { p_ids: memberIds });
-
-  const profileById = new Map<string, { username: string | null; avatar_url: string | null }>();
-  (profilesResult.data || []).forEach((profile) => {
-    profileById.set(profile.id, {
-      username: profile.username,
-      avatar_url: profile.avatar_url
-    });
-  });
-
-  const members = membersResult.data.map((member) => {
-    const profile = profileById.get(member.user_id);
-    return {
-      userId: member.user_id,
-      username: profile?.username ?? null,
-      avatarUrl: profile?.avatar_url ?? null,
-      role: member.role
-    };
-  });
-
-  const allMembersResult = await supabase
-    .from("group_members")
-    .select("user_id, role, created_at")
-    .eq("group_id", groupId)
-    .order("created_at", { ascending: true });
-
-  if (allMembersResult.error || !allMembersResult.data || allMembersResult.data.length === 0) {
-    return { members, allMembers: members, total };
-  }
-
-  const allMemberIds = allMembersResult.data.map((member) => member.user_id);
-  const allProfilesResult = await supabase.rpc("get_profiles_by_ids", { p_ids: allMemberIds });
-  const allProfileById = new Map<string, { username: string | null; avatar_url: string | null }>();
-  (allProfilesResult.data || []).forEach((profile) => {
-    allProfileById.set(profile.id, {
-      username: profile.username,
-      avatar_url: profile.avatar_url
-    });
-  });
-
-  const allMembers = allMembersResult.data.map((member) => {
-    const profile = allProfileById.get(member.user_id);
-    return {
-      userId: member.user_id,
-      username: profile?.username ?? null,
-      avatarUrl: profile?.avatar_url ?? null,
-      role: member.role
-    };
-  });
-
-  return { members, allMembers, total };
+  const ownProfilesResult = await supabase.rpc("get_profiles_by_ids", { p_ids: [userId] });
+  const ownProfile = (ownProfilesResult.data || [])[0];
+  const ownMember = {
+    userId,
+    username: ownProfile?.username ?? null,
+    avatarUrl: ownProfile?.avatar_url ?? null,
+    role: ownMemberResult.data.role
+  };
+  return { members: [ownMember], allMembers: [ownMember], total };
 }

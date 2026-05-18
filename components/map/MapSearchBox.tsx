@@ -5,7 +5,7 @@ import { forwardGeocode, type GeocodeSearchResult } from "@/lib/map/geocoding";
 
 type MapSearchBoxProps = {
   token: string;
-  getMapContext: () => { center: { lng: number; lat: number } | null; bbox: { west: number; south: number; east: number; north: number } | null };
+  getMapContext: () => { center: { lng: number; lat: number } | null };
   onSelectResult: (result: GeocodeSearchResult) => void;
 };
 
@@ -17,7 +17,7 @@ export function MapSearchBox({ token, getMapContext, onSelectResult }: MapSearch
 
   useEffect(() => {
     const query = searchQuery.trim();
-    if (query.length < 2) {
+    if (query.length < 3) {
       setSearchResults([]);
       return;
     }
@@ -32,7 +32,6 @@ export function MapSearchBox({ token, getMapContext, onSelectResult }: MapSearch
         const mapContext = getMapContext();
         const results = await forwardGeocode(token, query, {
           center: mapContext.center,
-          bbox: mapContext.bbox,
           signal: controller.signal
         });
         setSearchResults(results);
@@ -62,12 +61,12 @@ export function MapSearchBox({ token, getMapContext, onSelectResult }: MapSearch
         placeholder="Buscar bares, restaurantes, poblaciones..."
         value={searchQuery}
       />
-      {searchQuery.trim().length >= 2 ? (
+      {searchQuery.trim().length >= 3 ? (
         <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
           {isSearching ? (
             <p className="px-3 py-2 text-xs text-slate-500">Buscando...</p>
           ) : searchResults.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-slate-500">Sin resultados.</p>
+            <p className="px-3 py-2 text-xs text-slate-500">No encontramos resultados cercanos. Prueba otro termino.</p>
           ) : (
             <ul className="max-h-72 overflow-y-auto">
               {searchResults.map((result) => (

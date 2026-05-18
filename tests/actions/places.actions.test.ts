@@ -92,6 +92,7 @@ describe("places server actions", () => {
       groupId: "11111111-1111-4111-8111-111111111111",
       placeId: "22222222-2222-4222-8222-222222222222",
       address: "Madrid Centro",
+      city: null,
       latitude: 40.4168,
       longitude: -3.7038
     });

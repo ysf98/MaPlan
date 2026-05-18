@@ -184,21 +184,19 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
       zoom: Math.max(mapRef.current?.getZoom() || 0, 14),
       essential: true
     });
+    setDraftSelection({
+      latitude: result.latitude,
+      longitude: result.longitude,
+      name: result.name,
+      address: result.fullAddress,
+      city: result.city
+    });
   }, []);
 
   const getMapContext = useCallback(() => {
     const center = mapRef.current?.getCenter() ?? null;
-    const bounds = mapRef.current?.getBounds() ?? null;
     return {
-      center: center ? { lng: center.lng, lat: center.lat } : null,
-      bbox: bounds
-        ? {
-            west: bounds.getWest(),
-            south: bounds.getSouth(),
-            east: bounds.getEast(),
-            north: bounds.getNorth()
-          }
-        : null
+      center: center ? { lng: center.lng, lat: center.lat } : null
     };
   }, []);
 

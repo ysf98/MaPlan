@@ -391,6 +391,45 @@ $$;
 
 grant execute on function public.approve_group_join_request(uuid, uuid) to authenticated;
 
+-- Safe member listing for UI previews:
+-- members can read roster data of groups they belong to, without broadening
+-- direct SELECT policies on group_members.
+create or replace function public.get_group_members_with_profiles(p_group_id uuid, p_limit integer default null)
+returns table (
+  user_id uuid,
+  role text,
+  created_at timestamptz,
+  username text,
+  avatar_url text
+)
+language sql
+security definer
+set search_path = public
+as $$
+  with authorized as (
+    select exists (
+      select 1
+      from public.group_members gm_auth
+      where gm_auth.group_id = p_group_id
+        and gm_auth.user_id = auth.uid()
+    ) as ok
+  )
+  select
+    gm.user_id,
+    gm.role,
+    gm.created_at,
+    p.username,
+    p.avatar_url
+  from public.group_members gm
+  join authorized a on a.ok
+  left join public.profiles p on p.id = gm.user_id
+  where gm.group_id = p_group_id
+  order by gm.created_at asc
+  limit case when p_limit is null or p_limit <= 0 then null else p_limit end;
+$$;
+
+grant execute on function public.get_group_members_with_profiles(uuid, integer) to authenticated;
+
 -- If invitations table exists, keep visibility for invited users on groups
 -- so invitation UIs can show group names (not only IDs) after re-running this file.
 do $$

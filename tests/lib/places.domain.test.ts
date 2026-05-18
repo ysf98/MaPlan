@@ -20,9 +20,23 @@ describe("places domain", () => {
     vi.clearAllMocks();
   });
 
+  function createNoExistingPlaceQueryMock() {
+    const chain = {
+      eq: vi.fn(),
+      ilike: vi.fn(),
+      is: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+    };
+    chain.eq.mockReturnValue(chain);
+    chain.ilike.mockReturnValue(chain);
+    chain.is.mockReturnValue(chain);
+    return chain;
+  }
+
   it("member puede crear lugar si tiene permiso", async () => {
     canEditPlacesMock.mockResolvedValue(true);
     const insertMock = vi.fn().mockResolvedValue({ error: null });
+    const existingPlaceQuery = createNoExistingPlaceQueryMock();
     createSupabaseServerClientMock.mockResolvedValue({
       from: vi.fn((table: string) => {
         if (table === "categories") {
@@ -39,6 +53,7 @@ describe("places domain", () => {
 
         if (table === "places") {
           return {
+            select: vi.fn(() => existingPlaceQuery),
             insert: insertMock
           };
         }
@@ -62,6 +77,7 @@ describe("places domain", () => {
   it("owner (canEdit true) puede crear lugar", async () => {
     canEditPlacesMock.mockResolvedValue(true);
     const insertMock = vi.fn().mockResolvedValue({ error: null });
+    const existingPlaceQuery = createNoExistingPlaceQueryMock();
     createSupabaseServerClientMock.mockResolvedValue({
       from: vi.fn((table: string) => {
         if (table === "categories") {
@@ -78,6 +94,7 @@ describe("places domain", () => {
 
         if (table === "places") {
           return {
+            select: vi.fn(() => existingPlaceQuery),
             insert: insertMock
           };
         }
