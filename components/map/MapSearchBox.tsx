@@ -6,16 +6,21 @@ import { searchGooglePlaces, type GooglePlaceSuggestion } from "@/lib/map/google
 type MapSearchBoxProps = {
   getMapContext: () => { center: { lng: number; lat: number } | null };
   onSelectResult: (result: GooglePlaceSuggestion) => Promise<void> | void;
+  onManualCreate: (payload: { name: string; address: string; city: string }) => void;
   closeSignal?: number;
 };
 
-export function MapSearchBox({ getMapContext, onSelectResult, closeSignal = 0 }: MapSearchBoxProps) {
+export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, closeSignal = 0 }: MapSearchBoxProps) {
   const searchAbortRef = useRef<AbortController | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<GooglePlaceSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
+  const [isManualFormOpen, setIsManualFormOpen] = useState(false);
+  const [manualName, setManualName] = useState("");
+  const [manualAddress, setManualAddress] = useState("");
+  const [manualCity, setManualCity] = useState("");
 
   const getTypeLabel = (primaryType: string | null, placeName: string): string => {
     const normalizedName = placeName
@@ -165,6 +170,7 @@ export function MapSearchBox({ getMapContext, onSelectResult, closeSignal = 0 }:
   useEffect(() => {
     setIsResultsOpen(false);
     setSearchResults([]);
+    setIsManualFormOpen(false);
   }, [closeSignal]);
 
   return (
@@ -242,6 +248,61 @@ export function MapSearchBox({ getMapContext, onSelectResult, closeSignal = 0 }:
               ))}
             </ul>
           )}
+          <div className="border-t border-slate-100 px-3 py-2">
+            <button
+              className="text-xs font-medium text-teal-700 hover:text-teal-800"
+              onClick={() => {
+                setIsManualFormOpen((value) => !value);
+                setManualName(searchQuery.trim());
+              }}
+              type="button"
+            >
+              ¿No aparece? Añadir manualmente
+            </button>
+            {isManualFormOpen ? (
+              <form
+                className="mt-2 space-y-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  onManualCreate({
+                    name: manualName.trim(),
+                    address: manualAddress.trim(),
+                    city: manualCity.trim()
+                  });
+                  setIsManualFormOpen(false);
+                  setIsResultsOpen(false);
+                  setSearchResults([]);
+                }}
+              >
+                <input
+                  className="h-9 w-full rounded-lg border border-slate-200 px-2 text-xs text-slate-900"
+                  onChange={(event) => setManualName(event.target.value)}
+                  placeholder="Nombre"
+                  required
+                  value={manualName}
+                />
+                <input
+                  className="h-9 w-full rounded-lg border border-slate-200 px-2 text-xs text-slate-900"
+                  onChange={(event) => setManualAddress(event.target.value)}
+                  placeholder="Direccion"
+                  required
+                  value={manualAddress}
+                />
+                <input
+                  className="h-9 w-full rounded-lg border border-slate-200 px-2 text-xs text-slate-900"
+                  onChange={(event) => setManualCity(event.target.value)}
+                  placeholder="Poblacion"
+                  value={manualCity}
+                />
+                <button
+                  className="h-8 rounded-lg bg-teal-600 px-3 text-xs font-semibold text-white hover:bg-teal-700"
+                  type="submit"
+                >
+                  Crear borrador manual
+                </button>
+              </form>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </div>

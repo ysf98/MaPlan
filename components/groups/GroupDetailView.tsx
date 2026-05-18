@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AddPlaceForm } from "@/components/places/AddPlaceForm";
 import { PlaceCard } from "@/components/places/PlaceCard";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { Button } from "@/components/ui/Button";
@@ -49,7 +48,6 @@ export function GroupDetailView({
   groupInvitations,
   totalFriendsCount
 }: GroupDetailViewProps) {
-  const [showAddPlaceForm, setShowAddPlaceForm] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const useStackedMembers = membersPreview.length >= 4;
@@ -108,22 +106,6 @@ export function GroupDetailView({
           />
         </div>
       </Card>
-
-      <Card className="rounded-3xl">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Mapa del grupo</h2>
-            <p className="mt-1 text-sm text-slate-500">Visualiza lugares con coordenadas y selecciona marcadores para ver detalle.</p>
-          </div>
-          {group.canEditPlaces ? (
-            <Button onClick={() => setShowAddPlaceForm((value) => !value)} type="button">
-              {showAddPlaceForm ? "Cerrar formulario" : "Anadir lugar"}
-            </Button>
-          ) : null}
-        </div>
-      </Card>
-
-      {showAddPlaceForm && group.canEditPlaces ? <AddPlaceForm groupId={groupId} /> : null}
 
       <Card className="rounded-3xl">
         <div>
