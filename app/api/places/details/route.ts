@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { GooglePlaceFeature } from "@/lib/map/googlePlaces";
+import { pickCityFromComponents, pickStreetFromComponents, splitAddressParts } from "@/lib/map/addressParsing";
 
 type GooglePlaceDetailsResult = {
   place_id?: string;
@@ -10,12 +11,7 @@ type GooglePlaceDetailsResult = {
     short_name?: string;
     types?: string[];
   }>;
-  geometry?: {
-    location?: {
-      lat?: number;
-      lng?: number;
-    };
-  };
+  geometry?: { location?: { lat?: number; lng?: number } };
   business_status?: string;
 };
 
@@ -24,53 +20,8 @@ type GooglePlaceDetailsResponse = {
   status?: string;
 };
 
-function splitAddressParts(rawValue: string | undefined): { street: string; city: string } {
-  const raw = (rawValue || "").trim();
-  if (!raw) return { street: "", city: "" };
-  const parts = raw
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  if (parts.length === 0) return { street: "", city: "" };
-  if (parts.length === 1) return { street: parts[0], city: "" };
-  return { street: parts[0], city: parts[1] };
-}
-
 function buildGoogleMapsUrl(placeId: string): string {
   return `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(placeId)}`;
-}
-
-function pickCityFromComponents(components: GooglePlaceDetailsResult["address_components"]): string {
-  if (!components || components.length === 0) {
-    return "";
-  }
-  const preferredTypes = [
-    "locality",
-    "postal_town",
-    "administrative_area_level_2",
-    "administrative_area_level_1"
-  ];
-  for (const type of preferredTypes) {
-    const match = components.find((component) => (component.types || []).includes(type));
-    const value = (match?.long_name || "").trim();
-    if (value) {
-      return value;
-    }
-  }
-  return "";
-}
-
-function pickStreetFromComponents(
-  components: GooglePlaceDetailsResult["address_components"],
-  fallbackStreet: string
-): string {
-  if (!components || components.length === 0) {
-    return fallbackStreet;
-  }
-  const route = (components.find((component) => (component.types || []).includes("route"))?.long_name || "").trim();
-  const streetNumber = (components.find((component) => (component.types || []).includes("street_number"))?.long_name || "").trim();
-  const constructed = `${route} ${streetNumber}`.trim();
-  return constructed || fallbackStreet;
 }
 
 export async function POST(request: Request) {
@@ -122,7 +73,7 @@ export async function POST(request: Request) {
     externalPlaceId: placeId,
     provider: "google_places",
     name: (result.name || "").trim() || "Resultado",
-    address: streetFromComponents || "Sin dirección",
+    address: streetFromComponents || "Sin direccion",
     city: cityFromComponents || parts.city || "",
     latitude,
     longitude,

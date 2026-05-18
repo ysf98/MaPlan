@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
 import { normalizeSearchQuery, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
+import {
+  extractCityFromFormattedAddress,
+  extractProvinceFromFormattedAddress,
+  splitAddressParts,
+  stripPostalCodes
+} from "@/lib/map/addressParsing";
 
 type GoogleTextSearchPlace = {
   place_id?: string;
   name?: string;
   formatted_address?: string;
-  geometry?: {
-    location?: {
-      lat?: number;
-      lng?: number;
-    };
-  };
+  geometry?: { location?: { lat?: number; lng?: number } };
   business_status?: string;
   types?: string[];
 };
@@ -19,89 +20,6 @@ type GoogleTextSearchResponse = {
   results?: GoogleTextSearchPlace[];
   status?: string;
 };
-
-function splitAddressParts(rawValue: string | undefined): { street: string; city: string } {
-  const raw = (rawValue || "").trim();
-  if (!raw) return { street: "", city: "" };
-  const parts = raw
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  if (parts.length === 0) return { street: "", city: "" };
-  if (parts.length === 1) return { street: parts[0], city: "" };
-  return { street: parts[0], city: parts[1] };
-}
-
-function stripPostalCodes(value: string): string {
-  return value.replace(/\b\d{4,6}\b/g, "").replace(/\s{2,}/g, " ").replace(/\s+,/g, ",").trim();
-}
-
-function extractCityFromFormattedAddress(formattedAddress: string): string {
-  const parts = formattedAddress
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  if (parts.length === 0) return "";
-  if (parts.length === 1) return "";
-
-  // Typical ES format:
-  // - "Calle X, 10, 28013 Madrid, España"
-  // - "Calle X, 10, 46800 Xàtiva, Valencia, España"
-  // We prioritize the segment that includes postal code + locality.
-  const postalLocalityPart = parts.find((part) => /\b\d{4,6}\b/.test(part));
-  if (postalLocalityPart) {
-    const locality = postalLocalityPart.replace(/\b\d{4,6}\b/g, "").trim();
-    if (locality) {
-      return locality;
-    }
-  }
-
-  // Otherwise, fallback to the part before country (often province/city).
-  const countryCandidates = ["espana", "españa", "spain"];
-  const normalizedParts = parts.map((part) =>
-    part
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-  );
-  const countryIndex = normalizedParts.findIndex((part) => countryCandidates.some((country) => part === country));
-
-  const cityCandidateIndex = countryIndex > 0 ? countryIndex - 1 : parts.length - 1;
-  const cityCandidate = stripPostalCodes(parts[cityCandidateIndex] || "");
-  if (cityCandidate) {
-    return cityCandidate;
-  }
-
-  const fallback = parts[1] || "";
-  return stripPostalCodes(fallback);
-}
-
-function extractProvinceFromFormattedAddress(formattedAddress: string): string {
-  const parts = formattedAddress
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  if (parts.length < 2) return "";
-
-  // "..., 46800 Xàtiva, Valencia, España" -> province: "Valencia"
-  const countryCandidates = ["espana", "españa", "spain"];
-  const normalizedParts = parts.map((part) =>
-    part
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-  );
-  const countryIndex = normalizedParts.findIndex((part) => countryCandidates.some((country) => part === country));
-  if (countryIndex >= 2) {
-    const province = stripPostalCodes(parts[countryIndex - 1] || "");
-    if (province) return province;
-  }
-
-  // Fallback: last meaningful segment
-  const fallback = stripPostalCodes(parts[parts.length - 1] || "");
-  return fallback;
-}
 
 function buildGoogleMapsUrl(placeId: string): string {
   return `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(placeId)}`;
@@ -160,7 +78,7 @@ export async function POST(request: Request) {
       const parts = splitAddressParts(fullAddress);
       const parsedCity = extractCityFromFormattedAddress(fullAddress);
       const parsedProvince = extractProvinceFromFormattedAddress(fullAddress);
-      const cleanAddress = stripPostalCodes(parts.street || fullAddress || "Sin dirección");
+      const cleanAddress = stripPostalCodes(parts.street || fullAddress || "Sin direccion");
       return {
         externalPlaceId,
         provider: "google_places",

@@ -16,6 +16,7 @@ import {
 import { MapSearchBox } from "@/components/map/MapSearchBox";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { getGooglePlaceDetails, searchGooglePlaces, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
+import { inferCategoryFromSuggestion } from "@/lib/map/placeClassification";
 
 type GroupMapProps = {
   groupId: string;
@@ -68,37 +69,6 @@ function createPopupNode(place: GroupPlace): HTMLElement {
   return root;
 }
 
-function inferCategoryFromSuggestion(result: GooglePlaceSuggestion): string {
-  const primaryType = (result.primaryType || "").toLowerCase();
-  const name = result.name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-
-  if (primaryType.includes("cafe") || primaryType.includes("bakery") || name.includes("cafe")) return "Cafeteria";
-  if (
-    primaryType.includes("restaurant") ||
-    primaryType.includes("meal_takeaway") ||
-    primaryType.includes("meal_delivery") ||
-    primaryType.includes("food") ||
-    name.includes("restaurante") ||
-    name.includes("burger") ||
-    name.includes("pizza")
-  ) {
-    return "Comer";
-  }
-  if (primaryType.includes("bar") || primaryType.includes("night_club") || name.includes("discoteca")) return "Fiesta";
-  if (
-    primaryType.includes("store") ||
-    primaryType.includes("supermarket") ||
-    primaryType.includes("shopping_mall") ||
-    primaryType.includes("convenience_store")
-  ) {
-    return "Compras";
-  }
-  return "Otros";
-}
-
 export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onSelectPlace }: GroupMapProps) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -113,6 +83,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   const [linkSearchValue, setLinkSearchValue] = useState("");
   const [linkResults, setLinkResults] = useState<GooglePlaceSuggestion[]>([]);
   const [isLinkSearching, setIsLinkSearching] = useState(false);
+  const wasAddPlacePendingRef = useRef(false);
 
   const placesWithCoordinates = useMemo(() => places.filter((place) => hasValidCoordinates(place)), [places]);
   const internalSelectedPlace = useMemo(
@@ -121,13 +92,14 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   );
 
   useEffect(() => {
-    if (addPlaceState.success) {
+    if (wasAddPlacePendingRef.current && !isAddPlacePending && addPlaceState.success) {
       setDraftSelection(null);
       selectedSearchMarkerRef.current?.remove();
       selectedSearchMarkerRef.current = null;
       setSearchCloseSignal((value) => value + 1);
     }
-  }, [addPlaceState.success]);
+    wasAddPlacePendingRef.current = isAddPlacePending;
+  }, [addPlaceState.success, isAddPlacePending]);
 
   useEffect(() => {
     if (!mapContainerRef.current || !token) {

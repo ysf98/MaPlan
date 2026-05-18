@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { searchGooglePlaces, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
+import { getPlaceTypeLabel } from "@/lib/map/placeClassification";
 
 type MapSearchBoxProps = {
   getMapContext: () => { center: { lng: number; lat: number } | null };
@@ -21,104 +22,6 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
   const [manualName, setManualName] = useState("");
   const [manualAddress, setManualAddress] = useState("");
   const [manualCity, setManualCity] = useState("");
-
-  const getTypeLabel = (primaryType: string | null, placeName: string): string => {
-    const normalizedName = placeName
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-
-    const restaurantNameHints = [
-      "restaurante",
-      "restaurant",
-      "pizzeria",
-      "pizza",
-      "burger",
-      "mcdonald",
-      "mc donald",
-      "burger king",
-      "kfc",
-      "telepizza",
-      "domino",
-      "domino's",
-      "taco bell",
-      "popeyes",
-      "subway",
-      "foster",
-      "foster's",
-      "kebab",
-      "tapas",
-      "braseria",
-      "asador",
-      "marisqueria",
-      "hamburgueseria"
-    ];
-    const foodNameHints = ["comida", "take away", "takeaway", "fast food"];
-    const sportsNameHints = [
-      "padel",
-      "pádel",
-      "polideportivo",
-      "poliesportiu",
-      "gimnasio",
-      "gym",
-      "fitness",
-      "crossfit",
-      "piscina",
-      "tenis",
-      "futbol",
-      "fútbol",
-      "baloncesto",
-      "deporte"
-    ];
-
-    if (!primaryType) return "Lugar";
-    if (primaryType.includes("restaurant") || primaryType.includes("meal_takeaway") || primaryType.includes("meal_delivery")) {
-      return "Restaurante";
-    }
-    if (primaryType.includes("food")) return "Comida";
-    if (primaryType.includes("bar")) return "Bar";
-    if (primaryType.includes("night_club")) return "Discoteca";
-    if (primaryType.includes("cafe") || primaryType.includes("bakery")) return "Cafetería";
-    if (
-      primaryType.includes("store") ||
-      primaryType.includes("supermarket") ||
-      primaryType.includes("shopping_mall") ||
-      primaryType.includes("convenience_store")
-    ) {
-      return "Comercio";
-    }
-    if (
-      primaryType.includes("gym") ||
-      primaryType.includes("sports_complex") ||
-      primaryType.includes("stadium") ||
-      primaryType.includes("swimming_pool") ||
-      primaryType.includes("sports")
-    ) {
-      return "Deporte";
-    }
-    if (primaryType.includes("locality")) return "Localidad";
-    if (primaryType.includes("route") || primaryType.includes("street_address")) return "Direccion";
-    if (primaryType.includes("point_of_interest")) return "POI";
-    if (primaryType.includes("establishment")) {
-      if (sportsNameHints.some((hint) => normalizedName.includes(hint))) {
-        if (normalizedName.includes("padel") || normalizedName.includes("pádel")) {
-          return "Pádel";
-        }
-        if (normalizedName.includes("gym") || normalizedName.includes("gimnasio") || normalizedName.includes("fitness")) {
-          return "Gimnasio";
-        }
-        return "Deporte";
-      }
-      if (restaurantNameHints.some((hint) => normalizedName.includes(hint))) {
-        return "Restaurante";
-      }
-      if (foodNameHints.some((hint) => normalizedName.includes(hint))) {
-        return "Comida";
-      }
-      return "Sitio";
-    }
-    return "Lugar";
-  };
 
   const getBusinessStatusLabel = (businessStatus: string | null): string | null => {
     if (!businessStatus) return null;
@@ -196,13 +99,14 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
           ) : isSelecting ? (
             <p className="px-3 py-2 text-xs text-slate-500">Cargando lugar...</p>
           ) : searchResults.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-slate-500">No encontramos sitios con esa búsqueda cerca de esta zona.</p>
+            <p className="px-3 py-2 text-xs text-slate-500">No encontramos sitios con esa busqueda cerca de esta zona.</p>
           ) : (
             <ul className="max-h-72 overflow-y-auto">
               {searchResults.map((result) => (
                 <li key={result.externalPlaceId}>
                   <button
                     className="w-full border-b border-slate-100 px-3 py-2 text-left hover:bg-slate-50"
+                    disabled={isSelecting}
                     onClick={async () => {
                       try {
                         setIsSelecting(true);
@@ -214,7 +118,6 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
                         setIsSelecting(false);
                       }
                     }}
-                    disabled={isSelecting}
                     type="button"
                   >
                     {(() => {
@@ -235,7 +138,7 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
                           <p className="text-sm font-medium text-slate-900">
                             {result.name}
                             <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                              {getTypeLabel(result.primaryType, result.name)}
+                              {getPlaceTypeLabel(result.primaryType, result.name, result.address)}
                             </span>
                           </p>
                           <p className="mt-0.5 text-xs text-slate-500">{displayAddress}</p>
@@ -294,10 +197,7 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
                   placeholder="Poblacion"
                   value={manualCity}
                 />
-                <button
-                  className="h-8 rounded-lg bg-teal-600 px-3 text-xs font-semibold text-white hover:bg-teal-700"
-                  type="submit"
-                >
+                <button className="h-8 rounded-lg bg-teal-600 px-3 text-xs font-semibold text-white hover:bg-teal-700" type="submit">
                   Crear borrador manual
                 </button>
               </form>

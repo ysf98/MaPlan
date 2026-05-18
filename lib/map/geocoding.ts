@@ -1,3 +1,6 @@
+import { splitAddressParts } from "@/lib/map/addressParsing";
+export { splitAddressParts } from "@/lib/map/addressParsing";
+
 type ReverseGeocodeItem = {
   name?: string;
   name_preferred?: string;
@@ -40,26 +43,6 @@ export function pickFirstNonEmpty(...values: Array<string | undefined>): string 
     }
   }
   return "";
-}
-
-export function splitAddressParts(rawValue: string | undefined): { street: string; city: string } {
-  const raw = (rawValue || "").trim();
-  if (!raw) {
-    return { street: "", city: "" };
-  }
-
-  const parts = raw
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  if (parts.length === 0) {
-    return { street: "", city: "" };
-  }
-  if (parts.length === 1) {
-    return { street: parts[0], city: "" };
-  }
-  return { street: parts[0], city: parts[1] };
 }
 
 function byType(features: GeocodingFeature[], types: string[]): ReverseGeocodeItem | undefined {
