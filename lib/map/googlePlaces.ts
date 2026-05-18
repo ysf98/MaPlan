@@ -6,6 +6,7 @@ export type GooglePlaceSuggestion = {
   name: string;
   address: string;
   city: string;
+  province: string;
   latitude: number;
   longitude: number;
   googleMapsUrl: string | null;

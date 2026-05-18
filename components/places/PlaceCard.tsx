@@ -64,7 +64,6 @@ export function PlaceCard({ groupId, place, canEdit, canDelete }: PlaceCardProps
       <h3 className="mt-3 text-lg font-semibold text-slate-900">{place.name}</h3>
       <p className="mt-1 text-sm text-slate-600">{place.address}</p>
       {place.city ? <p className="mt-1 text-sm text-slate-500">{place.city}</p> : null}
-      {place.provider ? <p className="mt-1 text-xs text-slate-500">Proveedor: {place.provider}</p> : null}
       {place.businessStatus ? <p className="mt-1 text-xs text-slate-500">Estado negocio: {place.businessStatus}</p> : null}
       {place.notes ? <p className="mt-2 text-sm text-slate-500">{place.notes}</p> : null}
       {place.originalUrl ? (

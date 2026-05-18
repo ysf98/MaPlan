@@ -68,13 +68,46 @@ function createPopupNode(place: GroupPlace): HTMLElement {
   return root;
 }
 
+function inferCategoryFromSuggestion(result: GooglePlaceSuggestion): string {
+  const primaryType = (result.primaryType || "").toLowerCase();
+  const name = result.name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (primaryType.includes("cafe") || primaryType.includes("bakery") || name.includes("cafe")) return "Cafeteria";
+  if (
+    primaryType.includes("restaurant") ||
+    primaryType.includes("meal_takeaway") ||
+    primaryType.includes("meal_delivery") ||
+    primaryType.includes("food") ||
+    name.includes("restaurante") ||
+    name.includes("burger") ||
+    name.includes("pizza")
+  ) {
+    return "Comer";
+  }
+  if (primaryType.includes("bar") || primaryType.includes("night_club") || name.includes("discoteca")) return "Fiesta";
+  if (
+    primaryType.includes("store") ||
+    primaryType.includes("supermarket") ||
+    primaryType.includes("shopping_mall") ||
+    primaryType.includes("convenience_store")
+  ) {
+    return "Compras";
+  }
+  return "Otros";
+}
+
 export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onSelectPlace }: GroupMapProps) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const selectedSearchMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
   const [draftSelection, setDraftSelection] = useState<MapDraftPlace | null>(null);
+  const [searchCloseSignal, setSearchCloseSignal] = useState(0);
   const [addPlaceState, addPlaceFormAction, isAddPlacePending] = useActionState(addPlaceAction, addPlaceInitialState);
 
   const placesWithCoordinates = useMemo(() => places.filter((place) => hasValidCoordinates(place)), [places]);
@@ -86,6 +119,9 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   useEffect(() => {
     if (addPlaceState.success) {
       setDraftSelection(null);
+      selectedSearchMarkerRef.current?.remove();
+      selectedSearchMarkerRef.current = null;
+      setSearchCloseSignal((value) => value + 1);
     }
   }, [addPlaceState.success]);
 
@@ -124,7 +160,8 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
           longitude,
           name: resolved.name,
           address: resolved.address,
-          city: resolved.city
+          city: resolved.city,
+          category: "Otros"
         });
       } catch {
         const featureWithName = renderedFeatures.find((feature) => {
@@ -161,6 +198,8 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
     }
 
     return () => {
+      selectedSearchMarkerRef.current?.remove();
+      selectedSearchMarkerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -184,22 +223,38 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
       return;
     }
 
-    mapRef.current?.flyTo({
-      center: [resolved.longitude, resolved.latitude],
-      zoom: Math.max(mapRef.current?.getZoom() || 0, 14),
-      essential: true
-    });
-
-    setDraftSelection({
+    const nextDraft: MapDraftPlace = {
       latitude: resolved.latitude,
       longitude: resolved.longitude,
       name: resolved.name,
       address: resolved.address,
       city: resolved.city,
+      category: inferCategoryFromSuggestion(result),
       provider: resolved.provider,
       externalPlaceId: resolved.externalPlaceId,
       googleMapsUrl: resolved.googleMapsUrl,
       businessStatus: resolved.businessStatus
+    };
+
+    const map = mapRef.current;
+    if (!map) {
+      setDraftSelection(nextDraft);
+      return;
+    }
+
+    setDraftSelection(null);
+    map.flyTo({
+      center: [resolved.longitude, resolved.latitude],
+      zoom: Math.max(map.getZoom(), 14),
+      essential: true
+    });
+    selectedSearchMarkerRef.current?.remove();
+    selectedSearchMarkerRef.current = new mapboxgl.Marker({ color: "#f97316" })
+      .setLngLat([resolved.longitude, resolved.latitude])
+      .setPopup(new mapboxgl.Popup({ offset: 20 }).setText(resolved.name))
+      .addTo(map);
+    map.once("moveend", () => {
+      setDraftSelection(nextDraft);
     });
   }, []);
 
@@ -220,7 +275,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
 
   return (
     <div className="space-y-3">
-      <MapSearchBox getMapContext={getMapContext} onSelectResult={handleSelectSearchResult} />
+      <MapSearchBox closeSignal={searchCloseSignal} getMapContext={getMapContext} onSelectResult={handleSelectSearchResult} />
       <div className="relative h-[420px] w-full overflow-hidden rounded-2xl border border-slate-200">
         <div className="h-full w-full" ref={mapContainerRef} />
         {canEdit && isResolvingLocation ? (
@@ -231,18 +286,38 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
           </div>
         ) : null}
         {canEdit && draftSelection ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-3 z-10">
+          <div className="pointer-events-none absolute right-3 top-3 z-10 hidden w-[360px] max-w-[calc(100%-1.5rem)] md:block">
             <MapSaveDraftCard
               draft={draftSelection}
               formAction={addPlaceFormAction}
               groupId={groupId}
               isPending={isAddPlacePending}
-              onCancel={() => setDraftSelection(null)}
+              onCancel={() => {
+                setDraftSelection(null);
+                selectedSearchMarkerRef.current?.remove();
+                selectedSearchMarkerRef.current = null;
+              }}
               state={addPlaceState}
             />
           </div>
         ) : null}
       </div>
+      {canEdit && draftSelection ? (
+        <div className="md:hidden">
+          <MapSaveDraftCard
+            draft={draftSelection}
+            formAction={addPlaceFormAction}
+            groupId={groupId}
+            isPending={isAddPlacePending}
+            onCancel={() => {
+              setDraftSelection(null);
+              selectedSearchMarkerRef.current?.remove();
+              selectedSearchMarkerRef.current = null;
+            }}
+            state={addPlaceState}
+          />
+        </div>
+      ) : null}
       {placesWithCoordinates.length === 0 ? (
         <Card className="rounded-2xl">
           <p className="text-sm text-slate-600">El mapa ya esta activo. Cuando anadas lugares con coordenadas, apareceran marcados aqui.</p>

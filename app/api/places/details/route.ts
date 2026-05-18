@@ -5,6 +5,11 @@ type GooglePlaceDetailsResult = {
   place_id?: string;
   name?: string;
   formatted_address?: string;
+  address_components?: Array<{
+    long_name?: string;
+    short_name?: string;
+    types?: string[];
+  }>;
   geometry?: {
     location?: {
       lat?: number;
@@ -35,6 +40,39 @@ function buildGoogleMapsUrl(placeId: string): string {
   return `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(placeId)}`;
 }
 
+function pickCityFromComponents(components: GooglePlaceDetailsResult["address_components"]): string {
+  if (!components || components.length === 0) {
+    return "";
+  }
+  const preferredTypes = [
+    "locality",
+    "postal_town",
+    "administrative_area_level_2",
+    "administrative_area_level_1"
+  ];
+  for (const type of preferredTypes) {
+    const match = components.find((component) => (component.types || []).includes(type));
+    const value = (match?.long_name || "").trim();
+    if (value) {
+      return value;
+    }
+  }
+  return "";
+}
+
+function pickStreetFromComponents(
+  components: GooglePlaceDetailsResult["address_components"],
+  fallbackStreet: string
+): string {
+  if (!components || components.length === 0) {
+    return fallbackStreet;
+  }
+  const route = (components.find((component) => (component.types || []).includes("route"))?.long_name || "").trim();
+  const streetNumber = (components.find((component) => (component.types || []).includes("street_number"))?.long_name || "").trim();
+  const constructed = `${route} ${streetNumber}`.trim();
+  return constructed || fallbackStreet;
+}
+
 export async function POST(request: Request) {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
@@ -50,7 +88,7 @@ export async function POST(request: Request) {
   const params = new URLSearchParams({
     place_id: externalPlaceId,
     language: "es",
-    fields: "place_id,name,formatted_address,geometry,business_status",
+    fields: "place_id,name,formatted_address,address_components,geometry,business_status",
     key: apiKey
   });
   const response = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`, {
@@ -77,13 +115,15 @@ export async function POST(request: Request) {
 
   const fullAddress = (result.formatted_address || "").trim();
   const parts = splitAddressParts(fullAddress);
+  const cityFromComponents = pickCityFromComponents(result.address_components);
+  const streetFromComponents = pickStreetFromComponents(result.address_components, parts.street || fullAddress);
 
   const place: GooglePlaceFeature = {
     externalPlaceId: placeId,
     provider: "google_places",
     name: (result.name || "").trim() || "Resultado",
-    address: parts.street || fullAddress || "Sin dirección",
-    city: parts.city || "",
+    address: streetFromComponents || "Sin dirección",
+    city: cityFromComponents || parts.city || "",
     latitude,
     longitude,
     googleMapsUrl: buildGoogleMapsUrl(placeId),

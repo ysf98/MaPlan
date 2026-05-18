@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { INITIAL_PLACE_CATEGORIES } from "@/lib/places/shared";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import type { AddPlaceActionState } from "@/app/groups/[groupId]/actions";
@@ -20,13 +19,11 @@ export function MapSaveDraftCard({ groupId, draft, state, isPending, formAction,
   const [name, setName] = useState(draft.name);
   const [address, setAddress] = useState(draft.address);
   const [city, setCity] = useState(draft.city);
-  const [category, setCategory] = useState("Otros");
 
   useEffect(() => {
     setName(draft.name);
     setAddress(draft.address);
     setCity(draft.city);
-    setCategory("Otros");
   }, [draft.address, draft.city, draft.latitude, draft.longitude, draft.name]);
 
   return (
@@ -41,6 +38,7 @@ export function MapSaveDraftCard({ groupId, draft, state, isPending, formAction,
         <input name="externalPlaceId" type="hidden" value={draft.externalPlaceId || ""} />
         <input name="googleMapsUrl" type="hidden" value={draft.googleMapsUrl || ""} />
         <input name="businessStatus" type="hidden" value={draft.businessStatus || ""} />
+        <input name="category" type="hidden" value={draft.category || "Otros"} />
 
         <label className="block space-y-1">
           <span className="text-xs font-medium text-slate-700">Nombre</span>
@@ -77,30 +75,10 @@ export function MapSaveDraftCard({ groupId, draft, state, isPending, formAction,
           />
         </label>
 
-        <label className="block space-y-1">
-          <span className="text-xs font-medium text-slate-700">Categoria</span>
-          <select
-            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900"
-            name="category"
-            onChange={(event) => setCategory(event.target.value)}
-            value={category}
-          >
-            {INITIAL_PLACE_CATEGORIES.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
+        <p className="text-[11px] text-slate-500">Categoría detectada: {draft.category || "Otros"}</p>
 
-        <p className="text-[11px] text-slate-500">
-          Lat: {draft.latitude} · Lng: {draft.longitude}
-        </p>
-        {draft.provider === "google_places" ? (
-          <p className="text-[11px] text-slate-500">
-            Fuente: Google Places{draft.businessStatus ? ` · Estado: ${draft.businessStatus}` : ""}
-          </p>
-        ) : null}
+        <p className="text-[11px] text-slate-500">Lat: {draft.latitude} · Lng: {draft.longitude}</p>
+        {draft.businessStatus ? <p className="text-[11px] text-slate-500">Estado: {draft.businessStatus}</p> : null}
 
         <div className="flex gap-2">
           <Button disabled={isPending} size="sm" type="submit">

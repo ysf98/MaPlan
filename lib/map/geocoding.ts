@@ -23,6 +23,7 @@ export type MapDraftPlace = {
   name: string;
   address: string;
   city: string;
+  category: string;
   latitude: number;
   longitude: number;
   provider?: "manual" | "mapbox" | "google_places" | null;
@@ -121,7 +122,8 @@ export function buildDraftFromRenderedFeature(
     longitude,
     name: featureName || "Sitio en mapa",
     address: parsedArea.street || fallbackAddress,
-    city: fallbackCity
+    city: fallbackCity,
+    category: "Otros"
   };
 }
 
