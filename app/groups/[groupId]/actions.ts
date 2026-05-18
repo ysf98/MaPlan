@@ -104,6 +104,10 @@ export async function addPlaceAction(
     category: String(formData.get("category") || ""),
     originalUrl: String(formData.get("originalUrl") || ""),
     source: String(formData.get("source") || ""),
+    provider: String(formData.get("provider") || ""),
+    externalPlaceId: String(formData.get("externalPlaceId") || ""),
+    googleMapsUrl: String(formData.get("googleMapsUrl") || ""),
+    businessStatus: String(formData.get("businessStatus") || ""),
     latitude: formData.get("latitude"),
     longitude: formData.get("longitude")
   });
@@ -115,7 +119,7 @@ export async function addPlaceAction(
     };
   }
 
-  const { groupId, name, address, city, notes, category, originalUrl, source, latitude, longitude } = parsedInput.data;
+  const { groupId, name, address, city, notes, category, originalUrl, source, provider, externalPlaceId, googleMapsUrl, businessStatus, latitude, longitude } = parsedInput.data;
 
   const result = await createPlace({
     userId: user.id,
@@ -127,6 +131,10 @@ export async function addPlaceAction(
     category: category || null,
     originalUrl: originalUrl || null,
     source: source || null,
+    provider: provider || null,
+    externalPlaceId: externalPlaceId || null,
+    googleMapsUrl: googleMapsUrl || null,
+    businessStatus: businessStatus || null,
     latitude: typeof latitude === "number" ? latitude : null,
     longitude: typeof longitude === "number" ? longitude : null
   });

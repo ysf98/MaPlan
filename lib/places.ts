@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canEditPlaces, isGroupMember, isGroupOwner } from "@/lib/groupPermissions";
 import { INITIAL_PLACE_CATEGORIES, type GroupPlace, type PlaceCategory } from "@/lib/places/shared";
-import type { PlaceSource, PlaceStatus } from "@/types/supabase";
+import type { PlaceProvider, PlaceSource, PlaceStatus } from "@/types/supabase";
 
 type CreatePlaceInput = {
   userId: string;
@@ -13,6 +13,10 @@ type CreatePlaceInput = {
   category?: string | null;
   originalUrl?: string | null;
   source?: PlaceSource | null;
+  provider?: PlaceProvider | null;
+  externalPlaceId?: string | null;
+  googleMapsUrl?: string | null;
+  businessStatus?: string | null;
   latitude?: number | null;
   longitude?: number | null;
 };
@@ -92,7 +96,7 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
   const supabase = await createSupabaseServerClient();
   const { data: places, error } = await supabase
     .from("places")
-    .select("id, name, address, city, notes, status, created_at, category_id, original_url, source, latitude, longitude")
+    .select("id, name, address, city, notes, status, created_at, category_id, original_url, source, provider, external_place_id, google_maps_url, business_status, latitude, longitude")
     .eq("group_id", groupId)
     .order("created_at", { ascending: false });
 
@@ -124,6 +128,10 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
       notes: place.notes,
       originalUrl: place.original_url,
       source: place.source,
+      provider: place.provider,
+      externalPlaceId: place.external_place_id,
+      googleMapsUrl: place.google_maps_url,
+      businessStatus: place.business_status,
       latitude: place.latitude,
       longitude: place.longitude,
       status: place.status,
@@ -142,6 +150,8 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
   const name = input.name.trim();
   const address = input.address.trim();
   const city = input.city?.trim() || null;
+  const provider = input.provider || null;
+  const externalPlaceId = input.externalPlaceId?.trim() || null;
   if (!name) {
     return { error: "El nombre del lugar es obligatorio." };
   }
@@ -152,6 +162,24 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
   const category = normalizeCategory(input.category);
   const categoryId = await resolveCategoryId(input.groupId, category);
   const supabase = await createSupabaseServerClient();
+
+  if (provider && externalPlaceId) {
+    const existingByProvider = await supabase
+      .from("places")
+      .select("id")
+      .eq("group_id", input.groupId)
+      .eq("provider", provider)
+      .eq("external_place_id", externalPlaceId)
+      .maybeSingle();
+
+    if (existingByProvider.error) {
+      return { error: existingByProvider.error.message };
+    }
+    if (existingByProvider.data) {
+      return { error: "Ese sitio ya esta guardado en este grupo." };
+    }
+  }
+
   let existingPlaceQuery = supabase
     .from("places")
     .select("id")
@@ -179,6 +207,10 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
     city,
     original_url: input.originalUrl?.trim() || null,
     source: input.source || null,
+    provider,
+    external_place_id: externalPlaceId,
+    google_maps_url: input.googleMapsUrl?.trim() || null,
+    business_status: input.businessStatus?.trim() || null,
     latitude: input.latitude ?? null,
     longitude: input.longitude ?? null,
     notes: input.notes?.trim() || null,

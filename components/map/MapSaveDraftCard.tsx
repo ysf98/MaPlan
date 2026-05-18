@@ -36,7 +36,11 @@ export function MapSaveDraftCard({ groupId, draft, state, isPending, formAction,
         <input name="groupId" type="hidden" value={groupId} />
         <input name="latitude" type="hidden" value={String(draft.latitude)} />
         <input name="longitude" type="hidden" value={String(draft.longitude)} />
-        <input name="source" type="hidden" value="manual" />
+        <input name="source" type="hidden" value={draft.provider === "google_places" ? "google_maps" : "manual"} />
+        <input name="provider" type="hidden" value={draft.provider || "manual"} />
+        <input name="externalPlaceId" type="hidden" value={draft.externalPlaceId || ""} />
+        <input name="googleMapsUrl" type="hidden" value={draft.googleMapsUrl || ""} />
+        <input name="businessStatus" type="hidden" value={draft.businessStatus || ""} />
 
         <label className="block space-y-1">
           <span className="text-xs font-medium text-slate-700">Nombre</span>
@@ -92,6 +96,11 @@ export function MapSaveDraftCard({ groupId, draft, state, isPending, formAction,
         <p className="text-[11px] text-slate-500">
           Lat: {draft.latitude} · Lng: {draft.longitude}
         </p>
+        {draft.provider === "google_places" ? (
+          <p className="text-[11px] text-slate-500">
+            Fuente: Google Places{draft.businessStatus ? ` · Estado: ${draft.businessStatus}` : ""}
+          </p>
+        ) : null}
 
         <div className="flex gap-2">
           <Button disabled={isPending} size="sm" type="submit">

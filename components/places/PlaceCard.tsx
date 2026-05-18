@@ -64,6 +64,8 @@ export function PlaceCard({ groupId, place, canEdit, canDelete }: PlaceCardProps
       <h3 className="mt-3 text-lg font-semibold text-slate-900">{place.name}</h3>
       <p className="mt-1 text-sm text-slate-600">{place.address}</p>
       {place.city ? <p className="mt-1 text-sm text-slate-500">{place.city}</p> : null}
+      {place.provider ? <p className="mt-1 text-xs text-slate-500">Proveedor: {place.provider}</p> : null}
+      {place.businessStatus ? <p className="mt-1 text-xs text-slate-500">Estado negocio: {place.businessStatus}</p> : null}
       {place.notes ? <p className="mt-2 text-sm text-slate-500">{place.notes}</p> : null}
       {place.originalUrl ? (
         <a
@@ -73,6 +75,16 @@ export function PlaceCard({ groupId, place, canEdit, canDelete }: PlaceCardProps
           target="_blank"
         >
           Abrir enlace
+        </a>
+      ) : null}
+      {place.googleMapsUrl ? (
+        <a
+          className="mt-2 inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          href={place.googleMapsUrl}
+          rel="noreferrer noopener"
+          target="_blank"
+        >
+          Ver en Google Maps
         </a>
       ) : null}
 

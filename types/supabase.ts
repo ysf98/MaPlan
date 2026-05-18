@@ -2,6 +2,7 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 export type PlaceStatus = "pending" | "visited" | "favorite";
 export type PlaceSource = "manual" | "google_maps" | "tiktok" | "instagram" | "website";
+export type PlaceProvider = "manual" | "mapbox" | "google_places";
 export type GroupPlaceEditPolicy = "owner_only" | "members_can_edit";
 export type GroupJoinPolicy = "invite_only" | "open_by_code" | "request_to_join";
 export type GroupJoinRequestStatus = "pending" | "approved" | "rejected";
@@ -109,6 +110,10 @@ export type Database = {
           city: string | null;
           original_url: string | null;
           source: PlaceSource | null;
+          provider: PlaceProvider | null;
+          external_place_id: string | null;
+          google_maps_url: string | null;
+          business_status: string | null;
           latitude: number | null;
           longitude: number | null;
           notes: string | null;
@@ -126,6 +131,10 @@ export type Database = {
           city?: string | null;
           original_url?: string | null;
           source?: PlaceSource | null;
+          provider?: PlaceProvider | null;
+          external_place_id?: string | null;
+          google_maps_url?: string | null;
+          business_status?: string | null;
           latitude?: number | null;
           longitude?: number | null;
           notes?: string | null;
@@ -140,6 +149,10 @@ export type Database = {
           city?: string | null;
           original_url?: string | null;
           source?: PlaceSource | null;
+          provider?: PlaceProvider | null;
+          external_place_id?: string | null;
+          google_maps_url?: string | null;
+          business_status?: string | null;
           latitude?: number | null;
           longitude?: number | null;
           notes?: string | null;

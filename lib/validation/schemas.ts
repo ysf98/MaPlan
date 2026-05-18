@@ -7,6 +7,7 @@ import {
 
 export const PLACE_STATUS_VALUES = ["pending", "visited", "favorite"] as const;
 export const PLACE_SOURCE_VALUES = ["manual", "google_maps", "tiktok", "instagram", "website"] as const;
+export const PLACE_PROVIDER_VALUES = ["manual", "mapbox", "google_places"] as const;
 export const FRIEND_REQUEST_DECISION_VALUES = ["accepted", "rejected"] as const;
 const uuidSchema = z.string().uuid("Identificador invalido.");
 
@@ -88,6 +89,32 @@ export const createPlaceSchema = z.object({
     .refine((value): value is (typeof PLACE_SOURCE_VALUES)[number] | null => {
       return value === null || PLACE_SOURCE_VALUES.includes(value as never);
     }, "Fuente invalida."),
+  provider: z
+    .string()
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value): value is (typeof PLACE_PROVIDER_VALUES)[number] | null => {
+      return value === null || PLACE_PROVIDER_VALUES.includes(value as never);
+    }, "Proveedor invalido."),
+  externalPlaceId: z
+    .string()
+    .trim()
+    .max(255, "Identificador externo invalido.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  googleMapsUrl: z
+    .string()
+    .trim()
+    .max(500, "El enlace de Google Maps es demasiado largo.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value), "URL de Google Maps invalida."),
+  businessStatus: z
+    .string()
+    .trim()
+    .max(80, "El estado del negocio no es valido.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
   latitude: z
     .preprocess(
       (value) => (value === "" || value === null || value === undefined ? undefined : value),

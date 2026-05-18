@@ -11,11 +11,11 @@ import {
   buildDraftFromRenderedFeature,
   extractFallbackNameFromRenderedFeatures,
   resolvePlaceFromMapClick,
-  type GeocodeSearchResult,
   type MapDraftPlace
 } from "@/lib/map/geocoding";
 import { MapSearchBox } from "@/components/map/MapSearchBox";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
+import { getGooglePlaceDetails, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
 
 type GroupMapProps = {
   groupId: string;
@@ -178,18 +178,28 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
     });
   }, [internalSelectedPlace]);
 
-  const handleSelectSearchResult = useCallback((result: GeocodeSearchResult) => {
+  const handleSelectSearchResult = useCallback(async (result: GooglePlaceSuggestion) => {
+    const resolved = await getGooglePlaceDetails({ externalPlaceId: result.externalPlaceId });
+    if (!resolved) {
+      return;
+    }
+
     mapRef.current?.flyTo({
-      center: [result.longitude, result.latitude],
+      center: [resolved.longitude, resolved.latitude],
       zoom: Math.max(mapRef.current?.getZoom() || 0, 14),
       essential: true
     });
+
     setDraftSelection({
-      latitude: result.latitude,
-      longitude: result.longitude,
-      name: result.name,
-      address: result.fullAddress,
-      city: result.city
+      latitude: resolved.latitude,
+      longitude: resolved.longitude,
+      name: resolved.name,
+      address: resolved.address,
+      city: resolved.city,
+      provider: resolved.provider,
+      externalPlaceId: resolved.externalPlaceId,
+      googleMapsUrl: resolved.googleMapsUrl,
+      businessStatus: resolved.businessStatus
     });
   }, []);
 
@@ -210,7 +220,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
 
   return (
     <div className="space-y-3">
-      <MapSearchBox getMapContext={getMapContext} onSelectResult={handleSelectSearchResult} token={token} />
+      <MapSearchBox getMapContext={getMapContext} onSelectResult={handleSelectSearchResult} />
       <div className="relative h-[420px] w-full overflow-hidden rounded-2xl border border-slate-200">
         <div className="h-full w-full" ref={mapContainerRef} />
         {canEdit && isResolvingLocation ? (

@@ -1,5 +1,6 @@
 import type { PlaceStatus } from "@/types/supabase";
 import type { PlaceSource } from "@/types/supabase";
+import type { PlaceProvider } from "@/types/supabase";
 
 export const INITIAL_PLACE_CATEGORIES = [
   "Comer",
@@ -22,6 +23,10 @@ export type GroupPlace = {
   notes: string | null;
   originalUrl: string | null;
   source: PlaceSource | null;
+  provider: PlaceProvider | null;
+  externalPlaceId: string | null;
+  googleMapsUrl: string | null;
+  businessStatus: string | null;
   latitude: number | null;
   longitude: number | null;
   status: PlaceStatus;
