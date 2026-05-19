@@ -4,6 +4,7 @@ import {
   inviteFriendToGroupSchema,
   joinGroupSchema,
   createPlaceSchema,
+  createPersonalPlaceSchema,
   respondGroupInvitationSchema,
   respondFriendRequestSchema,
   reviewJoinRequestSchema,
@@ -115,6 +116,31 @@ describe("createPlaceSchema", () => {
       name: "Lugar",
       address: "Madrid",
       originalUrl: "not-a-url"
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("createPersonalPlaceSchema", () => {
+  it("accepts valid personal place payload", () => {
+    const result = createPersonalPlaceSchema.safeParse({
+      name: "Mi cafe",
+      address: "Madrid",
+      latitude: 40.4,
+      longitude: -3.7,
+      provider: "manual"
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid coordinates", () => {
+    const result = createPersonalPlaceSchema.safeParse({
+      name: "Mi cafe",
+      address: "Madrid",
+      latitude: 100,
+      longitude: -3.7
     });
 
     expect(result.success).toBe(false);

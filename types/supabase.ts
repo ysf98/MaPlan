@@ -160,6 +160,59 @@ export type Database = {
           updated_at?: string;
         };
       };
+      personal_places: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          address: string | null;
+          city: string | null;
+          latitude: number;
+          longitude: number;
+          category: string | null;
+          notes: string | null;
+          source: PlaceSource | null;
+          provider: PlaceProvider | null;
+          external_place_id: string | null;
+          google_maps_url: string | null;
+          business_status: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          address?: string | null;
+          city?: string | null;
+          latitude: number;
+          longitude: number;
+          category?: string | null;
+          notes?: string | null;
+          source?: PlaceSource | null;
+          provider?: PlaceProvider | null;
+          external_place_id?: string | null;
+          google_maps_url?: string | null;
+          business_status?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          address?: string | null;
+          city?: string | null;
+          latitude?: number;
+          longitude?: number;
+          category?: string | null;
+          notes?: string | null;
+          source?: PlaceSource | null;
+          provider?: PlaceProvider | null;
+          external_place_id?: string | null;
+          google_maps_url?: string | null;
+          business_status?: string | null;
+          updated_at?: string;
+        };
+      };
       group_join_requests: {
         Row: {
           id: string;

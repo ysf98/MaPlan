@@ -81,6 +81,7 @@ Run in Supabase SQL editor:
 4. `supabase/rls_friends.sql`
 5. `supabase/rls_group_invitations.sql`
 6. `supabase/places_external_provider.sql`
+7. `supabase/rls_personal_places.sql`
 
 `places_external_provider.sql` adds:
 - provider columns
@@ -158,6 +159,7 @@ Base E2E specs:
 - `e2e/navigation.spec.ts`
 - `e2e/auth.spec.ts`
 - `e2e/groups.spec.ts`
+- `e2e/map.spec.ts`
 
 ## CI
 

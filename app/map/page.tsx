@@ -1,10 +1,20 @@
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
-import { PagePlaceholder } from "@/components/shared/PagePlaceholder";
+import { MapPageClient } from "@/components/map/MapPageClient";
+import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { getPersonalPlacesForUser } from "@/lib/personalPlaces";
 
-export default function MapPage() {
+export default async function MapPage() {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login?next=/map");
+  }
+
+  const personalPlaces = await getPersonalPlacesForUser(user.id);
+
   return (
     <AppShell>
-      <PagePlaceholder title="Mapa social" description="Vista de mapa movil-first para explorar lugares guardados por tu grupo." />
+      <MapPageClient personalPlaces={personalPlaces} />
     </AppShell>
   );
 }

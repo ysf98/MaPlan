@@ -3,19 +3,24 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import type { AddPlaceActionState } from "@/app/groups/[groupId]/actions";
 import type { MapDraftPlace } from "@/lib/map/geocoding";
 
+type SaveDraftActionState = {
+  error: string | null;
+  success: boolean;
+};
+
 type MapSaveDraftCardProps = {
-  groupId: string;
+  scopeIdName: string;
+  scopeIdValue: string;
   draft: MapDraftPlace;
-  state: AddPlaceActionState;
+  state: SaveDraftActionState;
   isPending: boolean;
   formAction: (payload: FormData) => void;
   onCancel: () => void;
 };
 
-export function MapSaveDraftCard({ groupId, draft, state, isPending, formAction, onCancel }: MapSaveDraftCardProps) {
+export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPending, formAction, onCancel }: MapSaveDraftCardProps) {
   const [name, setName] = useState(draft.name);
   const [address, setAddress] = useState(draft.address);
   const [city, setCity] = useState(draft.city);
@@ -30,7 +35,7 @@ export function MapSaveDraftCard({ groupId, draft, state, isPending, formAction,
     <Card className="pointer-events-auto rounded-2xl border-slate-300 bg-white/95 shadow-lg backdrop-blur">
       <p className="text-sm font-semibold text-slate-900">Revisa los datos antes de guardar</p>
       <form action={formAction} className="mt-3 space-y-2">
-        <input name="groupId" type="hidden" value={groupId} />
+        <input name={scopeIdName} type="hidden" value={scopeIdValue} />
         <input name="latitude" type="hidden" value={String(draft.latitude)} />
         <input name="longitude" type="hidden" value={String(draft.longitude)} />
         <input name="source" type="hidden" value={draft.provider === "google_places" ? "google_maps" : "manual"} />

@@ -129,6 +129,68 @@ export const createPlaceSchema = z.object({
     .optional()
 });
 
+export const createPersonalPlaceSchema = z.object({
+  name: z.string().trim().min(1, "El nombre del lugar es obligatorio.").max(120, "El nombre es demasiado largo."),
+  address: z
+    .string()
+    .trim()
+    .min(1, "La direccion del lugar es obligatoria.")
+    .max(220, "La direccion es demasiado larga."),
+  city: z
+    .string()
+    .trim()
+    .max(120, "La ciudad es demasiado larga.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  notes: z
+    .string()
+    .trim()
+    .max(500, "Las notas no pueden superar 500 caracteres.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  category: z
+    .string()
+    .trim()
+    .max(40, "La categoria no es valida.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  source: z
+    .string()
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value): value is (typeof PLACE_SOURCE_VALUES)[number] | null => {
+      return value === null || PLACE_SOURCE_VALUES.includes(value as never);
+    }, "Fuente invalida."),
+  provider: z
+    .string()
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value): value is (typeof PLACE_PROVIDER_VALUES)[number] | null => {
+      return value === null || PLACE_PROVIDER_VALUES.includes(value as never);
+    }, "Proveedor invalido."),
+  externalPlaceId: z
+    .string()
+    .trim()
+    .max(255, "Identificador externo invalido.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  googleMapsUrl: z
+    .string()
+    .trim()
+    .max(500, "El enlace de Google Maps es demasiado largo.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value), "URL de Google Maps invalida."),
+  businessStatus: z
+    .string()
+    .trim()
+    .max(80, "El estado del negocio no es valido.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  latitude: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
+  longitude: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
+});
+
 export const updatePlaceStatusSchema = z.object({
   groupId: uuidSchema,
   placeId: uuidSchema,
@@ -215,6 +277,7 @@ export const respondGroupInvitationSchema = z.object({
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;
+export type CreatePersonalPlaceInput = z.infer<typeof createPersonalPlaceSchema>;
 export type UpdatePlaceStatusInput = z.infer<typeof updatePlaceStatusSchema>;
 export type UpdatePlaceLocationInput = z.infer<typeof updatePlaceLocationSchema>;
 export type ReviewJoinRequestInput = z.infer<typeof reviewJoinRequestSchema>;
