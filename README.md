@@ -11,6 +11,7 @@ MaPlan is a social app for friend groups where users can save places, manage inv
 - Mapbox (visual map)
 - Google Places (POI search)
 - Vitest
+- Playwright (E2E)
 
 ## Map Architecture
 
@@ -112,6 +113,52 @@ Standard:
 pnpm test
 ```
 
+E2E:
+
+```bash
+pnpm test:e2e
+```
+
+Headed mode:
+
+```bash
+pnpm test:e2e:headed
+```
+
+UI mode:
+
+```bash
+pnpm test:e2e:ui
+```
+
+HTML report:
+
+```bash
+pnpm test:e2e:report
+```
+
+### Playwright E2E setup
+
+Install dependency and browsers:
+
+```bash
+pnpm add -D @playwright/test
+pnpm exec playwright install --with-deps chromium
+```
+
+Optional env vars for authenticated E2E:
+
+- `E2E_EMAIL`
+- `E2E_PASSWORD`
+- `E2E_RUN_SIGNUP=1` (enables signup flow test)
+- `PLAYWRIGHT_BASE_URL` (skip local `pnpm dev` web server and run against existing URL)
+
+Base E2E specs:
+
+- `e2e/navigation.spec.ts`
+- `e2e/auth.spec.ts`
+- `e2e/groups.spec.ts`
+
 ### New tests
 
 - `tests/lib/addressParsing.test.ts`
@@ -133,4 +180,3 @@ Remove-Item Env:TEST_FAIL_DETECTION
 Expected behavior:
 - without env var: test is skipped
 - with env var: test fails intentionally
-
