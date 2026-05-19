@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 import { Card } from "@/components/ui/Card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
@@ -22,6 +23,12 @@ export default async function ProfilePage() {
         <Card className="rounded-3xl">
           <p className="text-sm text-slate-500">Nombre</p>
           <p className="mt-1 text-xl font-semibold text-slate-900">{displayName}</p>
+        </Card>
+        <Card className="rounded-3xl">
+          <p className="text-sm text-slate-500">Sesion</p>
+          <div className="mt-2">
+            <SignOutButton />
+          </div>
         </Card>
       </section>
     </AppShell>

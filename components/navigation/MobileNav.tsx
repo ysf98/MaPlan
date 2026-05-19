@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SignOutButton } from "@/components/auth/SignOutButton";
 import { ROUTES } from "@/utils/constants";
 import { cn } from "@/lib/cn";
 
@@ -46,7 +45,6 @@ export function MobileNav({ isAuthenticated }: MobileNavProps) {
           );
         })}
       </ul>
-      {isAuthenticated ? <div className="mt-2 flex justify-center"><SignOutButton /></div> : null}
     </nav>
   );
 }

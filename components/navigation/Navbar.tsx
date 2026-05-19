@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SignOutButton } from "@/components/auth/SignOutButton";
 import { APP_NAME, ROUTES } from "@/utils/constants";
 import { cn } from "@/lib/cn";
 
@@ -51,26 +50,23 @@ export function Navbar({ isAuthenticated }: NavbarProps) {
         </div>
         <div className="hidden items-center gap-3 md:flex">
           {isAuthenticated ? (
-            <>
-              <nav className="flex items-center gap-2">
-                {items.map((item) => {
-                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "rounded-xl px-3 py-2 text-sm font-medium transition",
-                        active ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                      )}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </nav>
-              <SignOutButton />
-            </>
+            <nav className="flex items-center gap-2">
+              {items.map((item) => {
+                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "rounded-xl px-3 py-2 text-sm font-medium transition",
+                      active ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
           ) : (
             <nav className="flex items-center gap-2">
               <Link className="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100" href={ROUTES.login}>
