@@ -35,7 +35,6 @@ jobs:
     name: E2E (Playwright Chromium)
     runs-on: ubuntu-latest
     needs: unit
-    if: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL != '' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY != '' }}
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
@@ -63,14 +62,27 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check required secrets
+        id: e2e_guard
+        shell: bash
+        run: |
+          if [[ -n "${NEXT_PUBLIC_SUPABASE_URL}" && -n "${NEXT_PUBLIC_SUPABASE_ANON_KEY}" ]]; then
+            echo "run_e2e=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_e2e=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping E2E: missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY."
+          fi
+
       - name: Install Playwright browser
+        if: ${{ steps.e2e_guard.outputs.run_e2e == 'true' }}
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run E2E tests
+        if: ${{ steps.e2e_guard.outputs.run_e2e == 'true' }}
         run: pnpm test:e2e
 
       - name: Upload Playwright report
-        if: always()
+        if: ${{ always() && steps.e2e_guard.outputs.run_e2e == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
@@ -78,7 +90,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload Playwright test results
-        if: failure()
+        if: ${{ failure() && steps.e2e_guard.outputs.run_e2e == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-test-results
