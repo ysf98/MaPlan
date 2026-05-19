@@ -17,10 +17,6 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
     <>
       <Card className="rounded-3xl">
         <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Tus grupos</h1>
-            <p className="mt-1 text-sm text-slate-500">Espacios compartidos para guardar y descubrir planes.</p>
-          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Link href={`${ROUTES.groups}/new`}>
               <Card className="rounded-2xl border-dashed transition hover:-translate-y-0.5 hover:shadow-md">

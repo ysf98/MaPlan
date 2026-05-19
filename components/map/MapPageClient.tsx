@@ -27,10 +27,6 @@ export function MapPageClient({ personalPlaces }: MapPageClientProps) {
   return (
     <section className="space-y-4">
       <Card className="rounded-3xl">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Mapa</h1>
-        <p className="mt-2 text-sm text-slate-500">Guarda y organiza tus lugares personales.</p>
-      </Card>
-      <Card className="rounded-3xl">
         <PersonalMap onSelectPlace={setSelectedPlaceId} places={personalPlaces} selectedPlaceId={selectedPlaceId} />
       </Card>
 

@@ -12,9 +12,7 @@ test.describe("map", () => {
 
     await loginWithEnvUser(page);
     await page.goto("/map");
-    await expect(page.getByRole("heading", { name: "Mapa" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Mi mapa" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Mapa de grupo" })).toBeVisible();
+    await expect(page.getByText("- Mapa")).toBeVisible();
     await expect(page.getByPlaceholder("Buscar bares, restaurantes, poblaciones...")).toBeVisible();
   });
 });

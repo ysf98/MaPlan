@@ -34,9 +34,7 @@ export function FriendsPageClient({
   return (
     <section className="space-y-4">
       <Card className="rounded-3xl">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Amigos</h1>
-        <p className="mt-1 text-sm text-slate-500">Busca usuarios por username y gestiona tus solicitudes.</p>
-        <form action="/friends" className="mt-4 flex flex-wrap gap-2">
+        <form action="/friends" className="flex flex-wrap gap-2">
           <input
             className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
             defaultValue={query}

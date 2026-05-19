@@ -20,10 +20,6 @@ export default async function ProfilePage() {
     <AppShell>
       <section className="space-y-4">
         <Card className="rounded-3xl">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Perfil</h1>
-          <p className="mt-2 text-sm text-slate-500">Informacion basica de tu cuenta.</p>
-        </Card>
-        <Card className="rounded-3xl">
           <p className="text-sm text-slate-500">Nombre</p>
           <p className="mt-1 text-xl font-semibold text-slate-900">{displayName}</p>
         </Card>

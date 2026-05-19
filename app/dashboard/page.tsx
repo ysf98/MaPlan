@@ -21,11 +21,6 @@ export default async function DashboardPage() {
     <AppShell>
       <section className="space-y-4">
         <Card className="rounded-3xl">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
-          <p className="mt-2 text-sm text-slate-500">Resumen social de tus grupos, pendientes y favoritos.</p>
-        </Card>
-
-        <Card className="rounded-3xl">
           <div className="flex flex-wrap items-center gap-3">
             <Link
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 transition hover:bg-slate-50"

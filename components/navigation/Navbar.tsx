@@ -15,19 +15,40 @@ const items = [
   { href: ROUTES.profile, label: "Perfil" }
 ];
 
+function getSectionLabel(pathname: string): string | null {
+  if (pathname === ROUTES.home) return null;
+  if (pathname === ROUTES.dashboard || pathname.startsWith(`${ROUTES.dashboard}/`)) return "Dashboard";
+  if (pathname === ROUTES.invitations || pathname.startsWith(`${ROUTES.invitations}/`)) return "Invitaciones";
+  if (pathname === ROUTES.friends || pathname.startsWith(`${ROUTES.friends}/`)) return "Amigos";
+  if (pathname === ROUTES.groups || pathname.startsWith(`${ROUTES.groups}/`)) return "Grupos";
+  if (pathname === ROUTES.map || pathname.startsWith(`${ROUTES.map}/`)) return "Mapa";
+  if (pathname === ROUTES.profile || pathname.startsWith(`${ROUTES.profile}/`)) return "Perfil";
+  if (pathname === ROUTES.login || pathname.startsWith(`${ROUTES.login}/`)) return "Login";
+  if (pathname === ROUTES.register || pathname.startsWith(`${ROUTES.register}/`)) return "Registro";
+  return null;
+}
+
 type NavbarProps = {
   isAuthenticated: boolean;
 };
 
 export function Navbar({ isAuthenticated }: NavbarProps) {
   const pathname = usePathname();
+  const sectionLabel = getSectionLabel(pathname);
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
-        <Link className="text-lg font-semibold tracking-tight text-slate-900" href={ROUTES.home}>
-          {APP_NAME}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link className="text-lg font-semibold tracking-tight text-slate-900" href={ROUTES.home}>
+            {APP_NAME}
+          </Link>
+          {sectionLabel ? (
+            <span className="text-sm font-medium text-slate-500">
+              - {sectionLabel}
+            </span>
+          ) : null}
+        </div>
         <div className="hidden items-center gap-3 md:flex">
           {isAuthenticated ? (
             <>

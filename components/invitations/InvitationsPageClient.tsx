@@ -26,11 +26,6 @@ export function InvitationsPageClient({ invitations }: InvitationsPageClientProp
 
   return (
     <section className="space-y-4">
-      <Card className="rounded-3xl">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Invitaciones</h1>
-        <p className="mt-1 text-sm text-slate-500">Gestiona invitaciones a grupos enviadas por tus amigos.</p>
-      </Card>
-
       {pendingInvitations.length === 0 && reviewedInvitations.length === 0 ? (
         <EmptyState title="Sin invitaciones pendientes" description="Cuando te inviten a un grupo aparecera aqui." />
       ) : (
