@@ -159,6 +159,23 @@ Base E2E specs:
 - `e2e/auth.spec.ts`
 - `e2e/groups.spec.ts`
 
+## CI
+
+GitHub Actions workflow:
+
+- `.github/workflows/ci.yml`
+- Runs `pnpm test` on every PR/push to `main`
+- Runs Playwright E2E when Supabase secrets are configured
+
+Recommended repository secrets:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_MAPBOX_TOKEN` (optional, recommended)
+- `GOOGLE_PLACES_API_KEY` (optional, recommended)
+- `E2E_EMAIL` and `E2E_PASSWORD` (to enable authenticated E2E)
+- `E2E_RUN_SIGNUP=1` (optional, enables signup E2E)
+
 ### New tests
 
 - `tests/lib/addressParsing.test.ts`
