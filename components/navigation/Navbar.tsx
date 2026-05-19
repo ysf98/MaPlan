@@ -3,29 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { APP_NAME, ROUTES } from "@/utils/constants";
+import { AUTH_NAV_ITEMS, getSectionLabel } from "@/utils/navigation";
 import { cn } from "@/lib/cn";
-
-const items = [
-  { href: ROUTES.dashboard, label: "Inicio" },
-  { href: ROUTES.invitations, label: "Invitaciones" },
-  { href: ROUTES.friends, label: "Amigos" },
-  { href: ROUTES.groups, label: "Grupos" },
-  { href: ROUTES.map, label: "Mapa" },
-  { href: ROUTES.profile, label: "Perfil" }
-];
-
-function getSectionLabel(pathname: string): string | null {
-  if (pathname === ROUTES.home) return null;
-  if (pathname === ROUTES.dashboard || pathname.startsWith(`${ROUTES.dashboard}/`)) return "Dashboard";
-  if (pathname === ROUTES.invitations || pathname.startsWith(`${ROUTES.invitations}/`)) return "Invitaciones";
-  if (pathname === ROUTES.friends || pathname.startsWith(`${ROUTES.friends}/`)) return "Amigos";
-  if (pathname === ROUTES.groups || pathname.startsWith(`${ROUTES.groups}/`)) return "Grupos";
-  if (pathname === ROUTES.map || pathname.startsWith(`${ROUTES.map}/`)) return "Mapa";
-  if (pathname === ROUTES.profile || pathname.startsWith(`${ROUTES.profile}/`)) return "Perfil";
-  if (pathname === ROUTES.login || pathname.startsWith(`${ROUTES.login}/`)) return "Login";
-  if (pathname === ROUTES.register || pathname.startsWith(`${ROUTES.register}/`)) return "Registro";
-  return null;
-}
 
 type NavbarProps = {
   isAuthenticated: boolean;
@@ -51,7 +30,7 @@ export function Navbar({ isAuthenticated }: NavbarProps) {
         <div className="hidden items-center gap-3 md:flex">
           {isAuthenticated ? (
             <nav className="flex items-center gap-2">
-              {items.map((item) => {
+              {AUTH_NAV_ITEMS.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
                 return (
                   <Link

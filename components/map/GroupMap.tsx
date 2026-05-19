@@ -17,6 +17,7 @@ import { MapSearchBox } from "@/components/map/MapSearchBox";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { getGooglePlaceDetails, searchGooglePlaces, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
 import { inferCategoryFromSuggestion } from "@/lib/map/placeClassification";
+import { extractSearchQueryFromLink } from "@/lib/map/linkSearch";
 
 type GroupMapProps = {
   groupId: string;
@@ -252,24 +253,6 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
     });
   }, []);
 
-  const extractSearchQueryFromLink = useCallback((value: string): string => {
-    const raw = value.trim();
-    if (!raw) return "";
-    try {
-      const url = new URL(raw);
-      const q = url.searchParams.get("q");
-      if (q?.trim()) return q.trim();
-      const pathname = decodeURIComponent(url.pathname || "");
-      const placeMatch = pathname.match(/\/place\/([^/]+)/i);
-      if (placeMatch?.[1]) {
-        return placeMatch[1].replace(/\+/g, " ").trim();
-      }
-      return raw;
-    } catch {
-      return raw;
-    }
-  }, []);
-
   const handleSearchByLink = useCallback(async () => {
     const query = extractSearchQueryFromLink(linkSearchValue);
     if (query.length < 3) {
@@ -287,7 +270,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
     } finally {
       setIsLinkSearching(false);
     }
-  }, [extractSearchQueryFromLink, linkSearchValue]);
+  }, [linkSearchValue]);
 
   const getMapContext = useCallback(() => {
     const center = mapRef.current?.getCenter() ?? null;

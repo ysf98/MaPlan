@@ -15,6 +15,7 @@ import {
   type MapDraftPlace
 } from "@/lib/map/geocoding";
 import { getGooglePlaceDetails, searchGooglePlaces, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
+import { extractSearchQueryFromLink } from "@/lib/map/linkSearch";
 import type { PersonalPlace } from "@/lib/personalPlaces";
 
 const addPersonalPlaceInitialState: AddPersonalPlaceActionState = {
@@ -220,7 +221,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
   }, []);
 
   const handleSearchByLink = useCallback(async () => {
-    const query = linkSearchValue.trim();
+    const query = extractSearchQueryFromLink(linkSearchValue);
     if (query.length < 3) {
       setLinkResults([]);
       return;

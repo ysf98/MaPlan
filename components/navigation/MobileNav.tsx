@@ -2,17 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ROUTES } from "@/utils/constants";
+import { AUTH_NAV_ITEMS } from "@/utils/navigation";
 import { cn } from "@/lib/cn";
-
-const items = [
-  { href: ROUTES.dashboard, label: "Inicio" },
-  { href: ROUTES.invitations, label: "Invites" },
-  { href: ROUTES.friends, label: "Amigos" },
-  { href: ROUTES.groups, label: "Grupos" },
-  { href: ROUTES.map, label: "Mapa" },
-  { href: ROUTES.profile, label: "Perfil" }
-];
 
 type MobileNavProps = {
   isAuthenticated: boolean;
@@ -28,7 +19,7 @@ export function MobileNav({ isAuthenticated }: MobileNavProps) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 px-2 py-2 backdrop-blur md:hidden">
       <ul className="grid grid-cols-6 gap-1">
-        {items.map((item) => {
+        {AUTH_NAV_ITEMS.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <li key={item.href}>
