@@ -46,15 +46,15 @@ describe("personal places domain", () => {
   });
 
   it("rechaza duplicado por provider + external_place_id", async () => {
+    const providerQuery = {
+      eq: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { id: "existing" }, error: null })
+    };
+    providerQuery.eq.mockReturnValue(providerQuery);
+
     createSupabaseServerClientMock.mockResolvedValue({
       from: vi.fn(() => ({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              maybeSingle: vi.fn().mockResolvedValue({ data: { id: "existing" }, error: null })
-            }))
-          }))
-        }))
+        select: vi.fn(() => providerQuery)
       }))
     });
 
