@@ -10,6 +10,7 @@ export type NotificationItem =
       groupId: string;
       groupName: string | null;
       invitedByUsername: string | null;
+      status: "pending" | "accepted" | "rejected";
     }
   | {
       id: string;
@@ -21,7 +22,8 @@ export type NotificationItem =
     };
 
 export type PendingNotifications = {
-  invitations: NotificationItem[];
+  pendingInvitations: NotificationItem[];
+  reviewedInvitations: NotificationItem[];
   friendRequests: NotificationItem[];
   total: number;
 };
@@ -32,8 +34,7 @@ export async function getPendingNotificationsForUser(userId: string): Promise<Pe
     getFriendRequests(userId)
   ]);
 
-  const pendingInvitations: NotificationItem[] = invitations
-    .filter((item) => item.status === "pending")
+  const invitationNotifications: NotificationItem[] = invitations
     .map((item) => ({
       id: `group_invitation:${item.id}`,
       kind: "group_invitation",
@@ -41,8 +42,13 @@ export async function getPendingNotificationsForUser(userId: string): Promise<Pe
       invitationId: item.id,
       groupId: item.groupId,
       groupName: item.groupName,
-      invitedByUsername: item.invitedByUsername
+      invitedByUsername: item.invitedByUsername,
+      status: item.status
     }));
+  const pendingInvitations = invitationNotifications.filter((item) => item.kind === "group_invitation" && item.status === "pending");
+  const reviewedInvitations = invitationNotifications.filter(
+    (item) => item.kind === "group_invitation" && item.status !== "pending"
+  );
 
   const pendingFriendRequests: NotificationItem[] = friendRequests.received.map((item) => ({
     id: `friend_request:${item.id}`,
@@ -54,7 +60,8 @@ export async function getPendingNotificationsForUser(userId: string): Promise<Pe
   }));
 
   return {
-    invitations: pendingInvitations,
+    pendingInvitations,
+    reviewedInvitations,
     friendRequests: pendingFriendRequests,
     total: pendingInvitations.length + pendingFriendRequests.length
   };

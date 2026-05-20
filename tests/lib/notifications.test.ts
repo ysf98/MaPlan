@@ -62,7 +62,8 @@ describe("notifications lib", () => {
     const pending = await getPendingNotificationsForUser("user-me");
     const count = await getPendingNotificationsCountForUser("user-me");
 
-    expect(pending.invitations).toHaveLength(1);
+    expect(pending.pendingInvitations).toHaveLength(1);
+    expect(pending.reviewedInvitations).toHaveLength(1);
     expect(pending.friendRequests).toHaveLength(1);
     expect(pending.total).toBe(2);
     expect(count).toBe(2);

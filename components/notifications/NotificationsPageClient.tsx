@@ -11,7 +11,8 @@ import type { NotificationItem } from "@/lib/notifications";
 import { ROUTES } from "@/utils/constants";
 
 type NotificationsPageClientProps = {
-  invitations: NotificationItem[];
+  pendingInvitations: NotificationItem[];
+  reviewedInvitations: NotificationItem[];
   friendRequests: NotificationItem[];
   total: number;
 };
@@ -26,7 +27,12 @@ const friendRequestsInitialState: FriendActionState = {
   success: false
 };
 
-export function NotificationsPageClient({ invitations, friendRequests, total }: NotificationsPageClientProps) {
+export function NotificationsPageClient({
+  pendingInvitations,
+  reviewedInvitations,
+  friendRequests,
+  total
+}: NotificationsPageClientProps) {
   const [invitationState, invitationFormAction, isInvitationPending] = useActionState(
     respondGroupInvitationAction,
     invitationsInitialState
@@ -54,11 +60,11 @@ export function NotificationsPageClient({ invitations, friendRequests, total }: 
         <>
           <Card className="rounded-3xl">
             <h2 className="text-lg font-semibold text-slate-900">Invitaciones a grupos</h2>
-            {invitations.length === 0 ? (
+            {pendingInvitations.length === 0 ? (
               <p className="mt-2 text-sm text-slate-500">No tienes invitaciones pendientes.</p>
             ) : (
               <ul className="mt-3 space-y-2">
-                {invitations.map((notification) => {
+                {pendingInvitations.map((notification) => {
                   if (notification.kind !== "group_invitation") return null;
                   return (
                     <li className="rounded-xl border border-slate-200 p-3" key={notification.id}>
@@ -89,6 +95,26 @@ export function NotificationsPageClient({ invitations, friendRequests, total }: 
             )}
             {invitationState.error ? <p className="mt-2 text-sm text-rose-600">{invitationState.error}</p> : null}
           </Card>
+
+          {reviewedInvitations.length > 0 ? (
+            <Card className="rounded-3xl">
+              <h2 className="text-lg font-semibold text-slate-900">Historial de invitaciones</h2>
+              <ul className="mt-3 space-y-2">
+                {reviewedInvitations.slice(0, 10).map((notification) => {
+                  if (notification.kind !== "group_invitation") return null;
+                  const message =
+                    notification.status === "accepted"
+                      ? `Te has unido a ${notification.groupName || notification.groupId}.`
+                      : `Has rechazado ${notification.groupName || notification.groupId}.`;
+                  return (
+                    <li className="rounded-xl border border-slate-200 p-3" key={`${notification.id}-reviewed`}>
+                      <p className="text-sm text-slate-700">{message}</p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          ) : null}
 
           <Card className="rounded-3xl">
             <h2 className="text-lg font-semibold text-slate-900">Solicitudes de amistad</h2>

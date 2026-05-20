@@ -5,38 +5,16 @@ import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { getUserGroups } from "@/lib/groups";
-import { getGroupInvitationsForUser } from "@/lib/groupInvitations";
-import { getFriendRequests } from "@/lib/friends";
 import { ROUTES } from "@/utils/constants";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   const groups = user ? await getUserGroups(user.id) : [];
-  const invitations = user ? await getGroupInvitationsForUser(user.id) : [];
-  const friendRequests = user ? await getFriendRequests(user.id) : { received: [], sent: [] };
-  const pendingInvitations = invitations.filter((invitation) => invitation.status === "pending");
   const previewGroups = groups.slice(0, 3);
 
   return (
     <AppShell>
       <section className="space-y-4">
-        <Card className="rounded-3xl">
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
-              href={ROUTES.invitations}
-            >
-              Invitaciones pendientes: {pendingInvitations.length}
-            </Link>
-            <Link
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
-              href={ROUTES.friends}
-            >
-              Solicitudes de amistad: {friendRequests.received.length}
-            </Link>
-          </div>
-        </Card>
-
         <Card className="rounded-3xl">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-900">Mis grupos</h2>

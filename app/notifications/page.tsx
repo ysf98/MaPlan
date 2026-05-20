@@ -14,7 +14,12 @@ export default async function NotificationsPage() {
 
   return (
     <AppShell>
-      <NotificationsPageClient friendRequests={pending.friendRequests} invitations={pending.invitations} total={pending.total} />
+      <NotificationsPageClient
+        friendRequests={pending.friendRequests}
+        pendingInvitations={pending.pendingInvitations}
+        reviewedInvitations={pending.reviewedInvitations}
+        total={pending.total}
+      />
     </AppShell>
   );
 }
