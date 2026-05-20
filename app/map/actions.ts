@@ -1,32 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { actionFailure, actionSuccess, INITIAL_ACTION_STATE, type ActionState } from "@/lib/actions/actionState";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
 import { createPersonalPlace, deletePersonalPlace } from "@/lib/personalPlaces";
 import { createPersonalPlaceSchema } from "@/lib/validation/schemas";
 
-export type AddPersonalPlaceActionState = {
-  error: string | null;
-  success: boolean;
-};
-
-export type DeletePersonalPlaceActionState = {
-  error: string | null;
-  success: boolean;
-};
-
-const ADD_PERSONAL_PLACE_INITIAL_STATE: AddPersonalPlaceActionState = {
-  error: null,
-  success: false
-};
-
-const DELETE_PERSONAL_PLACE_INITIAL_STATE: DeletePersonalPlaceActionState = {
-  error: null,
-  success: false
-};
+export type AddPersonalPlaceActionState = ActionState;
+export type DeletePersonalPlaceActionState = ActionState;
 
 export async function addPersonalPlaceAction(
-  _previousState: AddPersonalPlaceActionState = ADD_PERSONAL_PLACE_INITIAL_STATE,
+  _previousState: AddPersonalPlaceActionState = INITIAL_ACTION_STATE,
   formData: FormData
 ): Promise<AddPersonalPlaceActionState> {
   const user = await requireAuthenticatedUser("/map");
@@ -47,10 +31,7 @@ export async function addPersonalPlaceAction(
   });
 
   if (!parsedInput.success) {
-    return {
-      error: getValidationErrorMessage(parsedInput.error),
-      success: false
-    };
+    return actionFailure(getValidationErrorMessage(parsedInput.error));
   }
 
   const result = await createPersonalPlace({
@@ -59,21 +40,21 @@ export async function addPersonalPlaceAction(
   });
 
   if (result.error) {
-    return { error: result.error, success: false };
+    return actionFailure(result.error);
   }
 
   revalidatePath("/map");
-  return { error: null, success: true };
+  return actionSuccess();
 }
 
 export async function deletePersonalPlaceAction(
-  _previousState: DeletePersonalPlaceActionState = DELETE_PERSONAL_PLACE_INITIAL_STATE,
+  _previousState: DeletePersonalPlaceActionState = INITIAL_ACTION_STATE,
   formData: FormData
 ): Promise<DeletePersonalPlaceActionState> {
   const user = await requireAuthenticatedUser("/map");
   const placeId = String(formData.get("placeId") || "").trim();
   if (!placeId) {
-    return { error: "Lugar invalido.", success: false };
+    return actionFailure("Lugar invalido.");
   }
 
   const result = await deletePersonalPlace({
@@ -82,9 +63,9 @@ export async function deletePersonalPlaceAction(
   });
 
   if (result.error) {
-    return { error: result.error, success: false };
+    return actionFailure(result.error);
   }
 
   revalidatePath("/map");
-  return { error: null, success: true };
+  return actionSuccess();
 }
