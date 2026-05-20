@@ -7,10 +7,51 @@ function normalize(value: string): string {
     .toLowerCase();
 }
 
+function getDirectLabelFromPrimaryType(primaryType: string): string | null {
+  const primary = primaryType.toLowerCase();
+  if (!primary) return null;
+
+  const directMappings: Array<{ match: string; label: string }> = [
+    { match: "restaurant", label: "Restaurante" },
+    { match: "meal_takeaway", label: "Restaurante" },
+    { match: "meal_delivery", label: "Restaurante" },
+    { match: "bar", label: "Bar" },
+    { match: "cafe", label: "Cafeteria" },
+    { match: "bakery", label: "Panaderia" },
+    { match: "supermarket", label: "Hipermercado" },
+    { match: "convenience_store", label: "Supermercado" },
+    { match: "shopping_mall", label: "Centro comercial" },
+    { match: "clothing_store", label: "Tienda" },
+    { match: "movie_theater", label: "Cine" },
+    { match: "pharmacy", label: "Farmacia" },
+    { match: "hospital", label: "Hospital" },
+    { match: "hotel", label: "Hotel" },
+    { match: "gym", label: "Gimnasio" },
+    { match: "sports_complex", label: "Deporte" },
+    { match: "stadium", label: "Deporte" },
+    { match: "swimming_pool", label: "Deporte" },
+    { match: "park", label: "Parque" },
+    { match: "museum", label: "Museo" },
+    { match: "tourist_attraction", label: "Lugar turistico" },
+    { match: "locality", label: "Localidad" },
+    { match: "route", label: "Direccion" },
+    { match: "street_address", label: "Direccion" },
+    { match: "store", label: "Comercio" }
+  ];
+
+  const found = directMappings.find((item) => primary.includes(item.match));
+  return found?.label ?? null;
+}
+
 export function getPlaceTypeLabel(primaryType: string | null, placeName: string, address: string): string {
   const normalizedName = normalize(placeName);
   const normalizedAddress = normalize(address);
   const primary = (primaryType || "").toLowerCase();
+
+  const directLabel = getDirectLabelFromPrimaryType(primary);
+  if (directLabel) {
+    return directLabel;
+  }
 
   const scores: Record<
     "restaurante" | "bar" | "cafeteria" | "discoteca" | "comercio" | "deporte" | "localidad" | "direccion",
@@ -87,11 +128,7 @@ export function getPlaceTypeLabel(primaryType: string | null, placeName: string,
   if (best[0] === "cafeteria") return "Cafeteria";
   if (best[0] === "discoteca") return "Discoteca";
   if (best[0] === "comercio") return "Comercio";
-  if (best[0] === "deporte") {
-    if (normalizedName.includes("padel")) return "Padel";
-    if (normalizedName.includes("gym") || normalizedName.includes("gimnasio") || normalizedName.includes("fitness")) return "Gimnasio";
-    return "Deporte";
-  }
+  if (best[0] === "deporte") return "Deporte";
   if (best[0] === "localidad") return "Localidad";
   if (best[0] === "direccion") return "Direccion";
   return "Sitio";

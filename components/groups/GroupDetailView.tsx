@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { PlaceCard } from "@/components/places/PlaceCard";
+import { useActionState, useState } from "react";
+import { deletePlaceAction, type DeletePlaceActionState } from "@/app/groups/[groupId]/actions";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -24,6 +24,11 @@ type GroupDetailViewProps = {
   invitableFriends: Array<{ id: string; username: string | null }>;
   groupInvitations: GroupInvitationItem[];
   totalFriendsCount: number;
+};
+
+const deleteInitialState: DeletePlaceActionState = {
+  error: null,
+  success: false
 };
 
 function getInitial(name: string | null): string {
@@ -50,12 +55,20 @@ export function GroupDetailView({
 }: GroupDetailViewProps) {
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [deleteState, deleteFormAction, isDeleting] = useActionState(deletePlaceAction, deleteInitialState);
   const useStackedMembers = membersPreview.length >= 4;
   const hiddenMembersCount = Math.max(0, totalMembersCount - membersPreview.length);
-  const selectedPlace = places.find((place) => place.id === selectedPlaceId) ?? null;
 
   return (
-    <section className="space-y-4">
+    <section
+      className="space-y-4"
+      onClick={(event) => {
+        const target = event.target as HTMLElement;
+        if (!target.closest("[data-group-place-card]")) {
+          setSelectedPlaceId(null);
+        }
+      }}
+    >
       <Card className="rounded-3xl">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 flex-1">
@@ -125,20 +138,54 @@ export function GroupDetailView({
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {places.map((place) => (
               <li key={place.id}>
-                <button
+                <div
                   className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition ${
                     selectedPlaceId === place.id
                       ? "border-teal-300 bg-teal-50 text-teal-900"
                       : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
                   }`}
-                  onClick={() => setSelectedPlaceId(place.id)}
-                  type="button"
+                  data-group-place-card
                 >
-                  {place.name}
-                </button>
+                  <button
+                    className="w-full text-left"
+                    onClick={() => setSelectedPlaceId((current) => (current === place.id ? null : place.id))}
+                    type="button"
+                  >
+                    <p className="font-medium">{place.name}</p>
+                    <p className="text-xs text-slate-500">{place.address}</p>
+                  </button>
+                  {selectedPlaceId === place.id ? (
+                    <div className="mt-3 flex flex-wrap gap-2" data-group-place-card>
+                      {place.googleMapsUrl ? (
+                        <a
+                          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                          href={place.googleMapsUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Ver en Google Maps
+                        </a>
+                      ) : null}
+                      {group.role === "owner" ? (
+                        <form action={deleteFormAction}>
+                          <input name="groupId" type="hidden" value={groupId} />
+                          <input name="placeId" type="hidden" value={place.id} />
+                          <button
+                            className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                            disabled={isDeleting}
+                            type="submit"
+                          >
+                            {isDeleting ? "Eliminando..." : "Eliminar"}
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>
+          {deleteState.error ? <p className="mt-3 text-sm text-rose-600">{deleteState.error}</p> : null}
         </Card>
       ) : (
         <EmptyState
@@ -150,10 +197,6 @@ export function GroupDetailView({
           }
         />
       )}
-
-      {selectedPlace ? (
-        <PlaceCard canDelete={group.role === "owner"} canEdit={group.canEditPlaces} groupId={groupId} place={selectedPlace} />
-      ) : null}
 
       {isMembersModalOpen ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4">

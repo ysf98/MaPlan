@@ -15,9 +15,8 @@ import {
 } from "@/lib/map/geocoding";
 import { MapSearchBox } from "@/components/map/MapSearchBox";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
-import { getGooglePlaceDetails, searchGooglePlaces, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
+import { getGooglePlaceDetails, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
 import { inferCategoryFromSuggestion } from "@/lib/map/placeClassification";
-import { extractSearchQueryFromLink } from "@/lib/map/linkSearch";
 
 type GroupMapProps = {
   groupId: string;
@@ -80,10 +79,6 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   const [draftSelection, setDraftSelection] = useState<MapDraftPlace | null>(null);
   const [searchCloseSignal, setSearchCloseSignal] = useState(0);
   const [addPlaceState, addPlaceFormAction, isAddPlacePending] = useActionState(addPlaceAction, addPlaceInitialState);
-  const [isLinkSearchOpen, setIsLinkSearchOpen] = useState(false);
-  const [linkSearchValue, setLinkSearchValue] = useState("");
-  const [linkResults, setLinkResults] = useState<GooglePlaceSuggestion[]>([]);
-  const [isLinkSearching, setIsLinkSearching] = useState(false);
   const wasAddPlacePendingRef = useRef(false);
 
   const placesWithCoordinates = useMemo(() => places.filter((place) => hasValidCoordinates(place)), [places]);
@@ -253,25 +248,6 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
     });
   }, []);
 
-  const handleSearchByLink = useCallback(async () => {
-    const query = extractSearchQueryFromLink(linkSearchValue);
-    if (query.length < 3) {
-      setLinkResults([]);
-      return;
-    }
-    setIsLinkSearching(true);
-    try {
-      const center = mapRef.current?.getCenter();
-      const results = await searchGooglePlaces({
-        query,
-        center: center ? { lng: center.lng, lat: center.lat } : null
-      });
-      setLinkResults(results);
-    } finally {
-      setIsLinkSearching(false);
-    }
-  }, [linkSearchValue]);
-
   const getMapContext = useCallback(() => {
     const center = mapRef.current?.getCenter() ?? null;
     return {
@@ -339,51 +315,6 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
           />
         </div>
       ) : null}
-      <Card className="rounded-2xl border border-slate-200">
-        <button
-          className="text-sm font-medium text-teal-700 hover:text-teal-800"
-          onClick={() => setIsLinkSearchOpen((value) => !value)}
-          type="button"
-        >
-          Buscar con enlace
-        </button>
-        {isLinkSearchOpen ? (
-          <div className="mt-2 space-y-2">
-            <div className="flex gap-2">
-              <input
-                className="h-10 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                onChange={(event) => setLinkSearchValue(event.target.value)}
-                placeholder="Pega un enlace de Google Maps o texto"
-                value={linkSearchValue}
-              />
-              <button
-                className="h-10 rounded-xl bg-teal-600 px-3 text-sm font-semibold text-white hover:bg-teal-700"
-                onClick={() => void handleSearchByLink()}
-                type="button"
-              >
-                Buscar
-              </button>
-            </div>
-            {isLinkSearching ? <p className="text-xs text-slate-500">Buscando...</p> : null}
-            {linkResults.length > 0 ? (
-              <ul className="max-h-48 space-y-1 overflow-y-auto">
-                {linkResults.map((result) => (
-                  <li key={`link-${result.externalPlaceId}`}>
-                    <button
-                      className="w-full rounded-lg border border-slate-200 px-2 py-2 text-left text-xs hover:bg-slate-50"
-                      onClick={() => void handleSelectSearchResult(result)}
-                      type="button"
-                    >
-                      <p className="font-medium text-slate-900">{result.name}</p>
-                      <p className="text-slate-500">{result.address}</p>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        ) : null}
-      </Card>
     </div>
   );
 }

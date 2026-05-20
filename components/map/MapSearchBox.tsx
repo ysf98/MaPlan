@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { searchGooglePlaces, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
 import { getPlaceTypeLabel } from "@/lib/map/placeClassification";
+import { extractSearchQueryFromLink } from "@/lib/map/linkSearch";
 
 type MapSearchBoxProps = {
   getMapContext: () => { center: { lng: number; lat: number } | null };
@@ -32,7 +33,7 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
   };
 
   useEffect(() => {
-    const query = searchQuery.trim();
+    const query = extractSearchQueryFromLink(searchQuery);
     if (!isResultsOpen || query.length < 3) {
       setSearchResults([]);
       return;
@@ -85,14 +86,14 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
           setIsResultsOpen(true);
         }}
         onFocus={() => {
-          if (searchQuery.trim().length >= 3) {
+          if (extractSearchQueryFromLink(searchQuery).length >= 3) {
             setIsResultsOpen(true);
           }
         }}
-        placeholder="Buscar bares, restaurantes, poblaciones..."
+        placeholder="Buscar lugares cercanos o pegar un enlace de sitio"
         value={searchQuery}
       />
-      {isResultsOpen && searchQuery.trim().length >= 3 ? (
+      {isResultsOpen && extractSearchQueryFromLink(searchQuery).length >= 3 ? (
         <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
           {isSearching ? (
             <p className="px-3 py-2 text-xs text-slate-500">Buscando...</p>

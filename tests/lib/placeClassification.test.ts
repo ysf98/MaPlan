@@ -14,6 +14,18 @@ describe("place classification", () => {
     expect(getPlaceTypeLabel("establishment", "Artesania Local", "Referencia sin contexto")).toBe("Sitio");
   });
 
+  it("maps supermarket types to Hipermercado label", () => {
+    expect(getPlaceTypeLabel("supermarket", "Family Cash", "Av. del Textil, Ontinyent")).toBe("Hipermercado");
+  });
+
+  it("maps movie theater types to Cine label", () => {
+    expect(getPlaceTypeLabel("movie_theater", "Cines ABC", "Valencia")).toBe("Cine");
+  });
+
+  it("maps bar type to Bar label", () => {
+    expect(getPlaceTypeLabel("bar", "Taberna Central", "Madrid")).toBe("Bar");
+  });
+
   it("maps bar to Comer category (not Fiesta)", () => {
     const category = inferCategoryFromSuggestion({
       externalPlaceId: "x",
