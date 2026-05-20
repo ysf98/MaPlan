@@ -2,37 +2,25 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { FriendsPageClient } from "@/components/friends/FriendsPageClient";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
-import { getFriendRequests, getFriends, searchUsers } from "@/lib/friends";
+import { getFriendRequests, getFriends } from "@/lib/friends";
 
-type FriendsPageProps = {
-  searchParams: Promise<{
-    q?: string;
-  }>;
-};
-
-export default async function FriendsPage({ searchParams }: FriendsPageProps) {
+export default async function FriendsPage() {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login?next=/friends");
   }
 
-  const { q = "" } = await searchParams;
-  const [requests, friends, results] = await Promise.all([
-    getFriendRequests(user.id),
-    getFriends(user.id),
-    searchUsers(q, user.id)
-  ]);
+  const [requests, friends] = await Promise.all([getFriendRequests(user.id), getFriends(user.id)]);
 
   return (
     <AppShell>
       <FriendsPageClient
         friends={friends}
-        query={q}
+        query=""
         receivedRequests={requests.received}
-        searchResults={results}
+        searchResults={[]}
         sentRequests={requests.sent}
       />
     </AppShell>
   );
 }
-

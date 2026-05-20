@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { removeFriendAction, respondFriendRequestAction, sendFriendRequestAction } from "@/app/friends/actions";
 import type { FriendActionState } from "@/app/friends/actions";
 import { Button } from "@/components/ui/Button";
@@ -20,7 +20,7 @@ const initialState: FriendActionState = { error: null, success: false };
 
 export function FriendsPageClient({
   query,
-  searchResults,
+  searchResults: initialSearchResults,
   friends,
   receivedRequests,
   sentRequests
@@ -28,36 +28,79 @@ export function FriendsPageClient({
   const [sendState, sendAction, isSending] = useActionState(sendFriendRequestAction, initialState);
   const [respondState, respondAction, isResponding] = useActionState(respondFriendRequestAction, initialState);
   const [removeState, removeAction, isRemoving] = useActionState(removeFriendAction, initialState);
+  const [searchValue, setSearchValue] = useState(query);
+  const [liveResults, setLiveResults] = useState<UserSearchItem[]>(initialSearchResults);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const hasQuery = query.trim().length >= 2;
+  const hasQuery = searchValue.trim().length >= 2;
+  const normalizedQuery = useMemo(() => searchValue.trim(), [searchValue]);
+
+  useEffect(() => {
+    const term = normalizedQuery;
+    if (term.length < 2) {
+      setLiveResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const response = await fetch(`/api/friends/search?q=${encodeURIComponent(term)}`, {
+          method: "GET",
+          signal: controller.signal,
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          setLiveResults([]);
+          return;
+        }
+
+        const payload = (await response.json().catch(() => null)) as { results?: UserSearchItem[] } | null;
+        setLiveResults(payload?.results || []);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setLiveResults([]);
+        }
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [normalizedQuery]);
 
   return (
     <section className="space-y-4">
       <Card className="rounded-3xl">
-        <form action="/friends" className="flex flex-wrap gap-2">
+        <h2 className="text-lg font-semibold text-slate-900">Buscar amigos</h2>
+        <div className="mt-3">
           <input
             className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-            defaultValue={query}
+            autoComplete="off"
+            onChange={(event) => setSearchValue(event.target.value)}
+            value={searchValue}
             minLength={2}
             name="q"
             placeholder="Buscar por username"
           />
-          <Button type="submit" variant="secondary">
-            Buscar
-          </Button>
-        </form>
+        </div>
         {sendState.error ? <p className="mt-2 text-sm text-rose-600">{sendState.error}</p> : null}
-      </Card>
-
-      <Card className="rounded-3xl">
-        <h2 className="text-lg font-semibold text-slate-900">Resultados</h2>
+        {sendState.success ? <p className="mt-2 text-sm text-emerald-600">Solicitud enviada.</p> : null}
         {!hasQuery ? (
-          <p className="mt-2 text-sm text-slate-500">Escribe al menos 2 caracteres para buscar usuarios.</p>
-        ) : searchResults.length === 0 ? (
+          <p className="mt-3 text-sm text-slate-500">Escribe al menos 2 caracteres para buscar usuarios.</p>
+        ) : isSearching ? (
+          <p className="mt-3 text-sm text-slate-500">Buscando usuarios...</p>
+        ) : liveResults.length === 0 ? (
           <p className="mt-2 text-sm text-slate-500">No encontramos usuarios para esa busqueda.</p>
         ) : (
           <ul className="mt-3 space-y-2">
-            {searchResults.map((user) => (
+            {liveResults.map((user) => (
               <li key={user.id} className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-3">
                 <p className="text-sm font-medium text-slate-900">@{user.username || "sin-username"}</p>
                 {user.alreadyFriend ? (
@@ -76,7 +119,6 @@ export function FriendsPageClient({
             ))}
           </ul>
         )}
-        {sendState.success ? <p className="mt-2 text-sm text-emerald-600">Solicitud enviada.</p> : null}
       </Card>
 
       {receivedRequests.length > 0 ? (

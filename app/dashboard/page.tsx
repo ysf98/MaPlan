@@ -118,25 +118,6 @@ export default async function DashboardPage() {
           )}
         </Card>
 
-        {groupsWithActivity.length > 0 ? (
-          <Card className="rounded-3xl">
-            <h2 className="text-lg font-semibold text-slate-900">Grupos con novedades</h2>
-            <ul className="mt-4 space-y-3">
-              {groupsWithActivity.map((group) => (
-                <li key={group.groupId}>
-                  <Link href={`${ROUTES.groups}/${group.groupId}`}>
-                    <div className="rounded-2xl border border-slate-200 px-4 py-3 transition hover:bg-slate-50">
-                      <p className="text-sm font-semibold text-slate-900">{group.groupName}</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {group.recentEventsCount} novedad(es) · Ultima actividad: {formatDate(group.latestActivityAt)}
-                      </p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        ) : null}
       </section>
     </AppShell>
   );
