@@ -305,6 +305,29 @@ export type Database = {
           updated_at?: string;
         };
       };
+      group_activity_events: {
+        Row: {
+          id: string;
+          group_id: string;
+          actor_user_id: string;
+          event_type: string;
+          entity_id: string | null;
+          entity_name: string | null;
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          group_id: string;
+          actor_user_id: string;
+          event_type: string;
+          entity_id?: string | null;
+          entity_name?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

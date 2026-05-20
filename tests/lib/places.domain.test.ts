@@ -4,6 +4,7 @@ const createSupabaseServerClientMock = vi.fn();
 const canEditPlacesMock = vi.fn();
 const isGroupMemberMock = vi.fn();
 const isGroupOwnerMock = vi.fn();
+const recordPlaceAddedGroupActivityMock = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: createSupabaseServerClientMock
@@ -13,6 +14,10 @@ vi.mock("@/lib/groupPermissions", () => ({
   canEditPlaces: canEditPlacesMock,
   isGroupMember: isGroupMemberMock,
   isGroupOwner: isGroupOwnerMock
+}));
+
+vi.mock("@/lib/groupActivity", () => ({
+  recordPlaceAddedGroupActivity: recordPlaceAddedGroupActivityMock
 }));
 
 describe("places domain", () => {
@@ -33,9 +38,18 @@ describe("places domain", () => {
     return chain;
   }
 
+  function createInsertChainMock() {
+    const chain = {
+      select: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { id: "place-1", name: "Lugar" }, error: null })
+    };
+    chain.select.mockReturnValue(chain);
+    return chain;
+  }
+
   it("member puede crear lugar si tiene permiso", async () => {
     canEditPlacesMock.mockResolvedValue(true);
-    const insertMock = vi.fn().mockResolvedValue({ error: null });
+    const insertMock = vi.fn(() => createInsertChainMock());
     const existingPlaceQuery = createNoExistingPlaceQueryMock();
     createSupabaseServerClientMock.mockResolvedValue({
       from: vi.fn((table: string) => {
@@ -72,11 +86,12 @@ describe("places domain", () => {
 
     expect(result).toEqual({ error: null });
     expect(insertMock).toHaveBeenCalled();
+    expect(recordPlaceAddedGroupActivityMock).toHaveBeenCalled();
   });
 
   it("owner (canEdit true) puede crear lugar", async () => {
     canEditPlacesMock.mockResolvedValue(true);
-    const insertMock = vi.fn().mockResolvedValue({ error: null });
+    const insertMock = vi.fn(() => createInsertChainMock());
     const existingPlaceQuery = createNoExistingPlaceQueryMock();
     createSupabaseServerClientMock.mockResolvedValue({
       from: vi.fn((table: string) => {
@@ -113,6 +128,7 @@ describe("places domain", () => {
 
     expect(result).toEqual({ error: null });
     expect(insertMock).toHaveBeenCalled();
+    expect(recordPlaceAddedGroupActivityMock).toHaveBeenCalled();
   });
 
   it("usuario sin permiso no puede actualizar ubicacion", async () => {

@@ -64,6 +64,7 @@ Ejecuta en Supabase SQL Editor:
 5. `supabase/rls_group_invitations.sql`
 6. `supabase/places_external_provider.sql`
 7. `supabase/rls_personal_places.sql`
+8. `supabase/rls_group_activity.sql`
 
 Notas:
 - `rls_personal_places.sql` crea `personal_places`, índices, trigger de `updated_at` y políticas RLS por `auth.uid()`.

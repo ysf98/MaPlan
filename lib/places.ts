@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canEditPlaces, isGroupMember, isGroupOwner } from "@/lib/groupPermissions";
+import { recordPlaceAddedGroupActivity } from "@/lib/groupActivity";
 import { INITIAL_PLACE_CATEGORIES, type GroupPlace, type PlaceCategory } from "@/lib/places/shared";
 import type { PlaceProvider, PlaceSource, PlaceStatus } from "@/types/supabase";
 
@@ -198,30 +199,47 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
     return { error: "Ese sitio ya esta guardado en este grupo." };
   }
 
-  const { error } = await supabase.from("places").insert({
-    group_id: input.groupId,
-    created_by: input.userId,
-    category_id: categoryId,
-    name,
-    address,
-    city,
-    original_url: input.originalUrl?.trim() || null,
-    source: input.source || null,
-    provider,
-    external_place_id: externalPlaceId,
-    google_maps_url: input.googleMapsUrl?.trim() || null,
-    business_status: input.businessStatus?.trim() || null,
-    latitude: input.latitude ?? null,
-    longitude: input.longitude ?? null,
-    notes: input.notes?.trim() || null,
-    status: "pending"
-  });
+  const insertedPlace = await supabase
+    .from("places")
+    .insert({
+      group_id: input.groupId,
+      created_by: input.userId,
+      category_id: categoryId,
+      name,
+      address,
+      city,
+      original_url: input.originalUrl?.trim() || null,
+      source: input.source || null,
+      provider,
+      external_place_id: externalPlaceId,
+      google_maps_url: input.googleMapsUrl?.trim() || null,
+      business_status: input.businessStatus?.trim() || null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
+      notes: input.notes?.trim() || null,
+      status: "pending"
+    })
+    .select("id, name")
+    .maybeSingle();
 
-  if (error) {
-    if (error.code === "23505") {
+  if (insertedPlace.error) {
+    if (insertedPlace.error.code === "23505") {
       return { error: "Ese sitio ya esta guardado en este grupo." };
     }
-    return { error: error.message };
+    return { error: insertedPlace.error.message };
+  }
+
+  if (insertedPlace.data?.id) {
+    try {
+      await recordPlaceAddedGroupActivity({
+        groupId: input.groupId,
+        actorUserId: input.userId,
+        placeId: insertedPlace.data.id,
+        placeName: insertedPlace.data.name || name
+      });
+    } catch {
+      // No bloqueamos el guardado del lugar por un fallo secundario de actividad.
+    }
   }
 
   return { error: null };

@@ -27,4 +27,11 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("create policy personal_places_update_own");
     expect(sql).toContain("create policy personal_places_delete_own");
   });
+
+  it("includes group activity table and member-only visibility policy", () => {
+    const sql = readFileSync(resolve(process.cwd(), "supabase/rls_group_activity.sql"), "utf8");
+    expect(sql).toContain("create table if not exists public.group_activity_events");
+    expect(sql).toContain("create policy group_activity_select_group_member");
+    expect(sql).toContain("create policy group_activity_insert_editor_only");
+  });
 });
