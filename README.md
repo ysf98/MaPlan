@@ -24,6 +24,7 @@ MaPlan es una aplicación social para organizar planes entre amigos. Permite cre
 Documentación de arquitectura:
 - Convenciones de carpetas: [folder-conventions.md](/c:/Users/Worten/Desktop/Maplan/docs/architecture/folder-conventions.md)
 - Plan incremental de refactor: [incremental-refactor-plan.md](/c:/Users/Worten/Desktop/Maplan/docs/architecture/incremental-refactor-plan.md)
+- Checklist de refactor seguro: [safe-refactor-checklist.md](/c:/Users/Worten/Desktop/Maplan/docs/architecture/safe-refactor-checklist.md)
 
 ## Funcionalidades principales
 - Autenticación con Supabase.
