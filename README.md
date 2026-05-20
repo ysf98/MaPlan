@@ -99,6 +99,7 @@ Specs base:
 - `e2e/auth.spec.ts`
 - `e2e/groups.spec.ts`
 - `e2e/map.spec.ts`
+- `e2e/notifications.spec.ts`
 
 Instalación de browser en local/CI:
 ```bash

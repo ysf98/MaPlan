@@ -28,6 +28,7 @@ export async function sendFriendRequestAction(
   }
 
   revalidatePath("/friends");
+  revalidatePath("/notifications");
   revalidatePath("/dashboard");
   return actionSuccess();
 }

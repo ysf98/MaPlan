@@ -36,6 +36,7 @@ export async function respondGroupInvitationAction(
   }
 
   revalidatePath("/invitations");
+  revalidatePath("/notifications");
   revalidatePath("/dashboard");
   revalidatePath("/groups");
   return { error: null, success: true };

@@ -7,6 +7,7 @@ export const ROUTES = {
   dashboard: "/dashboard",
   friends: "/friends",
   invitations: "/invitations",
+  notifications: "/notifications",
   groups: "/groups",
   newGroup: "/groups/new",
   joinGroup: "/groups/join",
