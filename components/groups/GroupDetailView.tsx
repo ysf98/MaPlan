@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
 import { GroupMap } from "@/components/map/GroupMap";
+import { SimplePlacesList } from "@/components/map/SimplePlacesList";
 import type { GroupDetail, GroupJoinRequestItem } from "@/lib/groups/types";
 import type { GroupMemberPreview } from "@/lib/groups/types";
 import type { GroupInvitationItem } from "@/lib/groupInvitations";
@@ -134,57 +135,40 @@ export function GroupDetailView({
 
       {places.length > 0 ? (
         <Card className="rounded-3xl">
-          <h3 className="text-sm font-semibold text-slate-900">Lugares guardados</h3>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {places.map((place) => (
-              <li key={place.id}>
-                <div
-                  className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition ${
-                    selectedPlaceId === place.id
-                      ? "border-teal-300 bg-teal-50 text-teal-900"
-                      : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
-                  }`}
-                  data-group-place-card
-                >
-                  <button
-                    className="w-full text-left"
-                    onClick={() => setSelectedPlaceId((current) => (current === place.id ? null : place.id))}
-                    type="button"
+          <SimplePlacesList
+            cardDataAttribute="data-group-place-card"
+            onTogglePlace={(placeId) => setSelectedPlaceId((current) => (current === placeId ? null : placeId))}
+            places={places}
+            renderActions={(place) => (
+              <>
+                {place.googleMapsUrl ? (
+                  <a
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    href={place.googleMapsUrl}
+                    rel="noreferrer"
+                    target="_blank"
                   >
-                    <p className="font-medium">{place.name}</p>
-                    <p className="text-xs text-slate-500">{place.address}</p>
-                  </button>
-                  {selectedPlaceId === place.id ? (
-                    <div className="mt-3 flex flex-wrap gap-2" data-group-place-card>
-                      {place.googleMapsUrl ? (
-                        <a
-                          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                          href={place.googleMapsUrl}
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          Ver en Google Maps
-                        </a>
-                      ) : null}
-                      {group.role === "owner" ? (
-                        <form action={deleteFormAction}>
-                          <input name="groupId" type="hidden" value={groupId} />
-                          <input name="placeId" type="hidden" value={place.id} />
-                          <button
-                            className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
-                            disabled={isDeleting}
-                            type="submit"
-                          >
-                            {isDeleting ? "Eliminando..." : "Eliminar"}
-                          </button>
-                        </form>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
+                    Ver en Google Maps
+                  </a>
+                ) : null}
+                {group.role === "owner" ? (
+                  <form action={deleteFormAction}>
+                    <input name="groupId" type="hidden" value={groupId} />
+                    <input name="placeId" type="hidden" value={place.id} />
+                    <button
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                      disabled={isDeleting}
+                      type="submit"
+                    >
+                      {isDeleting ? "Eliminando..." : "Eliminar"}
+                    </button>
+                  </form>
+                ) : null}
+              </>
+            )}
+            selectedPlaceId={selectedPlaceId}
+            title="Lugares guardados"
+          />
           {deleteState.error ? <p className="mt-3 text-sm text-rose-600">{deleteState.error}</p> : null}
         </Card>
       ) : (

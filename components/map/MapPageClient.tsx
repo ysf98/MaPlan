@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { deletePersonalPlaceAction, type DeletePersonalPlaceActionState } from "@/app/map/actions";
 import { PersonalMap } from "@/components/map/PersonalMap";
+import { SimplePlacesList } from "@/components/map/SimplePlacesList";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { PersonalPlace } from "@/lib/personalPlaces";
@@ -36,54 +37,37 @@ export function MapPageClient({ personalPlaces }: MapPageClientProps) {
 
       {personalPlaces.length > 0 ? (
         <Card className="rounded-3xl">
-          <h2 className="text-sm font-semibold text-slate-900">Lugares de mi mapa</h2>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {personalPlaces.map((place) => (
-              <li key={place.id}>
-                <div
-                  className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition ${
-                    selectedPlaceId === place.id
-                      ? "border-teal-300 bg-teal-50 text-teal-900"
-                      : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
-                  }`}
-                  data-place-card
-                >
-                  <button
-                    className="w-full text-left"
-                    onClick={() => setSelectedPlaceId((current) => (current === place.id ? null : place.id))}
-                    type="button"
+          <SimplePlacesList
+            cardDataAttribute="data-place-card"
+            onTogglePlace={(placeId) => setSelectedPlaceId((current) => (current === placeId ? null : placeId))}
+            places={personalPlaces}
+            renderActions={(place) => (
+              <>
+                {place.googleMapsUrl ? (
+                  <a
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    href={place.googleMapsUrl}
+                    rel="noreferrer"
+                    target="_blank"
                   >
-                    <p className="font-medium">{place.name}</p>
-                    <p className="text-xs text-slate-500">{place.address}</p>
+                    Ver en Google Maps
+                  </a>
+                ) : null}
+                <form action={deleteFormAction}>
+                  <input name="placeId" type="hidden" value={place.id} />
+                  <button
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                    disabled={isDeleting}
+                    type="submit"
+                  >
+                    {isDeleting ? "Eliminando..." : "Eliminar"}
                   </button>
-                  {selectedPlaceId === place.id ? (
-                    <div className="mt-3 flex flex-wrap gap-2" data-place-card>
-                      {place.googleMapsUrl ? (
-                        <a
-                          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                          href={place.googleMapsUrl}
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          Ver en Google Maps
-                        </a>
-                      ) : null}
-                      <form action={deleteFormAction}>
-                        <input name="placeId" type="hidden" value={place.id} />
-                        <button
-                          className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
-                          disabled={isDeleting}
-                          type="submit"
-                        >
-                          {isDeleting ? "Eliminando..." : "Eliminar"}
-                        </button>
-                      </form>
-                    </div>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
+                </form>
+              </>
+            )}
+            selectedPlaceId={selectedPlaceId}
+            title="Lugares de mi mapa"
+          />
           {deleteState.error ? <p className="mt-3 text-sm text-rose-600">{deleteState.error}</p> : null}
         </Card>
       ) : (

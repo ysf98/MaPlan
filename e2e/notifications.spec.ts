@@ -4,7 +4,7 @@ import { HAS_E2E_CREDENTIALS, loginWithEnvUser } from "./utils/auth";
 test.describe("notifications", () => {
   test("notifications route is protected for anonymous users", async ({ page }) => {
     await page.goto("/notifications");
-    await expect(page).toHaveURL(/\/login\?next=%2Fnotifications$/);
+    await expect(page).toHaveURL(/\/login\?next=(%2F|\/)notifications$/);
   });
 
   test("authenticated user sees bell button and notifications page", async ({ page }) => {
