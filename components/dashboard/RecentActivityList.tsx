@@ -28,7 +28,7 @@ function formatRelativeTime(value: string): string {
 export function RecentActivityList({ activityFeed }: RecentActivityListProps) {
   if (activityFeed.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-rose-200 bg-white/70 px-5 py-6 text-sm font-medium text-zinc-500">
+      <div className="rounded-3xl border border-dashed border-rose-200 bg-white px-5 py-6 text-sm font-medium text-zinc-500">
         Aun no hay actividad reciente en tus grupos.
       </div>
     );
@@ -38,7 +38,7 @@ export function RecentActivityList({ activityFeed }: RecentActivityListProps) {
     <ul className="space-y-5">
       {activityFeed.slice(0, 5).map((event, index) => (
         <li className="flex items-center gap-3" key={event.id}>
-          <span className="relative grid h-12 w-12 shrink-0 place-items-center rounded-full bg-rose-100 text-sm font-extrabold text-[#c6283a] ring-4 ring-white">
+          <span className="relative grid h-12 w-12 shrink-0 place-items-center rounded-full bg-rose-100 text-sm font-semibold text-[#c6283a] ring-4 ring-white">
             {getInitial(event.actorUsername)}
             <span
               className={`absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white ${

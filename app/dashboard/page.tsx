@@ -66,7 +66,7 @@ export default async function DashboardPage() {
   const shortName = displayName.split(" ")[0] || displayName;
 
   return (
-    <div className="min-h-screen bg-[#fff7f7] text-zinc-950">
+    <div className="min-h-screen bg-white text-zinc-950">
       <DashboardHeader
         avatarUrl={profile?.avatar_url || null}
         displayName={displayName}
@@ -76,8 +76,8 @@ export default async function DashboardPage() {
       <main className="mx-auto w-full max-w-3xl px-5 pb-32 pt-6">
         <section className="space-y-7">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#c6283a]">Bienvenido de nuevo</p>
-            <h1 className="mt-2 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Hola, {shortName}!</h1>
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#c6283a]">Bienvenido de nuevo</p>
+            <h1 className="mt-2 text-4xl font-bold tracking-tight text-zinc-950 sm:text-5xl">Hola, {shortName}!</h1>
             <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-zinc-600">
               Tienes {notifications.pendingInvitations.length} invitaciones pendientes y {placeStats.pendingPlaceCount} lugares pendientes por visitar.
             </p>
@@ -98,8 +98,8 @@ export default async function DashboardPage() {
               }}
             />
           ) : (
-            <section className="rounded-[28px] border border-rose-100 bg-white px-5 py-5 shadow-sm">
-              <p className="text-sm font-extrabold text-zinc-800">Todo al dia</p>
+            <section className="rounded-[28px] border border-zinc-100 bg-white px-5 py-5 shadow-[0_12px_30px_rgba(24,24,27,0.08)]">
+              <p className="text-sm font-semibold text-zinc-800">Todo al dia</p>
               <p className="mt-1 text-sm leading-6 text-zinc-500">
                 No tienes invitaciones pendientes ahora mismo. Puedes seguir explorando sitios para tus planes.
               </p>
@@ -108,8 +108,8 @@ export default async function DashboardPage() {
 
           <section>
             <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="text-xl font-black tracking-tight text-zinc-950">Tus Grupos</h2>
-              <Link className="text-xs font-extrabold text-[#c6283a] transition hover:text-[#a91f31]" href={ROUTES.groups}>
+              <h2 className="text-xl font-bold tracking-tight text-zinc-950">Tus Grupos</h2>
+              <Link className="text-xs font-semibold text-[#c6283a] transition hover:text-[#a91f31]" href={ROUTES.groups}>
                 Ver todos
               </Link>
             </div>
@@ -124,10 +124,10 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="rounded-3xl border border-dashed border-rose-200 bg-white/70 px-5 py-6">
-                <p className="text-sm font-extrabold text-zinc-800">Todavia no tienes grupos</p>
+                <p className="text-sm font-semibold text-zinc-800">Todavia no tienes grupos</p>
                 <p className="mt-1 text-sm leading-6 text-zinc-500">Crea tu primer grupo para empezar a guardar sitios con amigos.</p>
                 <Link
-                  className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-[#c6283a] px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#a91f31]"
+                  className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-[#c6283a] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#a91f31]"
                   href={ROUTES.groups}
                 >
                   Crear grupo
@@ -137,7 +137,7 @@ export default async function DashboardPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-black tracking-tight text-zinc-950">Actividad Reciente</h2>
+            <h2 className="text-xl font-bold tracking-tight text-zinc-950">Actividad Reciente</h2>
             <RecentActivityList activityFeed={activityFeed} />
           </section>
         </section>

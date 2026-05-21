@@ -13,18 +13,18 @@ function getInitial(name: string): string {
 
 export function DashboardHeader({ avatarUrl, displayName, hasNotifications }: DashboardHeaderProps) {
   return (
-    <header className="sticky top-0 z-20 border-b border-rose-100/80 bg-[#fff7f7]/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-20 border-b border-zinc-100 bg-white/90 backdrop-blur-xl">
       <div className="mx-auto grid h-16 w-full max-w-3xl grid-cols-3 items-center px-5">
         <div className="flex justify-start">
           <Link
             aria-label="Ir al perfil"
-            className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-rose-200 bg-rose-100 text-sm font-bold text-[#c6283a] shadow-sm"
+            className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-rose-100 bg-rose-50 text-sm font-semibold text-[#c6283a] shadow-sm"
             href={ROUTES.profile}
           >
             {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : getInitial(displayName)}
           </Link>
         </div>
-        <Link className="justify-self-center text-lg font-extrabold tracking-tight text-[#c6283a]" href={ROUTES.dashboard}>
+        <Link className="justify-self-center text-lg font-bold tracking-tight text-[#c6283a]" href={ROUTES.dashboard}>
           {APP_NAME}
         </Link>
         <div className="flex justify-end">

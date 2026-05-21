@@ -65,7 +65,7 @@ export function ModernBottomNav() {
           return (
             <Link
               className={cn(
-                "flex flex-col items-center justify-center gap-1 rounded-2xl py-2 text-[11px] font-bold transition",
+                "flex flex-col items-center justify-center gap-1 rounded-2xl py-2 text-[11px] font-semibold transition",
                 active ? "bg-rose-100 text-[#c6283a]" : "text-zinc-500 hover:text-[#c6283a]"
               )}
               href={item.href}
@@ -90,7 +90,7 @@ export function ModernBottomNav() {
           return (
             <Link
               className={cn(
-                "flex flex-col items-center justify-center gap-1 rounded-2xl py-2 text-[11px] font-bold transition",
+                "flex flex-col items-center justify-center gap-1 rounded-2xl py-2 text-[11px] font-semibold transition",
                 active ? "bg-rose-100 text-[#c6283a]" : "text-zinc-500 hover:text-[#c6283a]"
               )}
               href={item.href}

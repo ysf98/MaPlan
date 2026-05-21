@@ -24,7 +24,7 @@ export function GroupPreviewCard({ group }: GroupPreviewCardProps) {
         style={{ backgroundImage: `url("${group.coverImageUrl}")` }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
-        <h3 className="absolute bottom-4 left-4 right-4 truncate text-lg font-extrabold text-white">{group.name}</h3>
+        <h3 className="absolute bottom-4 left-4 right-4 truncate text-lg font-bold text-white">{group.name}</h3>
       </div>
       <div className="space-y-4 px-4 py-4">
         <div className="flex items-center gap-4 text-xs font-semibold text-zinc-600">
@@ -52,7 +52,7 @@ export function GroupPreviewCard({ group }: GroupPreviewCardProps) {
         <div className="flex items-center">
           {visibleMembers.map((member) => (
             <span
-              className="-ml-1 grid h-8 w-8 first:ml-0 place-items-center overflow-hidden rounded-full border-2 border-white bg-rose-100 text-xs font-extrabold text-[#c6283a]"
+              className="-ml-1 grid h-8 w-8 first:ml-0 place-items-center overflow-hidden rounded-full border-2 border-white bg-rose-100 text-xs font-semibold text-[#c6283a]"
               key={member.userId}
               title={member.username || "Usuario"}
             >
@@ -60,7 +60,7 @@ export function GroupPreviewCard({ group }: GroupPreviewCardProps) {
             </span>
           ))}
           {hiddenMembers > 0 ? (
-            <span className="-ml-1 grid h-8 min-w-8 place-items-center rounded-full border-2 border-white bg-[#ff5b69] px-2 text-xs font-extrabold text-white">
+            <span className="-ml-1 grid h-8 min-w-8 place-items-center rounded-full border-2 border-white bg-[#ff5b69] px-2 text-xs font-semibold text-white">
               +{hiddenMembers}
             </span>
           ) : null}
