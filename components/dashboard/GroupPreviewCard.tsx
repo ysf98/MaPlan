@@ -1,22 +1,27 @@
 import Link from "next/link";
 import type { DashboardGroupSummary } from "@/lib/dashboard";
+import { cn } from "@/lib/cn";
 import { ROUTES } from "@/utils/constants";
 
 type GroupPreviewCardProps = {
   group: DashboardGroupSummary;
+  className?: string;
 };
 
 function getInitial(name: string | null): string {
   return name?.trim().charAt(0).toUpperCase() || "M";
 }
 
-export function GroupPreviewCard({ group }: GroupPreviewCardProps) {
+export function GroupPreviewCard({ group, className }: GroupPreviewCardProps) {
   const visibleMembers = group.members.slice(0, 3);
   const hiddenMembers = Math.max(group.memberCount - visibleMembers.length, 0);
 
   return (
     <Link
-      className="group block w-[235px] shrink-0 overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:w-full"
+      className={cn(
+        "group block w-[235px] shrink-0 overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:w-full",
+        className
+      )}
       href={`${ROUTES.groups}/${group.id}`}
     >
       <div

@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
+import { inviteFriendToGroup } from "@/lib/groupInvitations";
 import { createGroupSchema, joinGroupSchema } from "@/lib/validation/schemas";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GroupJoinPolicy } from "@/types/supabase";
@@ -61,6 +62,14 @@ export async function createGroupAction(
   }
 
   const { name, description, placeEditPolicy, joinPolicy } = parsedInput.data;
+  const selectedFriendIds = Array.from(
+    new Set(
+      formData
+        .getAll("selectedFriendIds")
+        .map((value) => String(value))
+        .filter((value) => /^[0-9a-f-]{36}$/i.test(value))
+    )
+  );
 
   const supabase = await createSupabaseServerClient();
   let createdGroupId: string | null = null;
@@ -109,8 +118,13 @@ export async function createGroupAction(
     return { error: memberError.message, success: false, groupId: null };
   }
 
+  if (selectedFriendIds.length > 0) {
+    await Promise.all(selectedFriendIds.map((friendUserId) => inviteFriendToGroup(user.id, createdGroupId, friendUserId)));
+  }
+
   revalidatePath("/groups");
   revalidatePath("/dashboard");
+  revalidatePath("/invitations");
   return { error: null, success: true, groupId: createdGroupId };
 }
 
