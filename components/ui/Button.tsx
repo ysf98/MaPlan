@@ -11,10 +11,10 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: "bg-teal-500 text-white shadow-sm hover:bg-teal-600",
-  secondary: "bg-white text-slate-800 border border-slate-200 hover:bg-slate-50",
-  ghost: "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-  danger: "bg-rose-600 text-white shadow-sm hover:bg-rose-700 focus-visible:ring-rose-300"
+  primary: "bg-[#c6283a] text-white shadow-sm hover:bg-[#a91f31]",
+  secondary: "border border-rose-100 bg-rose-50 text-zinc-800 hover:bg-rose-100",
+  ghost: "bg-transparent text-zinc-600 hover:bg-rose-50 hover:text-[#c6283a]",
+  danger: "bg-rose-600 text-white shadow-sm hover:bg-rose-700 focus-visible:ring-rose-200"
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -33,7 +33,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 disabled:cursor-not-allowed disabled:opacity-50",
         variantStyles[variant],
         sizeStyles[size],
         fullWidth && "w-full",

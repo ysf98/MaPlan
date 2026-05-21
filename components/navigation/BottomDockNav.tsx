@@ -12,6 +12,10 @@ const items = [
   { href: ROUTES.profile, label: "Perfil", icon: "user" }
 ] as const;
 
+type BottomDockNavProps = {
+  isAuthenticated?: boolean;
+};
+
 function NavIcon({ name }: { name: (typeof items)[number]["icon"] | "pin" }) {
   if (name === "grid") {
     return (
@@ -24,7 +28,13 @@ function NavIcon({ name }: { name: (typeof items)[number]["icon"] | "pin" }) {
   if (name === "map") {
     return (
       <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-        <path d="m9 18-5 2V6l5-2 6 2 5-2v14l-5 2-6-2Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+        <path
+          d="m9 18-5 2V6l5-2 6 2 5-2v14l-5 2-6-2Z"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.8"
+        />
         <path d="M9 4v14M15 6v14" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
       </svg>
     );
@@ -54,8 +64,12 @@ function NavIcon({ name }: { name: (typeof items)[number]["icon"] | "pin" }) {
   );
 }
 
-export function ModernBottomNav() {
+export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
   const pathname = usePathname();
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 px-3 pb-3">

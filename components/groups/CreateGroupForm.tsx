@@ -29,9 +29,9 @@ export function CreateGroupForm() {
         <Input label="Nombre del grupo" name="name" placeholder="Ej. Planes de Madrid" required />
         <Input label="Descripcion (opcional)" name="description" placeholder="Tipo de planes o notas del grupo" />
         <label className="block space-y-2">
-          <span className="text-sm font-medium text-slate-700">Edicion de lugares</span>
+          <span className="text-sm font-medium text-zinc-700">Edicion de lugares</span>
           <select
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+            className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
             defaultValue="members_can_edit"
             name="placeEditPolicy"
           >
@@ -40,9 +40,9 @@ export function CreateGroupForm() {
           </select>
         </label>
         <label className="block space-y-2">
-          <span className="text-sm font-medium text-slate-700">Acceso al grupo</span>
+          <span className="text-sm font-medium text-zinc-700">Acceso al grupo</span>
           <select
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+            className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
             defaultValue="invite_only"
             name="joinPolicy"
           >
@@ -53,7 +53,7 @@ export function CreateGroupForm() {
         </label>
         {createState.error ? <p className="text-sm text-rose-600">{createState.error}</p> : null}
         {createState.success ? <p className="text-sm text-emerald-600">Grupo creado correctamente.</p> : null}
-        {isNavigatingToGroup ? <p className="text-sm text-slate-500">Abriendo el grupo...</p> : null}
+        {isNavigatingToGroup ? <p className="text-sm text-zinc-500">Abriendo el grupo...</p> : null}
         <div className="flex flex-wrap gap-3">
           <Button disabled={isCreatePending || isNavigatingToGroup} type="submit">
             {isCreatePending ? "Creando..." : "Crear grupo"}

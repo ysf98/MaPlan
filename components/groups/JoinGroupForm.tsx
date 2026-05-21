@@ -43,7 +43,7 @@ export function JoinGroupForm() {
           </Button>
           {joinState.success && joinState.groupId && joinState.mode === "joined" ? (
             <Link
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-teal-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-teal-600"
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-[#c6283a] px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#a91f31]"
               href={`${ROUTES.groups}/${joinState.groupId}`}
             >
               Ir al grupo
@@ -54,4 +54,3 @@ export function JoinGroupForm() {
     </form>
   );
 }
-

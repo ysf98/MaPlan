@@ -86,11 +86,11 @@ export function RegisterForm() {
         type="password"
         value={password}
       />
-      <ul className="space-y-1 text-xs text-slate-600">
+      <ul className="space-y-1 text-xs text-zinc-600">
         {PASSWORD_REQUIREMENTS.map((requirement, index) => {
           const isMet = requirementStatus[index] ?? false;
           return (
-            <li className={isMet ? "text-emerald-700" : "text-slate-500"} key={requirement}>
+            <li className={isMet ? "text-emerald-700" : "text-zinc-500"} key={requirement}>
               {isMet ? "Cumple" : "Pendiente"}: {requirement}
             </li>
           );

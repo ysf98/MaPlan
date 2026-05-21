@@ -20,9 +20,9 @@ export function PlaceFilters({ status, category, source, onStatusChange, onCateg
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       <label className="block space-y-2">
-        <span className="text-sm font-medium text-slate-700">Filtrar por estado</span>
+        <span className="text-sm font-medium text-zinc-700">Filtrar por estado</span>
         <select
-          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+          className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
           onChange={(event) => onStatusChange(event.target.value as PlaceStatusFilter)}
           value={status}
         >
@@ -34,9 +34,9 @@ export function PlaceFilters({ status, category, source, onStatusChange, onCateg
       </label>
 
       <label className="block space-y-2">
-        <span className="text-sm font-medium text-slate-700">Filtrar por categoria</span>
+        <span className="text-sm font-medium text-zinc-700">Filtrar por categoria</span>
         <select
-          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+          className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
           onChange={(event) => onCategoryChange(event.target.value as PlaceCategoryFilter)}
           value={category}
         >
@@ -50,9 +50,9 @@ export function PlaceFilters({ status, category, source, onStatusChange, onCateg
       </label>
 
       <label className="block space-y-2">
-        <span className="text-sm font-medium text-slate-700">Filtrar por fuente</span>
+        <span className="text-sm font-medium text-zinc-700">Filtrar por fuente</span>
         <select
-          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+          className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
           onChange={(event) => onSourceChange(event.target.value as PlaceSourceFilter)}
           value={source}
         >

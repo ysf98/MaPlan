@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { GroupPreviewCard } from "@/components/dashboard/GroupPreviewCard";
-import { ModernBottomNav } from "@/components/dashboard/ModernBottomNav";
+import { BottomDockNav } from "@/components/navigation/BottomDockNav";
 import { PendingInvitationCard } from "@/components/dashboard/PendingInvitationCard";
 import { RecentActivityList } from "@/components/dashboard/RecentActivityList";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
@@ -143,7 +143,7 @@ export default async function DashboardPage() {
         </section>
       </main>
 
-      <ModernBottomNav />
+      <BottomDockNav />
     </div>
   );
 }

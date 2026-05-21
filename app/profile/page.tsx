@@ -21,11 +21,11 @@ export default async function ProfilePage() {
     <AppShell>
       <section className="space-y-4">
         <Card className="rounded-3xl">
-          <p className="text-sm text-slate-500">Nombre</p>
-          <p className="mt-1 text-xl font-semibold text-slate-900">{displayName}</p>
+          <p className="text-sm text-zinc-500">Nombre</p>
+          <p className="mt-1 text-xl font-semibold text-zinc-950">{displayName}</p>
         </Card>
         <Card className="rounded-3xl">
-          <p className="text-sm text-slate-500">Sesion</p>
+          <p className="text-sm text-zinc-500">Sesion</p>
           <div className="mt-2">
             <SignOutButton />
           </div>

@@ -10,7 +10,7 @@ const toneStyles = {
   coffee: "bg-amber-100 text-amber-700",
   party: "bg-pink-100 text-pink-700",
   visit: "bg-sky-100 text-sky-700",
-  plan: "bg-teal-100 text-teal-700"
+  plan: "bg-rose-100 text-[#c6283a]"
 } as const;
 
 export function CategoryBadge({ label, tone = "plan" }: CategoryBadgeProps) {

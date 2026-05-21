@@ -51,7 +51,7 @@ export function PlacesList({ groupId, places, canEdit, canDelete }: PlacesListPr
           ))}
         </ul>
       ) : (
-        <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500">
+        <p className="rounded-2xl border border-dashed border-rose-200 px-4 py-5 text-sm text-zinc-500">
           No hay lugares con los filtros seleccionados.
         </p>
       )}

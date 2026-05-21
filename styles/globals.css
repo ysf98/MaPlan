@@ -2,15 +2,15 @@
 
 :root {
   color-scheme: light;
-  --bg: 248 250 252;
+  --bg: 255 255 255;
   --surface: 255 255 255;
-  --surface-soft: 241 245 249;
-  --text: 15 23 42;
-  --muted: 100 116 139;
-  --border: 226 232 240;
-  --primary: 20 184 166;
-  --primary-strong: 13 148 136;
-  --ring: 45 212 191;
+  --surface-soft: 255 241 242;
+  --text: 9 9 11;
+  --muted: 82 82 91;
+  --border: 244 244 245;
+  --primary: 198 40 58;
+  --primary-strong: 169 31 49;
+  --ring: 254 205 211;
 }
 
 body {
@@ -21,9 +21,4 @@ body {
 
 * {
   border-color: rgb(var(--border));
-}
-
-.app-bg {
-  background-image: radial-gradient(circle at top right, rgba(45, 212, 191, 0.12), transparent 40%),
-    radial-gradient(circle at left 30%, rgba(148, 163, 184, 0.15), transparent 35%);
 }

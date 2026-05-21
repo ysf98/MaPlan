@@ -91,9 +91,9 @@ export function GroupOwnerControls({
   }, [reviewState.success, router, settingsState.success]);
 
   return (
-    <aside className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:max-w-sm">
+    <aside className="w-full rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm lg:max-w-sm">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-slate-900">Gestion del grupo</h2>
+        <h2 className="text-sm font-semibold text-zinc-950">Gestion del grupo</h2>
         <Button onClick={() => setExpanded((value) => !value)} size="sm" type="button" variant="secondary">
           {expanded ? "Ocultar" : "Desplegar"}
         </Button>
@@ -102,12 +102,12 @@ export function GroupOwnerControls({
       {expanded ? (
         <div className="mt-4 space-y-4">
           {role === "owner" ? (
-            <form action={settingsAction} className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
+            <form action={settingsAction} className="space-y-3 rounded-xl border border-zinc-100 bg-white p-3">
               <input name="groupId" type="hidden" value={groupId} />
               <label className="block space-y-2">
-                <span className="text-xs font-medium text-slate-700">Edicion de lugares</span>
+                <span className="text-xs font-medium text-zinc-700">Edicion de lugares</span>
                 <select
-                  className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                  className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-950 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
                   defaultValue={placeEditPolicy}
                   name="placeEditPolicy"
                 >
@@ -116,9 +116,9 @@ export function GroupOwnerControls({
                 </select>
               </label>
               <label className="block space-y-2">
-                <span className="text-xs font-medium text-slate-700">Acceso al grupo</span>
+                <span className="text-xs font-medium text-zinc-700">Acceso al grupo</span>
                 <select
-                  className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                  className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-950 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
                   defaultValue={joinPolicy}
                   name="joinPolicy"
                 >
@@ -135,27 +135,27 @@ export function GroupOwnerControls({
             </form>
           ) : null}
 
-          <div className="rounded-xl border border-slate-200 bg-white p-3">
-            <p className="text-xs font-medium text-slate-700">Codigo de invitacion</p>
-            <p className="mt-1 text-sm font-semibold tracking-wide text-slate-900">{joinCode}</p>
+          <div className="rounded-xl border border-zinc-100 bg-white p-3">
+            <p className="text-xs font-medium text-zinc-700">Codigo de invitacion</p>
+            <p className="mt-1 text-sm font-semibold tracking-wide text-zinc-950">{joinCode}</p>
           </div>
 
           {role === "owner" ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="rounded-xl border border-zinc-100 bg-white p-3">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold text-slate-900">Solicitudes pendientes</h3>
-                <span className="inline-flex min-w-7 justify-center rounded-full bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-800">
+                <h3 className="text-sm font-semibold text-zinc-950">Solicitudes pendientes</h3>
+                <span className="inline-flex min-w-7 justify-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-[#c6283a]">
                   {pendingRequests.length}
                 </span>
               </div>
               {pendingRequests.length === 0 ? (
-                <p className="mt-2 text-xs text-slate-500">No hay solicitudes pendientes.</p>
+                <p className="mt-2 text-xs text-zinc-500">No hay solicitudes pendientes.</p>
               ) : (
                 <ul className="mt-3 space-y-3">
                   {pendingRequests.map((request) => (
-                    <li key={request.id} className="rounded-lg border border-slate-200 p-3">
-                      <p className="text-sm font-medium text-slate-900">{request.username || "Usuario sin nombre"}</p>
-                      <p className="mt-1 text-xs text-slate-500">Ultimo intento: {formatDate(request.updatedAt)}</p>
+                    <li key={request.id} className="rounded-lg border border-zinc-100 p-3">
+                      <p className="text-sm font-medium text-zinc-950">{request.username || "Usuario sin nombre"}</p>
+                      <p className="mt-1 text-xs text-zinc-500">Ultimo intento: {formatDate(request.updatedAt)}</p>
                       <form action={reviewAction} className="mt-2 flex flex-wrap gap-2">
                         <input name="groupId" type="hidden" value={groupId} />
                         <input name="requestId" type="hidden" value={request.id} />
@@ -176,10 +176,10 @@ export function GroupOwnerControls({
           ) : null}
 
           {role === "owner" ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <h3 className="text-sm font-semibold text-slate-900">Invitar amigos</h3>
+            <div className="rounded-xl border border-zinc-100 bg-white p-3">
+              <h3 className="text-sm font-semibold text-zinc-950">Invitar amigos</h3>
               {invitableFriends.length === 0 ? (
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-zinc-500">
                   {totalFriendsCount === 0
                     ? "Anade amigos primero para poder invitarlos al grupo."
                     : "Todos tus amigos ya estan invitados o ya son miembros de este grupo."}
@@ -187,8 +187,8 @@ export function GroupOwnerControls({
               ) : (
                 <ul className="mt-3 space-y-2">
                   {invitableFriends.map((friend) => (
-                    <li key={friend.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 p-2">
-                      <p className="text-xs font-medium text-slate-900">@{friend.username || "sin-username"}</p>
+                    <li key={friend.id} className="flex items-center justify-between gap-2 rounded-lg border border-zinc-100 p-2">
+                      <p className="text-xs font-medium text-zinc-950">@{friend.username || "sin-username"}</p>
                       <form action={inviteAction}>
                         <input name="groupId" type="hidden" value={groupId} />
                         <input name="friendUserId" type="hidden" value={friend.id} />
@@ -204,15 +204,15 @@ export function GroupOwnerControls({
               {inviteState.success ? <p className="mt-2 text-xs text-emerald-600">Invitacion enviada.</p> : null}
 
               {groupInvitations.filter((invitation) => invitation.status !== "accepted").length > 0 ? (
-                <div className="mt-3 border-t border-slate-200 pt-3">
-                  <h4 className="text-xs font-semibold text-slate-900">Invitaciones del grupo</h4>
+                <div className="mt-3 border-t border-zinc-100 pt-3">
+                  <h4 className="text-xs font-semibold text-zinc-950">Invitaciones del grupo</h4>
                   <ul className="mt-2 space-y-2">
                     {groupInvitations
                       .filter((invitation) => invitation.status !== "accepted")
                       .slice(0, 8)
                       .map((invitation) => (
-                      <li key={invitation.id} className="rounded-lg border border-slate-200 p-2">
-                        <p className="text-xs text-slate-900">
+                      <li key={invitation.id} className="rounded-lg border border-zinc-100 p-2">
+                        <p className="text-xs text-zinc-950">
                           @{invitation.invitedUsername || "sin-username"} -{" "}
                           <span
                             className={
@@ -234,7 +234,7 @@ export function GroupOwnerControls({
             </div>
           ) : null}
 
-          <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
+          <div className="rounded-xl border border-zinc-100 bg-white p-3 text-center">
             {role === "owner" ? (
               <>
                 {confirmMode !== "delete" ? (

@@ -15,8 +15,8 @@ export default async function NewGroupPage() {
     <AppShell>
       <section className="space-y-4">
         <Card className="rounded-3xl">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Crear nuevo grupo</h1>
-          <p className="mt-1 text-sm text-slate-500">Configura el grupo y empieza a compartir lugares.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">Crear nuevo grupo</h1>
+          <p className="mt-1 text-sm text-zinc-500">Configura el grupo y empieza a compartir lugares.</p>
         </Card>
         <Card className="rounded-3xl">
           <CreateGroupForm />
@@ -25,4 +25,3 @@ export default async function NewGroupPage() {
     </AppShell>
   );
 }
-

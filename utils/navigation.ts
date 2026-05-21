@@ -1,13 +1,4 @@
 import { ROUTES } from "@/utils/constants";
-import type { NavItem } from "@/types/navigation";
-
-export const AUTH_NAV_ITEMS: NavItem[] = [
-  { href: ROUTES.dashboard, label: "Inicio" },
-  { href: ROUTES.friends, label: "Amigos" },
-  { href: ROUTES.groups, label: "Grupos" },
-  { href: ROUTES.map, label: "Mapa" },
-  { href: ROUTES.profile, label: "Perfil" }
-];
 
 export function getSectionLabel(pathname: string): string | null {
   if (pathname === ROUTES.home) return null;

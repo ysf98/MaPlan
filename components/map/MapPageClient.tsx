@@ -45,7 +45,7 @@ export function MapPageClient({ personalPlaces }: MapPageClientProps) {
               <>
                 {place.googleMapsUrl ? (
                   <a
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-100 px-3 text-xs font-medium text-zinc-700 hover:bg-rose-50 hover:text-[#c6283a]"
                     href={place.googleMapsUrl}
                     rel="noreferrer"
                     target="_blank"

@@ -78,10 +78,10 @@ export function FriendsPageClient({
   return (
     <section className="space-y-4">
       <Card className="rounded-3xl">
-        <h2 className="text-lg font-semibold text-slate-900">Buscar amigos</h2>
+        <h2 className="text-lg font-semibold text-zinc-950">Buscar amigos</h2>
         <div className="mt-3">
           <input
-            className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            className="h-11 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
             autoComplete="off"
             onChange={(event) => setSearchValue(event.target.value)}
             value={searchValue}
@@ -93,16 +93,16 @@ export function FriendsPageClient({
         {sendState.error ? <p className="mt-2 text-sm text-rose-600">{sendState.error}</p> : null}
         {sendState.success ? <p className="mt-2 text-sm text-emerald-600">Solicitud enviada.</p> : null}
         {!hasQuery ? (
-          <p className="mt-3 text-sm text-slate-500">Escribe al menos 2 caracteres para buscar usuarios.</p>
+          <p className="mt-3 text-sm text-zinc-500">Escribe al menos 2 caracteres para buscar usuarios.</p>
         ) : isSearching ? (
-          <p className="mt-3 text-sm text-slate-500">Buscando usuarios...</p>
+          <p className="mt-3 text-sm text-zinc-500">Buscando usuarios...</p>
         ) : liveResults.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">No encontramos usuarios para esa busqueda.</p>
+          <p className="mt-2 text-sm text-zinc-500">No encontramos usuarios para esa busqueda.</p>
         ) : (
           <ul className="mt-3 space-y-2">
             {liveResults.map((user) => (
-              <li key={user.id} className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 p-3">
-                <p className="text-sm font-medium text-slate-900">@{user.username || "sin-username"}</p>
+              <li key={user.id} className="flex items-center justify-between gap-2 rounded-xl border border-zinc-100 p-3">
+                <p className="text-sm font-medium text-zinc-950">@{user.username || "sin-username"}</p>
                 {user.alreadyFriend ? (
                   <span className="text-xs text-emerald-700">Ya sois amigos</span>
                 ) : user.hasPendingRequest ? (
@@ -123,12 +123,12 @@ export function FriendsPageClient({
 
       {receivedRequests.length > 0 ? (
         <Card className="rounded-3xl">
-          <h2 className="text-lg font-semibold text-slate-900">Solicitudes recibidas</h2>
+          <h2 className="text-lg font-semibold text-zinc-950">Solicitudes recibidas</h2>
           <ul className="mt-3 space-y-2">
             {receivedRequests.map((request) => (
-              <li key={request.id} className="rounded-xl border border-slate-200 p-3">
-                <p className="text-sm font-medium text-slate-900">@{request.senderUsername || "sin-username"}</p>
-                <p className="mt-1 text-xs text-slate-500">Estado: {request.status}</p>
+              <li key={request.id} className="rounded-xl border border-zinc-100 p-3">
+                <p className="text-sm font-medium text-zinc-950">@{request.senderUsername || "sin-username"}</p>
+                <p className="mt-1 text-xs text-zinc-500">Estado: {request.status}</p>
                 {request.status === "pending" ? (
                   <form action={respondAction} className="mt-2 flex gap-2">
                     <input name="requestId" type="hidden" value={request.id} />
@@ -156,12 +156,12 @@ export function FriendsPageClient({
 
       {sentRequests.length > 0 ? (
         <Card className="rounded-3xl">
-          <h2 className="text-lg font-semibold text-slate-900">Solicitudes enviadas</h2>
+          <h2 className="text-lg font-semibold text-zinc-950">Solicitudes enviadas</h2>
           <ul className="mt-3 space-y-2">
             {sentRequests.map((request) => (
-              <li key={request.id} className="rounded-xl border border-slate-200 p-3">
-                <p className="text-sm font-medium text-slate-900">@{request.receiverUsername || "sin-username"}</p>
-                <p className="mt-1 text-xs text-slate-500">Estado: {request.status}</p>
+              <li key={request.id} className="rounded-xl border border-zinc-100 p-3">
+                <p className="text-sm font-medium text-zinc-950">@{request.receiverUsername || "sin-username"}</p>
+                <p className="mt-1 text-xs text-zinc-500">Estado: {request.status}</p>
               </li>
             ))}
           </ul>
@@ -169,15 +169,15 @@ export function FriendsPageClient({
       ) : null}
 
       <Card className="rounded-3xl">
-        <h2 className="text-lg font-semibold text-slate-900">Mis amigos</h2>
+        <h2 className="text-lg font-semibold text-zinc-950">Mis amigos</h2>
         {friends.length === 0 ? (
           <EmptyState description="Cuando aceptes solicitudes apareceran aqui." title="Aun no tienes amigos" />
         ) : (
           <ul className="mt-3 space-y-2">
             {friends.map((friend) => (
-              <li key={friend.userId} className="rounded-xl border border-slate-200 p-3">
+              <li key={friend.userId} className="rounded-xl border border-zinc-100 p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-slate-900">@{friend.username || "sin-username"}</p>
+                  <p className="text-sm font-medium text-zinc-950">@{friend.username || "sin-username"}</p>
                   <form
                     action={removeAction}
                     onSubmit={(event) => {

@@ -42,34 +42,32 @@ export function NotificationsPageClient({
   return (
     <section className="space-y-4">
       {total === 0 ? (
-        <Card className="rounded-3xl">
-          <EmptyState
-            title="Sin notificaciones pendientes"
-            description="Cuando recibas invitaciones de grupo o solicitudes de amistad apareceran aqui."
-            action={
-              <Link
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-teal-500 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-teal-600"
-                href={ROUTES.dashboard}
-              >
-                Volver al inicio
-              </Link>
-            }
-          />
-        </Card>
+        <EmptyState
+          title="Sin notificaciones pendientes"
+          description="Cuando recibas invitaciones de grupo o solicitudes de amistad apareceran aqui."
+          action={
+            <Link
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-[#c6283a] px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#a91f31]"
+              href={ROUTES.dashboard}
+            >
+              Volver al inicio
+            </Link>
+          }
+        />
       ) : (
         <>
           <Card className="rounded-3xl">
-            <h2 className="text-lg font-semibold text-slate-900">Invitaciones a grupos</h2>
+            <h2 className="text-lg font-semibold text-zinc-950">Invitaciones a grupos</h2>
             {pendingInvitations.length === 0 ? (
-              <p className="mt-2 text-sm text-slate-500">No tienes invitaciones pendientes.</p>
+              <p className="mt-2 text-sm text-zinc-500">No tienes invitaciones pendientes.</p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {pendingInvitations.map((notification) => {
                   if (notification.kind !== "group_invitation") return null;
                   return (
-                    <li className="rounded-xl border border-slate-200 p-3" key={notification.id}>
-                      <p className="text-sm font-medium text-slate-900">{notification.groupName || notification.groupId}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                    <li className="rounded-xl border border-zinc-100 p-3" key={notification.id}>
+                      <p className="text-sm font-medium text-zinc-950">{notification.groupName || notification.groupId}</p>
+                      <p className="mt-1 text-xs text-zinc-500">
                         Te invita @{notification.invitedByUsername || "sin-username"}
                       </p>
                       <form action={invitationFormAction} className="mt-2 flex gap-2">
@@ -98,7 +96,7 @@ export function NotificationsPageClient({
 
           {reviewedInvitations.length > 0 ? (
             <Card className="rounded-3xl">
-              <h2 className="text-lg font-semibold text-slate-900">Historial de invitaciones</h2>
+              <h2 className="text-lg font-semibold text-zinc-950">Historial de invitaciones</h2>
               <ul className="mt-3 space-y-2">
                 {reviewedInvitations.slice(0, 10).map((notification) => {
                   if (notification.kind !== "group_invitation") return null;
@@ -107,8 +105,8 @@ export function NotificationsPageClient({
                       ? `Te has unido a ${notification.groupName || notification.groupId}.`
                       : `Has rechazado ${notification.groupName || notification.groupId}.`;
                   return (
-                    <li className="rounded-xl border border-slate-200 p-3" key={`${notification.id}-reviewed`}>
-                      <p className="text-sm text-slate-700">{message}</p>
+                    <li className="rounded-xl border border-zinc-100 p-3" key={`${notification.id}-reviewed`}>
+                      <p className="text-sm text-zinc-700">{message}</p>
                     </li>
                   );
                 })}
@@ -117,16 +115,16 @@ export function NotificationsPageClient({
           ) : null}
 
           <Card className="rounded-3xl">
-            <h2 className="text-lg font-semibold text-slate-900">Solicitudes de amistad</h2>
+            <h2 className="text-lg font-semibold text-zinc-950">Solicitudes de amistad</h2>
             {friendRequests.length === 0 ? (
-              <p className="mt-2 text-sm text-slate-500">No tienes solicitudes de amistad pendientes.</p>
+              <p className="mt-2 text-sm text-zinc-500">No tienes solicitudes de amistad pendientes.</p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {friendRequests.map((notification) => {
                   if (notification.kind !== "friend_request") return null;
                   return (
-                    <li className="rounded-xl border border-slate-200 p-3" key={notification.id}>
-                      <p className="text-sm font-medium text-slate-900">@{notification.senderUsername || "sin-username"}</p>
+                    <li className="rounded-xl border border-zinc-100 p-3" key={notification.id}>
+                      <p className="text-sm font-medium text-zinc-950">@{notification.senderUsername || "sin-username"}</p>
                       <form action={friendFormAction} className="mt-2 flex gap-2">
                         <input name="requestId" type="hidden" value={notification.requestId} />
                         <Button disabled={isFriendPending} name="decision" size="sm" type="submit" value="accepted">

@@ -271,12 +271,12 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
         onManualCreate={handleManualCreateFromSearch}
         onSelectResult={handleSelectSearchResult}
       />
-      <div className="relative h-[420px] w-full overflow-hidden rounded-2xl border border-slate-200">
+      <div className="relative h-[420px] w-full overflow-hidden rounded-2xl border border-zinc-100">
         <div className="h-full w-full" ref={mapContainerRef} />
         {canEdit && isResolvingLocation ? (
           <div className="pointer-events-none absolute left-3 right-3 top-3 z-10">
-            <Card className="rounded-2xl border-slate-300 bg-white/95 shadow-lg backdrop-blur">
-              <p className="text-sm text-slate-700">Cargando datos del lugar...</p>
+            <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
+              <p className="text-sm text-zinc-700">Cargando datos del lugar...</p>
             </Card>
           </div>
         ) : null}

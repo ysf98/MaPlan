@@ -34,7 +34,7 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
   }, [draft.address, draft.city, draft.latitude, draft.longitude, draft.name]);
 
   return (
-    <Card className="pointer-events-auto rounded-2xl border-slate-300 bg-white/95 shadow-lg backdrop-blur">
+    <Card className="pointer-events-auto rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
       <form action={formAction} className="space-y-2">
         <input name={scopeIdName} type="hidden" value={scopeIdValue} />
         <input name="latitude" type="hidden" value={String(draft.latitude)} />
@@ -51,8 +51,8 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
 
         {mode === "confirm" ? (
           <>
-            <p className="text-sm font-semibold text-slate-900">Deseas guardar ese lugar?</p>
-            <p className="text-xs text-slate-500">{name}</p>
+            <p className="text-sm font-semibold text-zinc-950">Deseas guardar ese lugar?</p>
+            <p className="text-xs text-zinc-500">{name}</p>
             <div className="mt-2 flex gap-2">
               <Button disabled={isPending} size="sm" type="submit">
                 {isPending ? "Guardando..." : "Si"}
@@ -67,11 +67,11 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
           </>
         ) : (
           <>
-            <p className="text-sm font-semibold text-slate-900">Editar nombre antes de guardar</p>
+            <p className="text-sm font-semibold text-zinc-950">Editar nombre antes de guardar</p>
             <label className="mt-2 block space-y-1">
-              <span className="text-xs font-medium text-slate-700">Nombre</span>
+              <span className="text-xs font-medium text-zinc-700">Nombre</span>
               <input
-                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900"
+                className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm text-zinc-950"
                 maxLength={120}
                 onChange={(event) => setName(event.target.value)}
                 required

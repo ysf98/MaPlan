@@ -61,14 +61,14 @@ export function PlaceCard({ groupId, place, canEdit, canDelete }: PlaceCardProps
         <CategoryBadge label={hasCoords ? "Con coordenadas" : "Sin coordenadas"} tone={hasCoords ? "coffee" : "food"} />
       </div>
 
-      <h3 className="mt-3 text-lg font-semibold text-slate-900">{place.name}</h3>
-      <p className="mt-1 text-sm text-slate-600">{place.address}</p>
-      {place.city ? <p className="mt-1 text-sm text-slate-500">{place.city}</p> : null}
-      {place.businessStatus ? <p className="mt-1 text-xs text-slate-500">Estado negocio: {place.businessStatus}</p> : null}
-      {place.notes ? <p className="mt-2 text-sm text-slate-500">{place.notes}</p> : null}
+      <h3 className="mt-3 text-lg font-semibold text-zinc-950">{place.name}</h3>
+      <p className="mt-1 text-sm text-zinc-600">{place.address}</p>
+      {place.city ? <p className="mt-1 text-sm text-zinc-500">{place.city}</p> : null}
+      {place.businessStatus ? <p className="mt-1 text-xs text-zinc-500">Estado negocio: {place.businessStatus}</p> : null}
+      {place.notes ? <p className="mt-2 text-sm text-zinc-500">{place.notes}</p> : null}
       {place.originalUrl ? (
         <a
-          className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          className="mt-3 inline-flex h-9 items-center justify-center rounded-xl border border-zinc-100 px-3 text-sm font-medium text-zinc-700 transition hover:bg-rose-50 hover:text-[#c6283a]"
           href={place.originalUrl}
           rel="noreferrer noopener"
           target="_blank"
@@ -78,7 +78,7 @@ export function PlaceCard({ groupId, place, canEdit, canDelete }: PlaceCardProps
       ) : null}
       {place.googleMapsUrl ? (
         <a
-          className="mt-2 inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          className="mt-2 inline-flex h-9 items-center justify-center rounded-xl border border-zinc-100 px-3 text-sm font-medium text-zinc-700 transition hover:bg-rose-50 hover:text-[#c6283a]"
           href={place.googleMapsUrl}
           rel="noreferrer noopener"
           target="_blank"
@@ -96,7 +96,7 @@ export function PlaceCard({ groupId, place, canEdit, canDelete }: PlaceCardProps
               Estado
             </label>
             <select
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
+              className="h-10 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
               defaultValue={place.status}
               id={`status-${place.id}`}
               name="status"
@@ -113,20 +113,20 @@ export function PlaceCard({ groupId, place, canEdit, canDelete }: PlaceCardProps
           </fieldset>
         </form>
       ) : (
-        <p className="mt-4 text-sm text-slate-500">Solo el propietario puede editar lugares en este grupo.</p>
+        <p className="mt-4 text-sm text-zinc-500">Solo el propietario puede editar lugares en este grupo.</p>
       )}
       {statusState.error ? <p className="mt-2 text-sm text-rose-600">{statusState.error}</p> : null}
       {statusState.success ? <p className="mt-2 text-sm text-emerald-600">Estado actualizado.</p> : null}
 
       {canEdit && !hasCoords ? (
-        <form action={locationFormAction} className="mt-4 rounded-2xl border border-slate-200 p-3">
+        <form action={locationFormAction} className="mt-4 rounded-2xl border border-zinc-100 p-3">
           <input name="groupId" type="hidden" value={groupId} />
           <input name="placeId" type="hidden" value={place.id} />
           <div className="grid gap-2 sm:grid-cols-3">
             <label className="space-y-1 sm:col-span-3">
-              <span className="text-xs font-medium text-slate-700">Direccion</span>
+              <span className="text-xs font-medium text-zinc-700">Direccion</span>
               <input
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950"
                 defaultValue={place.address}
                 maxLength={220}
                 name="address"
@@ -134,18 +134,18 @@ export function PlaceCard({ groupId, place, canEdit, canDelete }: PlaceCardProps
               />
             </label>
             <label className="space-y-1 sm:col-span-3">
-              <span className="text-xs font-medium text-slate-700">Ciudad / poblacion</span>
+              <span className="text-xs font-medium text-zinc-700">Ciudad / poblacion</span>
               <input
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950"
                 defaultValue={place.city ?? ""}
                 maxLength={120}
                 name="city"
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-medium text-slate-700">Latitud</span>
+              <span className="text-xs font-medium text-zinc-700">Latitud</span>
               <input
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950"
                 defaultValue={place.latitude ?? ""}
                 name="latitude"
                 required
@@ -154,9 +154,9 @@ export function PlaceCard({ groupId, place, canEdit, canDelete }: PlaceCardProps
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-medium text-slate-700">Longitud</span>
+              <span className="text-xs font-medium text-zinc-700">Longitud</span>
               <input
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950"
                 defaultValue={place.longitude ?? ""}
                 name="longitude"
                 required

@@ -30,10 +30,10 @@ export function GroupMembershipActions({ groupId, groupName, role }: GroupMember
 
   return (
     <Card className="rounded-3xl">
-      <h2 className="text-lg font-semibold text-slate-900">Gestion del grupo</h2>
+      <h2 className="text-lg font-semibold text-zinc-950">Gestion del grupo</h2>
       {role === "owner" ? (
         <>
-          <p className="mt-2 text-sm text-slate-500">Como propietario puedes eliminar el grupo para todos sus miembros.</p>
+          <p className="mt-2 text-sm text-zinc-500">Como propietario puedes eliminar el grupo para todos sus miembros.</p>
           {confirmMode !== "delete" ? (
             <div className="mt-4">
               <Button onClick={() => setConfirmMode("delete")} type="button" variant="secondary">
@@ -60,7 +60,7 @@ export function GroupMembershipActions({ groupId, groupName, role }: GroupMember
         </>
       ) : (
         <>
-          <p className="mt-2 text-sm text-slate-500">Si sales del grupo, dejaras de ver sus lugares y actualizaciones.</p>
+          <p className="mt-2 text-sm text-zinc-500">Si sales del grupo, dejaras de ver sus lugares y actualizaciones.</p>
           {confirmMode !== "leave" ? (
             <div className="mt-4">
               <Button onClick={() => setConfirmMode("leave")} type="button" variant="secondary">

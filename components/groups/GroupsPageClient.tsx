@@ -19,15 +19,15 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <Link href={`${ROUTES.groups}/new`}>
-              <Card className="rounded-2xl border-dashed transition hover:-translate-y-0.5 hover:shadow-md">
-                <p className="text-sm font-medium text-slate-900">Crear nuevo grupo</p>
-                <p className="mt-1 text-xs text-slate-500">Define nombre, permisos de edicion y tipo de acceso.</p>
+              <Card className="rounded-2xl border-dashed border-rose-200 transition hover:-translate-y-0.5 hover:shadow-md">
+                <p className="text-sm font-medium text-zinc-950">Crear nuevo grupo</p>
+                <p className="mt-1 text-xs text-zinc-500">Define nombre, permisos de edicion y tipo de acceso.</p>
               </Card>
             </Link>
             <Link href={`${ROUTES.groups}/join`}>
-              <Card className="rounded-2xl border-dashed transition hover:-translate-y-0.5 hover:shadow-md">
-                <p className="text-sm font-medium text-slate-900">Unirse con codigo</p>
-                <p className="mt-1 text-xs text-slate-500">Introduce un codigo de 8 caracteres para entrar a un grupo.</p>
+              <Card className="rounded-2xl border-dashed border-rose-200 transition hover:-translate-y-0.5 hover:shadow-md">
+                <p className="text-sm font-medium text-zinc-950">Unirse con codigo</p>
+                <p className="mt-1 text-xs text-zinc-500">Introduce un codigo de 8 caracteres para entrar a un grupo.</p>
               </Card>
             </Link>
           </div>
@@ -41,8 +41,8 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
               <Link href={`${ROUTES.groups}/${group.id}`}>
                 <Card className="rounded-3xl transition hover:-translate-y-0.5 hover:shadow-md">
                   <CategoryBadge label={group.role === "owner" ? "Admin" : "Member"} tone={index % 2 === 0 ? "plan" : "visit"} />
-                  <h2 className="mt-3 text-lg font-semibold text-slate-900">{group.name}</h2>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <h2 className="mt-3 text-lg font-semibold text-zinc-950">{group.name}</h2>
+                  <p className="mt-1 text-sm text-zinc-500">
                     {group.description || "Ver recomendaciones y mapa colaborativo"}
                   </p>
                 </Card>
@@ -57,7 +57,7 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
           action={
             <Link href={`${ROUTES.groups}/new`}>
               <Button type="button" variant="secondary">
-              Crear grupo
+                Crear grupo
               </Button>
             </Link>
           }

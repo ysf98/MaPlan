@@ -29,21 +29,21 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
 }: SimplePlacesListProps<TPlace>) {
   return (
     <>
-      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+      <h3 className="text-sm font-semibold text-zinc-950">{title}</h3>
       <ul className="mt-3 grid gap-2 sm:grid-cols-2">
         {places.map((place) => (
           <li key={place.id}>
             <div
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition ${
                 selectedPlaceId === place.id
-                  ? "border-teal-300 bg-teal-50 text-teal-900"
-                  : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                  ? "border-rose-300 bg-rose-50 text-[#c6283a]"
+                  : "border-zinc-100 bg-white text-zinc-800 hover:bg-rose-50"
               }`}
               {...{ [cardDataAttribute]: "" }}
             >
               <button className="w-full text-left" onClick={() => onTogglePlace(place.id)} type="button">
                 <p className="font-medium">{place.name}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-zinc-500">
                   {place.address}
                   {place.city ? ` · ${place.city}` : ""}
                 </p>
