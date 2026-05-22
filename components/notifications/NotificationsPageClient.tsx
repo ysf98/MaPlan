@@ -49,6 +49,7 @@ export function NotificationsPageClient({
             <Link
               className="inline-flex h-10 items-center justify-center rounded-xl bg-[#c6283a] px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#a91f31]"
               href={ROUTES.dashboard}
+              prefetch={false}
             >
               Volver al inicio
             </Link>

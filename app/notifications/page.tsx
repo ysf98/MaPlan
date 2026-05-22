@@ -13,7 +13,7 @@ export default async function NotificationsPage() {
   const pending = await getPendingNotificationsForUser(user.id);
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <NotificationsPageClient
         friendRequests={pending.friendRequests}
         pendingInvitations={pending.pendingInvitations}

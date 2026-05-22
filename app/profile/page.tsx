@@ -18,7 +18,7 @@ export default async function ProfilePage() {
   const displayName = profile?.username?.trim() || user.user_metadata?.username || user.email || "Usuario";
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <section className="space-y-4">
         <Card className="rounded-3xl">
           <p className="text-sm text-zinc-500">Nombre</p>

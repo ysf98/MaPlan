@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { Database } from "@/types/supabase";
 
-const PRIVATE_PATHS = ["/dashboard", "/groups", "/map", "/profile"];
+const PRIVATE_PATHS = ["/dashboard", "/friends", "/groups", "/invitations", "/map", "/notifications", "/profile"];
 const AUTH_PATHS = ["/login", "/register"];
 
 function isPrivatePath(pathname: string) {
@@ -57,5 +57,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"]
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"]
 };

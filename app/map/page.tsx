@@ -13,7 +13,7 @@ export default async function MapPage() {
   const personalPlaces = await getPersonalPlacesForUser(user.id);
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <MapPageClient personalPlaces={personalPlaces} />
     </AppShell>
   );

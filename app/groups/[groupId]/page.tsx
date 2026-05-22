@@ -35,7 +35,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   const totalFriendsCount = group.role === "owner" ? (await getFriends(user.id)).length : 0;
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <GroupDetailView
         group={group}
         groupId={groupId}

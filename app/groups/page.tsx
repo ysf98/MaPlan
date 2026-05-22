@@ -16,7 +16,7 @@ export default async function GroupsPage() {
   const groupSummaries = await getDashboardGroupSummaries(user.id, groups, groups.length);
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <section className="space-y-4">
         <GroupsPageClient groups={groupSummaries} />
       </section>

@@ -12,7 +12,7 @@ export default async function JoinGroupPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <section className="space-y-4">
         <Card className="rounded-3xl">
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">Unirse a un grupo</h1>

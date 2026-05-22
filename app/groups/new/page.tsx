@@ -14,7 +14,7 @@ export default async function NewGroupPage() {
   const friends = await getFriends(user.id);
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <section className="mx-auto w-full max-w-md overflow-hidden rounded-[28px] border border-rose-100 bg-white shadow-[0_18px_45px_rgba(24,24,27,0.08)]">
         <CreateGroupForm friends={friends} />
       </section>

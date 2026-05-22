@@ -20,11 +20,12 @@ export function DashboardHeader({ avatarUrl, displayName, hasNotifications }: Da
             aria-label="Ir al perfil"
             className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-rose-100 bg-rose-50 text-sm font-semibold text-[#c6283a] shadow-sm"
             href={ROUTES.profile}
+            prefetch={false}
           >
             {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : getInitial(displayName)}
           </Link>
         </div>
-        <Link className="justify-self-center text-lg font-bold tracking-tight text-[#c6283a]" href={ROUTES.dashboard}>
+        <Link className="justify-self-center text-lg font-bold tracking-tight text-[#c6283a]" href={ROUTES.dashboard} prefetch={false}>
           {APP_NAME}
         </Link>
         <div className="flex justify-end">
@@ -32,6 +33,7 @@ export function DashboardHeader({ avatarUrl, displayName, hasNotifications }: Da
             aria-label="Notificaciones"
             className="relative grid h-10 w-10 place-items-center rounded-full text-[#c6283a] transition hover:bg-rose-100"
             href={ROUTES.notifications}
+            prefetch={false}
           >
             <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
               <path

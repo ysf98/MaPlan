@@ -10,6 +10,7 @@ import { getDashboardGroupSummaries, getDashboardPlaceStats } from "@/lib/dashbo
 import { getGroupActivityFeedForUser, getGroupsWithRecentActivityForUser } from "@/lib/groupActivity";
 import { getUserGroups } from "@/lib/groups";
 import { getPendingNotificationsForUser } from "@/lib/notifications";
+import { resolveDisplayName } from "@/lib/profile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ROUTES } from "@/utils/constants";
 
@@ -17,16 +18,6 @@ type DashboardProfileRow = {
   username: string | null;
   avatar_url: string | null;
 };
-
-function resolveDisplayName(input: {
-  email?: string | null;
-  metadataUsername: unknown;
-  profileUsername?: string | null;
-}): string {
-  const metadataUsername = typeof input.metadataUsername === "string" ? input.metadataUsername.trim() : "";
-  const fallbackEmailName = input.email?.split("@")[0]?.trim() || "";
-  return input.profileUsername?.trim() || metadataUsername || fallbackEmailName || "Usuario";
-}
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();

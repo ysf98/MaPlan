@@ -13,7 +13,7 @@ export default async function FriendsPage() {
   const [requests, friends] = await Promise.all([getFriendRequests(user.id), getFriends(user.id)]);
 
   return (
-    <AppShell>
+    <AppShell currentUser={user}>
       <FriendsPageClient
         friends={friends}
         query=""

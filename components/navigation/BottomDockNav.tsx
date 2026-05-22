@@ -84,6 +84,7 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
               )}
               href={item.href}
               key={item.href}
+              prefetch={false}
             >
               <NavIcon name={item.icon} />
               {item.label}
@@ -95,6 +96,7 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
           aria-label="Guardar lugar"
           className="mx-auto grid h-14 w-14 -translate-y-5 place-items-center rounded-2xl bg-[#c6283a] text-white shadow-[0_12px_24px_rgba(198,40,58,0.35)] transition hover:bg-[#a91f31]"
           href={ROUTES.map}
+          prefetch={false}
         >
           <NavIcon name="pin" />
         </Link>
@@ -109,6 +111,7 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
               )}
               href={item.href}
               key={item.href}
+              prefetch={false}
             >
               <NavIcon name={item.icon} />
               {item.label}
