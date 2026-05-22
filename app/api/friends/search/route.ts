@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { searchUsers } from "@/lib/friends";
+import { friendSearchQuerySchema } from "@/lib/validation/schemas";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
@@ -9,11 +10,14 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const query = (url.searchParams.get("q") || "").trim();
-  if (query.length < 2) {
-    return NextResponse.json({ results: [] });
+  const parsedQuery = friendSearchQuerySchema.safeParse({
+    q: url.searchParams.get("q") || ""
+  });
+
+  if (!parsedQuery.success) {
+    return NextResponse.json({ error: "Payload invalido." }, { status: 400 });
   }
 
-  const results = await searchUsers(query, user.id);
+  const results = await searchUsers(parsedQuery.data.q, user.id);
   return NextResponse.json({ results });
 }

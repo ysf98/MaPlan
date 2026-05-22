@@ -274,6 +274,29 @@ export const respondGroupInvitationSchema = z.object({
     }, "Decision invalida.")
 });
 
+export const friendSearchQuerySchema = z.object({
+  q: z.string().trim().min(2, "La busqueda debe tener al menos 2 caracteres.").max(80, "La busqueda es demasiado larga.")
+});
+
+export const googlePlacesSearchSchema = z.object({
+  query: z.string().trim().min(3, "La busqueda debe tener al menos 3 caracteres.").max(120, "La busqueda es demasiado larga."),
+  center: z
+    .object({
+      lat: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
+      lng: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
+    })
+    .nullable()
+    .optional()
+});
+
+export const googlePlaceDetailsSchema = z.object({
+  externalPlaceId: z
+    .string()
+    .trim()
+    .min(1, "Identificador externo obligatorio.")
+    .max(255, "Identificador externo invalido.")
+});
+
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;
@@ -287,3 +310,6 @@ export type RespondFriendRequestInput = z.infer<typeof respondFriendRequestSchem
 export type RemoveFriendInput = z.infer<typeof removeFriendSchema>;
 export type InviteFriendToGroupInput = z.infer<typeof inviteFriendToGroupSchema>;
 export type RespondGroupInvitationInput = z.infer<typeof respondGroupInvitationSchema>;
+export type FriendSearchQueryInput = z.infer<typeof friendSearchQuerySchema>;
+export type GooglePlacesSearchInput = z.infer<typeof googlePlacesSearchSchema>;
+export type GooglePlaceDetailsInput = z.infer<typeof googlePlaceDetailsSchema>;

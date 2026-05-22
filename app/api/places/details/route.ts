@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import type { GooglePlaceFeature } from "@/lib/map/googlePlaces";
 import { pickCityFromComponents, pickStreetFromComponents, splitAddressParts } from "@/lib/map/addressParsing";
+import { googlePlaceDetailsSchema } from "@/lib/validation/schemas";
 
 type GooglePlaceDetailsResult = {
   place_id?: string;
@@ -25,17 +27,23 @@ function buildGoogleMapsUrl(placeId: string): string {
 }
 
 export async function POST(request: Request) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "GOOGLE_PLACES_API_KEY no configurada." }, { status: 500 });
   }
 
-  const payload = (await request.json().catch(() => null)) as { externalPlaceId?: string } | null;
-  const externalPlaceId = String(payload?.externalPlaceId || "").trim();
-  if (!externalPlaceId) {
-    return NextResponse.json({ place: null satisfies GooglePlaceFeature | null });
+  const payload = await request.json().catch(() => null);
+  const parsedPayload = googlePlaceDetailsSchema.safeParse(payload);
+  if (!parsedPayload.success) {
+    return NextResponse.json({ error: "Payload invalido." }, { status: 400 });
   }
 
+  const { externalPlaceId } = parsedPayload.data;
   const params = new URLSearchParams({
     place_id: externalPlaceId,
     language: "es",
