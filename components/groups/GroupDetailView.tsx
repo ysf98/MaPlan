@@ -2,16 +2,15 @@
 
 import { useActionState, useState } from "react";
 import { deletePlaceAction, type DeletePlaceActionState } from "@/app/groups/[groupId]/actions";
-import { CategoryBadge } from "@/components/ui/CategoryBadge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
 import { GroupMap } from "@/components/map/GroupMap";
 import { SimplePlacesList } from "@/components/map/SimplePlacesList";
-import type { GroupDetail, GroupJoinRequestItem } from "@/lib/groups/types";
-import type { GroupMemberPreview } from "@/lib/groups/types";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { CategoryBadge } from "@/components/ui/CategoryBadge";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { GroupInvitationItem } from "@/lib/groupInvitations";
+import type { GroupDetail, GroupJoinRequestItem, GroupMemberPreview } from "@/lib/groups/types";
 import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupDetailViewProps = {
@@ -71,53 +70,61 @@ export function GroupDetailView({
       }}
     >
       <Card className="rounded-3xl">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <CategoryBadge label={group.role === "owner" ? "Admin" : "Member"} tone="visit" />
-              <div className={`flex items-center ${useStackedMembers ? "-space-x-2" : "gap-2"}`}>
-                {membersPreview.map((member) => (
-                  <div
-                    key={member.userId}
-                    className="h-8 w-8 overflow-hidden rounded-full border border-rose-100 bg-rose-50"
-                    title={`@${member.username || "sin-username"} · ${getRoleLabel(member.role)}`}
-                  >
-                    {member.avatarUrl ? (
-                      <img alt={member.username || "Avatar"} className="h-full w-full object-cover" src={member.avatarUrl} />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-[#c6283a]">
-                        {getInitial(member.username)}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {hiddenMembersCount > 0 ? (
-                  <button
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-[#c6283a] bg-[#c6283a] text-[10px] font-semibold text-white"
-                    onClick={() => setIsMembersModalOpen(true)}
-                    title={`${hiddenMembersCount} miembro(s) mas`}
-                    type="button"
-                  >
-                    +{hiddenMembersCount}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-950">{group.name}</h1>
-            <p className="mt-2 text-sm text-zinc-500">{group.description || "Grupo sin descripcion"}</p>
+        <div className="relative -m-5 rounded-3xl border border-zinc-100 bg-white sm:-m-6">
+          <div className="absolute right-4 top-4 z-30">
+            <GroupOwnerControls
+              groupId={groupId}
+              groupInvitations={groupInvitations}
+              groupName={group.name}
+              invitableFriends={invitableFriends}
+              joinCode={group.joinCode}
+              joinPolicy={group.joinPolicy}
+              pendingRequests={pendingRequests}
+              placeEditPolicy={group.placeEditPolicy}
+              role={group.role}
+              totalFriendsCount={totalFriendsCount}
+            />
           </div>
-          <GroupOwnerControls
-            groupId={groupId}
-            groupName={group.name}
-            joinCode={group.joinCode}
-            joinPolicy={group.joinPolicy}
-            pendingRequests={pendingRequests}
-            placeEditPolicy={group.placeEditPolicy}
-            role={group.role}
-            invitableFriends={invitableFriends}
-            groupInvitations={groupInvitations}
-            totalFriendsCount={totalFriendsCount}
-          />
+          <div
+            className="relative h-40 bg-zinc-200 bg-cover bg-center"
+            style={group.coverImageUrl ? { backgroundImage: `url("${group.coverImageUrl}")` } : undefined}
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/10" />
+            <div className="absolute inset-x-4 bottom-4 min-w-0">
+              <CategoryBadge label={group.role === "owner" ? "Admin" : "Member"} tone="visit" />
+              <h1 className="mt-2 truncate text-2xl font-semibold tracking-tight text-white">{group.name}</h1>
+              <p className="mt-1 line-clamp-2 text-sm text-white/85">{group.description || "Grupo sin descripcion"}</p>
+            </div>
+          </div>
+          <div className="p-4">
+            <div className={`flex items-center ${useStackedMembers ? "-space-x-2" : "gap-2"}`}>
+              {membersPreview.map((member) => (
+                <div
+                  key={member.userId}
+                  className="h-8 w-8 overflow-hidden rounded-full border border-rose-100 bg-rose-50"
+                  title={`@${member.username || "sin-username"} · ${getRoleLabel(member.role)}`}
+                >
+                  {member.avatarUrl ? (
+                    <img alt={member.username || "Avatar"} className="h-full w-full object-cover" src={member.avatarUrl} />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-[#c6283a]">
+                      {getInitial(member.username)}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {hiddenMembersCount > 0 ? (
+                <button
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-[#c6283a] bg-[#c6283a] text-[10px] font-semibold text-white"
+                  onClick={() => setIsMembersModalOpen(true)}
+                  title={`${hiddenMembersCount} miembro(s) mas`}
+                  type="button"
+                >
+                  +{hiddenMembersCount}
+                </button>
+              ) : null}
+            </div>
+          </div>
         </div>
       </Card>
 
@@ -173,12 +180,12 @@ export function GroupDetailView({
         </Card>
       ) : (
         <EmptyState
-          title="Todavia no hay lugares"
           description={
             group.canEditPlaces
               ? "Empieza agregando el primer sitio recomendado para que tu grupo pueda verlo en el mapa."
               : "Aun no hay lugares. Solo el propietario puede agregar el primer sitio en este grupo."
           }
+          title="Todavia no hay lugares"
         />
       )}
 
@@ -216,4 +223,3 @@ export function GroupDetailView({
     </section>
   );
 }
-

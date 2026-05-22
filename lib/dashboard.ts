@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getGroupMembersPreviewForUser } from "@/lib/groups";
+import { getGroupCoverImageUrl } from "@/lib/groups/covers";
 import type { GroupListItem, GroupMemberPreview } from "@/lib/groups/types";
 
 export type DashboardGroupSummary = GroupListItem & {
@@ -21,13 +22,6 @@ type DashboardPlaceStatusRow = {
 type DashboardGroupIdRow = {
   group_id: string;
 };
-
-const GROUP_COVER_IMAGES = [
-  "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80"
-];
 
 export async function getDashboardPlaceStats(groupIds: string[]): Promise<DashboardPlaceStats> {
   if (groupIds.length === 0) {
@@ -83,7 +77,7 @@ export async function getDashboardGroupSummaries(
 
   return visibleGroups.map((group, index) => ({
     ...group,
-    coverImageUrl: GROUP_COVER_IMAGES[index % GROUP_COVER_IMAGES.length],
+    coverImageUrl: getGroupCoverImageUrl(group.id),
     memberCount: previews[index]?.total || memberCountByGroupId.get(group.id) || 1,
     members: previews[index]?.members || [],
     placeCount: placeCountByGroupId.get(group.id) || 0

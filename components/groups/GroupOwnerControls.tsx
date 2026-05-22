@@ -91,16 +91,28 @@ export function GroupOwnerControls({
   }, [reviewState.success, router, settingsState.success]);
 
   return (
-    <aside className="w-full rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm lg:max-w-sm">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-zinc-950">Gestion del grupo</h2>
-        <Button onClick={() => setExpanded((value) => !value)} size="sm" type="button" variant="secondary">
-          {expanded ? "Ocultar" : "Desplegar"}
-        </Button>
-      </div>
+    <aside className="relative">
+      <button
+        aria-expanded={expanded}
+        aria-label="Gestion del grupo"
+        className="grid h-10 w-10 place-items-center rounded-full border border-white/70 bg-white/85 text-zinc-700 shadow-sm backdrop-blur transition hover:bg-white"
+        onClick={() => setExpanded((value) => !value)}
+        type="button"
+      >
+        <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+          <path
+            d="M10.3 3.6c.5-1.5 2.9-1.5 3.4 0l.2.7c.2.6.8 1 1.4 1h.8c1.6 0 2.3 2 .9 3l-.6.5c-.5.4-.7 1.1-.5 1.7l.2.7c.5 1.5-1.4 2.7-2.7 1.8l-.6-.4c-.5-.4-1.2-.4-1.8 0l-.6.4c-1.3.9-3.2-.3-2.7-1.8l.2-.7c.2-.6 0-1.3-.5-1.7l-.6-.5c-1.4-1-.7-3 .9-3h.8c.6 0 1.2-.4 1.4-1l.2-.7Z"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.5"
+          />
+          <circle cx="12" cy="9.8" r="1.8" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+      </button>
 
       {expanded ? (
-        <div className="mt-4 space-y-4">
+        <div className="absolute right-0 z-30 mt-2 w-[min(24rem,calc(100vw-2rem))] space-y-4 rounded-2xl border border-zinc-100 bg-white p-4 shadow-xl">
           {role === "owner" ? (
             <form action={settingsAction} className="space-y-3 rounded-xl border border-zinc-100 bg-white p-3">
               <input name="groupId" type="hidden" value={groupId} />

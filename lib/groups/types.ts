@@ -14,6 +14,7 @@ export type GroupDetail = {
   id: string;
   name: string;
   description: string | null;
+  coverImageUrl: string | null;
   joinCode: string;
   createdAt: string;
   role: "owner" | "member";

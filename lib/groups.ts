@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getGroupCoverImageUrl } from "@/lib/groups/covers";
 import type {
   GroupDetail,
   GroupJoinRequestItem,
@@ -87,6 +88,7 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
     id: group.id,
     name: group.name,
     description: group.description,
+    coverImageUrl: getGroupCoverImageUrl(group.id),
     joinCode: group.join_code,
     createdAt: group.created_at,
     role: membership.role,
