@@ -2,6 +2,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { JoinGroupForm } from "@/components/groups/JoinGroupForm";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { ROUTES } from "@/utils/constants";
 import { redirect } from "next/navigation";
 
 export default async function JoinGroupPage() {
@@ -12,7 +13,7 @@ export default async function JoinGroupPage() {
   }
 
   return (
-    <AppShell currentUser={user}>
+    <AppShell backHref={ROUTES.groups} currentUser={user}>
       <section className="space-y-4">
         <Card className="rounded-3xl">
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">Unirse a un grupo</h1>

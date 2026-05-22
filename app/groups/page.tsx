@@ -4,6 +4,7 @@ import { GroupsPageClient } from "@/components/groups/GroupsPageClient";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { getDashboardGroupSummaries } from "@/lib/dashboard";
 import { getUserGroups } from "@/lib/groups";
+import { ROUTES } from "@/utils/constants";
 
 export default async function GroupsPage() {
   const user = await getCurrentUser();
@@ -16,7 +17,7 @@ export default async function GroupsPage() {
   const groupSummaries = await getDashboardGroupSummaries(user.id, groups, groups.length);
 
   return (
-    <AppShell currentUser={user}>
+    <AppShell backHref={ROUTES.dashboard} currentUser={user}>
       <section className="space-y-4">
         <GroupsPageClient groups={groupSummaries} />
       </section>

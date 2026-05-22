@@ -3,6 +3,7 @@ import { APP_NAME, ROUTES } from "@/utils/constants";
 
 type DashboardHeaderProps = {
   avatarUrl: string | null;
+  backHref?: string;
   displayName: string;
   hasNotifications: boolean;
 };
@@ -11,24 +12,31 @@ function getInitial(name: string): string {
   return name.trim().charAt(0).toUpperCase() || "M";
 }
 
-export function DashboardHeader({ avatarUrl, displayName, hasNotifications }: DashboardHeaderProps) {
+export function DashboardHeader({ avatarUrl, backHref, displayName, hasNotifications }: DashboardHeaderProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-100 bg-white/90 backdrop-blur-xl">
       <div className="mx-auto grid h-16 w-full max-w-3xl grid-cols-3 items-center px-5">
-        <div className="flex justify-start">
-          <Link
-            aria-label="Ir al perfil"
-            className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-rose-100 bg-rose-50 text-sm font-semibold text-[#c6283a] shadow-sm"
-            href={ROUTES.profile}
-            prefetch={false}
-          >
-            {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : getInitial(displayName)}
-          </Link>
+        <div className="flex min-w-24 justify-start">
+          {backHref ? (
+            <Link
+              aria-label="Volver"
+              className="grid h-10 w-10 place-items-center rounded-full text-[#c6283a] transition hover:bg-rose-50"
+              href={backHref}
+              prefetch={false}
+            >
+              <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <path d="M15 6 9 12l6 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+            </Link>
+          ) : (
+            <ProfileLink avatarUrl={avatarUrl} displayName={displayName} />
+          )}
         </div>
         <Link className="justify-self-center text-lg font-bold tracking-tight text-[#c6283a]" href={ROUTES.dashboard} prefetch={false}>
           {APP_NAME}
         </Link>
-        <div className="flex justify-end">
+        <div className="flex min-w-24 justify-end gap-2">
+          {backHref ? <ProfileLink avatarUrl={avatarUrl} displayName={displayName} /> : null}
           <Link
             aria-label="Notificaciones"
             className="relative grid h-10 w-10 place-items-center rounded-full text-[#c6283a] transition hover:bg-rose-100"
@@ -50,5 +58,18 @@ export function DashboardHeader({ avatarUrl, displayName, hasNotifications }: Da
         </div>
       </div>
     </header>
+  );
+}
+
+function ProfileLink({ avatarUrl, displayName }: { avatarUrl: string | null; displayName: string }) {
+  return (
+    <Link
+      aria-label="Ir al perfil"
+      className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-rose-100 bg-rose-50 text-sm font-semibold text-[#c6283a] shadow-sm"
+      href={ROUTES.profile}
+      prefetch={false}
+    >
+      {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : getInitial(displayName)}
+    </Link>
   );
 }

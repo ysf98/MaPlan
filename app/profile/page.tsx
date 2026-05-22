@@ -3,6 +3,7 @@ import { SignOutButton } from "@/components/auth/SignOutButton";
 import { Card } from "@/components/ui/Card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { ROUTES } from "@/utils/constants";
 import { redirect } from "next/navigation";
 
 export default async function ProfilePage() {
@@ -18,7 +19,7 @@ export default async function ProfilePage() {
   const displayName = profile?.username?.trim() || user.user_metadata?.username || user.email || "Usuario";
 
   return (
-    <AppShell currentUser={user}>
+    <AppShell backHref={ROUTES.dashboard} currentUser={user}>
       <section className="space-y-4">
         <Card className="rounded-3xl">
           <p className="text-sm text-zinc-500">Nombre</p>

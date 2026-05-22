@@ -5,6 +5,7 @@ import { getGroupInvitationsForGroup, getInvitableFriendsForGroup } from "@/lib/
 import { getFriends } from "@/lib/friends";
 import { getGroupPlacesForUser } from "@/lib/places";
 import { GroupDetailView } from "@/components/groups/GroupDetailView";
+import { ROUTES } from "@/utils/constants";
 import { notFound, redirect } from "next/navigation";
 
 type GroupDetailPageProps = {
@@ -35,7 +36,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   const totalFriendsCount = group.role === "owner" ? (await getFriends(user.id)).length : 0;
 
   return (
-    <AppShell currentUser={user}>
+    <AppShell backHref={ROUTES.groups} currentUser={user}>
       <GroupDetailView
         group={group}
         groupId={groupId}

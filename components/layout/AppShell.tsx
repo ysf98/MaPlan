@@ -8,6 +8,7 @@ import { resolveDisplayName } from "@/lib/profile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type AppShellProps = {
+  backHref?: string;
   children: ReactNode;
   currentUser?: Awaited<ReturnType<typeof getCurrentUser>>;
 };
@@ -17,7 +18,7 @@ type AppShellProfileRow = {
   avatar_url: string | null;
 };
 
-export async function AppShell({ children, currentUser }: AppShellProps) {
+export async function AppShell({ backHref, children, currentUser }: AppShellProps) {
   const user = currentUser === undefined ? await getCurrentUser() : currentUser;
   let pendingNotificationsCount = 0;
   let profile: AppShellProfileRow | null = null;
@@ -46,6 +47,7 @@ export async function AppShell({ children, currentUser }: AppShellProps) {
       {user ? (
         <DashboardHeader
           avatarUrl={profile?.avatar_url || null}
+          backHref={backHref}
           displayName={displayName}
           hasNotifications={pendingNotificationsCount > 0}
         />

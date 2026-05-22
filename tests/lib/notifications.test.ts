@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getGroupInvitationsForUserMock = vi.fn();
 const getFriendRequestsMock = vi.fn();
+const createSupabaseServerClientMock = vi.fn();
 
 vi.mock("@/lib/groupInvitations", () => ({
   getGroupInvitationsForUser: getGroupInvitationsForUserMock
@@ -9,6 +10,10 @@ vi.mock("@/lib/groupInvitations", () => ({
 
 vi.mock("@/lib/friends", () => ({
   getFriendRequests: getFriendRequestsMock
+}));
+
+vi.mock("@/lib/supabase/server", () => ({
+  createSupabaseServerClient: createSupabaseServerClientMock
 }));
 
 describe("notifications lib", () => {
@@ -58,6 +63,25 @@ describe("notifications lib", () => {
       sent: []
     });
 
+    const invitationCountQuery = {
+      eq: vi.fn()
+    };
+    invitationCountQuery.eq.mockReturnValueOnce(invitationCountQuery).mockResolvedValueOnce({ count: 1 });
+
+    const friendRequestCountQuery = {
+      eq: vi.fn()
+    };
+    friendRequestCountQuery.eq.mockReturnValueOnce(friendRequestCountQuery).mockResolvedValueOnce({ count: 1 });
+    const selectMock = vi
+      .fn()
+      .mockReturnValueOnce(invitationCountQuery)
+      .mockReturnValueOnce(friendRequestCountQuery);
+    const fromMock = vi.fn().mockReturnValue({ select: selectMock });
+
+    createSupabaseServerClientMock.mockResolvedValue({
+      from: fromMock
+    });
+
     const { getPendingNotificationsForUser, getPendingNotificationsCountForUser } = await import("@/lib/notifications");
     const pending = await getPendingNotificationsForUser("user-me");
     const count = await getPendingNotificationsCountForUser("user-me");
@@ -67,5 +91,8 @@ describe("notifications lib", () => {
     expect(pending.friendRequests).toHaveLength(1);
     expect(pending.total).toBe(2);
     expect(count).toBe(2);
+    expect(fromMock).toHaveBeenCalledWith("group_invitations");
+    expect(fromMock).toHaveBeenCalledWith("friend_requests");
+    expect(selectMock).toHaveBeenCalledWith("id", { count: "exact", head: true });
   });
 });

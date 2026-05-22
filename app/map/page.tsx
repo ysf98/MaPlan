@@ -3,6 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { MapPageClient } from "@/components/map/MapPageClient";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { getPersonalPlacesForUser } from "@/lib/personalPlaces";
+import { ROUTES } from "@/utils/constants";
 
 export default async function MapPage() {
   const user = await getCurrentUser();
@@ -13,7 +14,7 @@ export default async function MapPage() {
   const personalPlaces = await getPersonalPlacesForUser(user.id);
 
   return (
-    <AppShell currentUser={user}>
+    <AppShell backHref={ROUTES.dashboard} currentUser={user}>
       <MapPageClient personalPlaces={personalPlaces} />
     </AppShell>
   );

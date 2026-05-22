@@ -3,6 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { FriendsPageClient } from "@/components/friends/FriendsPageClient";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { getFriendRequests, getFriends } from "@/lib/friends";
+import { ROUTES } from "@/utils/constants";
 
 export default async function FriendsPage() {
   const user = await getCurrentUser();
@@ -13,7 +14,7 @@ export default async function FriendsPage() {
   const [requests, friends] = await Promise.all([getFriendRequests(user.id), getFriends(user.id)]);
 
   return (
-    <AppShell currentUser={user}>
+    <AppShell backHref={ROUTES.dashboard} currentUser={user}>
       <FriendsPageClient
         friends={friends}
         query=""
