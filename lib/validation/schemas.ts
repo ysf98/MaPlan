@@ -243,6 +243,31 @@ export const updateGroupSettingsSchema = z.object({
     }, "Politica de acceso invalida.")
 });
 
+export const updateGroupDetailsSchema = z.object({
+  groupId: uuidSchema,
+  name: z
+    .string()
+    .trim()
+    .min(1, "El nombre del grupo es obligatorio.")
+    .max(80, "El nombre del grupo no puede superar 80 caracteres."),
+  description: z
+    .string()
+    .trim()
+    .max(300, "La descripcion no puede superar 300 caracteres.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  coverImageUrl: z
+    .string()
+    .trim()
+    .max(2_000_000, "La imagen es demasiado larga.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine(
+      (value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(value),
+      "URL de imagen invalida."
+    )
+});
+
 export const sendFriendRequestSchema = z.object({
   receiverId: uuidSchema
 });
@@ -305,6 +330,7 @@ export type UpdatePlaceStatusInput = z.infer<typeof updatePlaceStatusSchema>;
 export type UpdatePlaceLocationInput = z.infer<typeof updatePlaceLocationSchema>;
 export type ReviewJoinRequestInput = z.infer<typeof reviewJoinRequestSchema>;
 export type UpdateGroupSettingsInput = z.infer<typeof updateGroupSettingsSchema>;
+export type UpdateGroupDetailsInput = z.infer<typeof updateGroupDetailsSchema>;
 export type SendFriendRequestInput = z.infer<typeof sendFriendRequestSchema>;
 export type RespondFriendRequestInput = z.infer<typeof respondFriendRequestSchema>;
 export type RemoveFriendInput = z.infer<typeof removeFriendSchema>;

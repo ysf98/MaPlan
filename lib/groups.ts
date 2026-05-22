@@ -14,7 +14,7 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
     supabase.from("group_members").select("group_id, role").eq("user_id", userId),
     supabase
       .from("groups")
-      .select("id, name, description, created_at, place_edit_policy, join_policy")
+      .select("id, name, description, cover_image_url, created_at, place_edit_policy, join_policy")
       .eq("created_by", userId)
       .order("created_at", { ascending: false })
   ]);
@@ -27,7 +27,7 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
     memberGroupIds.length > 0
       ? await supabase
           .from("groups")
-          .select("id, name, description, created_at, place_edit_policy, join_policy")
+          .select("id, name, description, cover_image_url, created_at, place_edit_policy, join_policy")
           .in("id", memberGroupIds)
       : { data: [], error: null };
 
@@ -37,6 +37,7 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
       id: string;
       name: string;
       description: string | null;
+      cover_image_url: string | null;
       created_at: string;
       place_edit_policy: GroupListItem["placeEditPolicy"];
       join_policy: GroupListItem["joinPolicy"];
@@ -51,6 +52,7 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
       id: group.id,
       name: group.name,
       description: group.description,
+      coverImageUrl: group.cover_image_url ?? null,
       createdAt: group.created_at,
       role: roleByGroupId.get(group.id) ?? "owner",
       placeEditPolicy: group.place_edit_policy,
@@ -75,7 +77,7 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
 
   const groupResult = await supabase
     .from("groups")
-    .select("id, name, description, join_code, created_at, place_edit_policy, join_policy")
+    .select("id, name, description, cover_image_url, join_code, created_at, place_edit_policy, join_policy")
     .eq("id", groupId)
     .maybeSingle();
   const { data: group, error: groupError } = groupResult;
@@ -88,7 +90,7 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
     id: group.id,
     name: group.name,
     description: group.description,
-    coverImageUrl: getGroupCoverImageUrl(group.id),
+    coverImageUrl: group.cover_image_url || getGroupCoverImageUrl(group.id),
     joinCode: group.join_code,
     createdAt: group.created_at,
     role: membership.role,

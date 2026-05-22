@@ -4,7 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
 import { createPlace, deletePlace, updatePlaceLocation, updatePlaceStatus } from "@/lib/places";
-import { createPlaceSchema, reviewJoinRequestSchema, updateGroupSettingsSchema, updatePlaceLocationSchema, updatePlaceStatusSchema } from "@/lib/validation/schemas";
+import {
+  createPlaceSchema,
+  reviewJoinRequestSchema,
+  updateGroupDetailsSchema,
+  updateGroupSettingsSchema,
+  updatePlaceLocationSchema,
+  updatePlaceStatusSchema
+} from "@/lib/validation/schemas";
 import type { PlaceStatus } from "@/types/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
@@ -40,6 +47,11 @@ export type DeleteGroupActionState = {
 };
 
 export type UpdateGroupSettingsActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type UpdateGroupDetailsActionState = {
   error: string | null;
   success: boolean;
 };
@@ -80,6 +92,11 @@ const DELETE_GROUP_INITIAL_STATE: DeleteGroupActionState = {
 };
 
 const UPDATE_GROUP_SETTINGS_INITIAL_STATE: UpdateGroupSettingsActionState = {
+  error: null,
+  success: false
+};
+
+const UPDATE_GROUP_DETAILS_INITIAL_STATE: UpdateGroupDetailsActionState = {
   error: null,
   success: false
 };
@@ -342,6 +359,49 @@ export async function updateGroupSettingsAction(
   };
 
   const updateResult = await supabase.from("groups").update(payload).eq("id", groupId);
+
+  if (updateResult.error) {
+    return { error: updateResult.error.message, success: false };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/groups");
+  revalidatePath("/dashboard");
+  return { error: null, success: true };
+}
+
+export async function updateGroupDetailsAction(
+  _previousState: UpdateGroupDetailsActionState = UPDATE_GROUP_DETAILS_INITIAL_STATE,
+  formData: FormData
+): Promise<UpdateGroupDetailsActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const parsedInput = updateGroupDetailsSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    name: String(formData.get("name") || ""),
+    description: String(formData.get("description") || ""),
+    coverImageUrl: String(formData.get("coverImageUrl") || "")
+  });
+
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
+  }
+
+  const { groupId, name, description, coverImageUrl } = parsedInput.data;
+  const owner = await isGroupOwner(user.id, groupId);
+  if (!owner) {
+    return { error: "Solo el propietario puede editar este grupo.", success: false };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const updateResult = await supabase
+    .from("groups")
+    .update({
+      name,
+      description,
+      cover_image_url: coverImageUrl
+    })
+    .eq("id", groupId);
 
   if (updateResult.error) {
     return { error: updateResult.error.message, success: false };

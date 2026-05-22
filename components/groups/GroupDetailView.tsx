@@ -26,10 +26,7 @@ type GroupDetailViewProps = {
   totalFriendsCount: number;
 };
 
-const deleteInitialState: DeletePlaceActionState = {
-  error: null,
-  success: false
-};
+const deleteInitialState: DeletePlaceActionState = { error: null, success: false };
 
 function getInitial(name: string | null): string {
   const value = (name || "").trim();
@@ -70,10 +67,12 @@ export function GroupDetailView({
       }}
     >
       <Card className="rounded-3xl">
-        <div className="relative -m-5 rounded-3xl border border-zinc-100 bg-white sm:-m-6">
+        <div className="relative -m-5 overflow-hidden rounded-3xl border border-zinc-100 bg-white sm:-m-6">
           <div className="absolute right-4 top-4 z-30">
             <GroupOwnerControls
               groupId={groupId}
+              groupCoverImageUrl={group.coverImageUrl}
+              groupDescription={group.description}
               groupInvitations={groupInvitations}
               groupName={group.name}
               invitableFriends={invitableFriends}

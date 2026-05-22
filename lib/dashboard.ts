@@ -77,7 +77,7 @@ export async function getDashboardGroupSummaries(
 
   return visibleGroups.map((group, index) => ({
     ...group,
-    coverImageUrl: getGroupCoverImageUrl(group.id),
+    coverImageUrl: group.coverImageUrl || getGroupCoverImageUrl(group.id),
     memberCount: previews[index]?.total || memberCountByGroupId.get(group.id) || 1,
     members: previews[index]?.members || [],
     placeCount: placeCountByGroupId.get(group.id) || 0

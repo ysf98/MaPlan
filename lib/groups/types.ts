@@ -4,6 +4,7 @@ export type GroupListItem = {
   id: string;
   name: string;
   description: string | null;
+  coverImageUrl: string | null;
   createdAt: string;
   role: "owner" | "member";
   placeEditPolicy: GroupPlaceEditPolicy;

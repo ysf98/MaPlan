@@ -36,6 +36,7 @@ export type Database = {
           id: string;
           name: string;
           description: string | null;
+          cover_image_url: string | null;
           created_by: string;
           join_code: string;
           place_edit_policy: GroupPlaceEditPolicy;
@@ -46,6 +47,7 @@ export type Database = {
           id?: string;
           name: string;
           description?: string | null;
+          cover_image_url?: string | null;
           created_by: string;
           join_code: string;
           place_edit_policy?: GroupPlaceEditPolicy;
@@ -55,6 +57,7 @@ export type Database = {
         Update: {
           name?: string;
           description?: string | null;
+          cover_image_url?: string | null;
           join_code?: string;
           place_edit_policy?: GroupPlaceEditPolicy;
           join_policy?: GroupJoinPolicy;
