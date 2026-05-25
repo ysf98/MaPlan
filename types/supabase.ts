@@ -18,17 +18,20 @@ export type Database = {
           username: string | null;
           avatar_url: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id: string;
           username?: string | null;
           avatar_url?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           username?: string | null;
           avatar_url?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
       };
       groups: {
@@ -333,7 +336,64 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      accept_friend_request: {
+        Args: {
+          request_id: string;
+        };
+        Returns: boolean;
+      };
+      search_profiles_by_username: {
+        Args: {
+          p_query: string;
+        };
+        Returns: Array<{
+          id: string;
+          username: string | null;
+        }>;
+      };
+      get_profiles_by_ids: {
+        Args: {
+          p_ids: string[];
+        };
+        Returns: Array<{
+          id: string;
+          username: string | null;
+          avatar_url?: string | null;
+        }>;
+      };
+      accept_group_invitation: {
+        Args: {
+          invitation_id: string;
+        };
+        Returns: boolean;
+      };
+      approve_group_join_request: {
+        Args: {
+          p_group_id: string;
+          p_request_id: string;
+        };
+        Returns: boolean;
+      };
+      get_group_members_with_profiles: {
+        Args: {
+          p_group_id: string;
+          p_limit?: number | null;
+        };
+        Returns: Array<{
+          user_id: string;
+          role: "owner" | "member";
+          username: string | null;
+          avatar_url: string | null;
+        }>;
+      };
+      is_group_creator: {
+        Args: {
+          p_group_id: string;
+        };
+        Returns: boolean;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
