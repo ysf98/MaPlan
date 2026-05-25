@@ -30,8 +30,7 @@ export async function updateProfileAction(
     .from("profiles")
     .update({
       username: parsed.data.username,
-      avatar_url: parsed.data.avatarUrl,
-      updated_at: new Date().toISOString()
+      avatar_url: parsed.data.avatarUrl
     })
     .eq("id", user.id);
 
