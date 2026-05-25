@@ -16,8 +16,10 @@ export default async function NewGroupPage() {
 
   return (
     <AppShell backHref={ROUTES.groups} currentUser={user}>
-      <section className="mx-auto w-full max-w-md">
-        <CreateGroupForm friends={friends} />
+      <section className="mx-auto w-full max-w-md px-1 pb-4 pt-3">
+        <div className="overflow-hidden rounded-[26px] border border-rose-100/70 bg-white shadow-[0_18px_45px_rgba(24,24,27,0.12)]">
+          <CreateGroupForm friends={friends} />
+        </div>
       </section>
     </AppShell>
   );

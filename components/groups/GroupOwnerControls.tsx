@@ -113,9 +113,16 @@ export function GroupOwnerControls({
   useEffect(() => {
     if (!isEditOpen) return;
     const previousOverflow = document.body.style.overflow;
+    const previousHideBottomNav = document.body.getAttribute("data-hide-bottom-nav");
     document.body.style.overflow = "hidden";
+    document.body.setAttribute("data-hide-bottom-nav", "true");
     return () => {
       document.body.style.overflow = previousOverflow;
+      if (previousHideBottomNav === null) {
+        document.body.removeAttribute("data-hide-bottom-nav");
+      } else {
+        document.body.setAttribute("data-hide-bottom-nav", previousHideBottomNav);
+      }
     };
   }, [isEditOpen]);
 
@@ -152,11 +159,12 @@ export function GroupOwnerControls({
       </button>
 
       {isEditOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/45 p-4">
-          <div ref={dialogRef}>
+        <div className="fixed inset-0 z-50 bg-zinc-950/45">
+          <div className="flex h-full w-full items-start justify-center overflow-y-auto px-4 pb-36 pt-24 sm:pb-24 sm:pt-24">
+            <div ref={dialogRef} className="w-full max-w-[24rem] sm:max-w-[26rem]">
             <form
               action={detailsAction}
-              className="max-h-[calc(100vh-2rem)] w-[min(28rem,calc(100vw-1rem))] overflow-y-auto rounded-2xl border border-zinc-100 bg-white shadow-[0_18px_45px_rgba(24,24,27,0.14)]"
+              className="max-h-[calc(100dvh-14rem)] w-full overflow-y-auto rounded-2xl border border-zinc-100 bg-white shadow-[0_18px_45px_rgba(24,24,27,0.14)] sm:max-h-[calc(100dvh-12rem)]"
             >
               <input name="groupId" type="hidden" value={groupId} />
               <input name="coverImageUrl" type="hidden" value={coverValue} />
@@ -175,22 +183,20 @@ export function GroupOwnerControls({
                 <h2 className="text-base font-bold text-[#c6283a]">Editar grupo</h2>
               </div>
 
-              <fieldset className="space-y-5 px-5 py-5" disabled={isDetailsPending}>
+              <fieldset className="relative space-y-5 px-5 py-5" disabled={isDetailsPending}>
+                <button
+                  aria-expanded={isSettingsOpen}
+                  aria-label="Ajustes del grupo"
+                  className="absolute right-5 top-5 inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-100 bg-white text-[#c6283a] shadow-[0_8px_20px_rgba(198,40,58,0.12)] transition hover:bg-rose-50"
+                  onClick={() => setIsSettingsOpen((value) => !value)}
+                  type="button"
+                >
+                  <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" strokeWidth="1.7" />
+                    <path d="M19 13.3v-2.6l-2-.4a5.7 5.7 0 0 0-.6-1.4l1.1-1.7-1.8-1.8-1.7 1.1c-.5-.3-.9-.5-1.5-.6L12.1 4H9.5l-.4 1.9c-.5.1-1 .4-1.5.6L6 5.4 4.1 7.2l1.1 1.7c-.3.5-.5.9-.6 1.4l-2 .4v2.6l2 .4c.1.5.4 1 .6 1.4l-1.1 1.7L6 18.6l1.7-1.1c.5.3.9.5 1.5.6l.4 1.9h2.6l.4-1.9c.5-.1 1-.4 1.5-.6l1.7 1.1 1.8-1.8-1.1-1.7c.3-.5.5-.9.6-1.4l2-.4Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
+                  </svg>
+                </button>
                 <GroupCoverPicker
-                  actionSlot={
-                    <button
-                      aria-expanded={isSettingsOpen}
-                      aria-label="Ajustes del grupo"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-100 bg-white text-[#c6283a] shadow-[0_8px_20px_rgba(198,40,58,0.12)] transition hover:bg-rose-50"
-                      onClick={() => setIsSettingsOpen((value) => !value)}
-                      type="button"
-                    >
-                      <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                        <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" strokeWidth="1.7" />
-                        <path d="M19 13.3v-2.6l-2-.4a5.7 5.7 0 0 0-.6-1.4l1.1-1.7-1.8-1.8-1.7 1.1c-.5-.3-.9-.5-1.5-.6L12.1 4H9.5l-.4 1.9c-.5.1-1 .4-1.5.6L6 5.4 4.1 7.2l1.1 1.7c-.3.5-.5.9-.6 1.4l-2 .4v2.6l2 .4c.1.5.4 1 .6 1.4l-1.1 1.7L6 18.6l1.7-1.1c.5.3.9.5 1.5.6l.4 1.9h2.6l.4-1.9c.5-.1 1-.4 1.5-.6l1.7 1.1 1.8-1.8-1.1-1.7c.3-.5.5-.9.6-1.4l2-.4Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
-                      </svg>
-                    </button>
-                  }
                   helperText="Pulsa la foto para cambiar la portada"
                   onFileChange={handleCoverChange}
                   placeholder={<span className="text-sm font-bold text-[#c6283a]">{groupName.trim().charAt(0).toUpperCase() || "M"}</span>}
@@ -300,6 +306,7 @@ export function GroupOwnerControls({
                 </div>
               </fieldset>
             </form>
+            </div>
           </div>
         </div>
       ) : null}

@@ -24,3 +24,7 @@ body {
 * {
   border-color: rgb(var(--border));
 }
+
+body[data-hide-bottom-nav="true"] .bottom-dock-nav {
+  display: none;
+}
