@@ -322,6 +322,24 @@ export const googlePlaceDetailsSchema = z.object({
     .max(255, "Identificador externo invalido.")
 });
 
+export const updateProfileSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(1, "El nombre es obligatorio.")
+    .max(80, "El nombre no puede superar 80 caracteres."),
+  avatarUrl: z
+    .string()
+    .trim()
+    .max(2_000_000, "La imagen es demasiado larga.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine(
+      (value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(value),
+      "URL de imagen invalida."
+    )
+});
+
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;

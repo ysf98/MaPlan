@@ -110,8 +110,6 @@ export async function addPlaceAction(
   _previousState: AddPlaceActionState = ADD_PLACE_INITIAL_STATE,
   formData: FormData
 ): Promise<AddPlaceActionState> {
-  const user = await requireAuthenticatedUser("/groups");
-
   const parsedInput = createPlaceSchema.safeParse({
     groupId: String(formData.get("groupId") || ""),
     name: String(formData.get("name") || ""),
@@ -135,6 +133,8 @@ export async function addPlaceAction(
       success: false
     };
   }
+
+  const user = await requireAuthenticatedUser("/groups");
 
   const { groupId, name, address, city, notes, category, originalUrl, source, provider, externalPlaceId, googleMapsUrl, businessStatus, latitude, longitude } = parsedInput.data;
 

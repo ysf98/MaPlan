@@ -5,6 +5,10 @@ import type { ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { updateGroupDetailsAction, updateGroupSettingsAction } from "@/app/groups/[groupId]/actions";
 import type { UpdateGroupDetailsActionState, UpdateGroupSettingsActionState } from "@/app/groups/[groupId]/actions";
+import { inviteFriendToGroupAction } from "@/app/groups/[groupId]/invitations/actions";
+import type { InviteFriendActionState } from "@/app/groups/[groupId]/invitations/actions";
+import { GroupCoverPicker } from "@/components/groups/GroupCoverPicker";
+import { GroupFriendsSelector } from "@/components/groups/GroupFriendsSelector";
 import { Button } from "@/components/ui/Button";
 import type { GroupInvitationItem } from "@/lib/groupInvitations";
 import type { GroupJoinPolicy, GroupPlaceEditPolicy } from "@/lib/groups/policies";
@@ -27,10 +31,7 @@ type GroupOwnerControlsProps = {
 
 const settingsInitialState: UpdateGroupSettingsActionState = { error: null, success: false };
 const detailsInitialState: UpdateGroupDetailsActionState = { error: null, success: false };
-
-function getInitial(name: string | null): string {
-  return name?.trim().charAt(0).toUpperCase() || "M";
-}
+const inviteInitialState: InviteFriendActionState = { error: null, success: false };
 
 export function GroupOwnerControls({
   groupId,
@@ -47,23 +48,33 @@ export function GroupOwnerControls({
   const router = useRouter();
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const settingsRef = useRef<HTMLDivElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [invitingFriendId, setInvitingFriendId] = useState<string | null>(null);
   const [coverValue, setCoverValue] = useState(groupCoverImageUrl || "");
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(groupCoverImageUrl);
 
   const [settingsState, settingsAction, isSettingsPending] = useActionState(updateGroupSettingsAction, settingsInitialState);
   const [detailsState, detailsAction, isDetailsPending] = useActionState(updateGroupDetailsAction, detailsInitialState);
+  const [inviteState, inviteAction, isInviting] = useActionState(inviteFriendToGroupAction, inviteInitialState);
 
   useEffect(() => {
-    if (settingsState.success || detailsState.success) {
+    if (settingsState.success || detailsState.success || inviteState.success) {
       router.refresh();
     }
     if (detailsState.success) {
       setIsEditOpen(false);
     }
-  }, [detailsState.success, router, settingsState.success]);
+  }, [detailsState.success, inviteState.success, router, settingsState.success]);
+
+  async function handleInvite(friendId: string) {
+    setInvitingFriendId(friendId);
+    const formData = new FormData();
+    formData.set("groupId", groupId);
+    formData.set("friendUserId", friendId);
+    await inviteAction(formData);
+    setInvitingFriendId(null);
+  }
 
   useEffect(() => {
     if (!isEditOpen) {
@@ -165,21 +176,8 @@ export function GroupOwnerControls({
               </div>
 
               <fieldset className="space-y-5 px-5 py-5" disabled={isDetailsPending}>
-                <div className="mx-auto flex w-fit items-start gap-3">
-                  <button
-                    className="group grid h-[86px] w-[86px] place-items-center overflow-hidden rounded-full border border-zinc-100 bg-rose-50 shadow-[0_8px_20px_rgba(198,40,58,0.1)]"
-                    onClick={() => fileInputRef.current?.click()}
-                    type="button"
-                  >
-                    {coverPreviewUrl ? (
-                      <img alt="" className="h-full w-full object-cover" src={coverPreviewUrl} />
-                    ) : (
-                      <span className="text-sm font-bold text-[#c6283a]">{getInitial(groupName)}</span>
-                    )}
-                  </button>
-                  <input accept="image/*" className="hidden" onChange={handleCoverChange} ref={fileInputRef} type="file" />
-
-                  <div className="pt-1">
+                <GroupCoverPicker
+                  actionSlot={
                     <button
                       aria-expanded={isSettingsOpen}
                       aria-label="Ajustes del grupo"
@@ -192,17 +190,20 @@ export function GroupOwnerControls({
                         <path d="M19 13.3v-2.6l-2-.4a5.7 5.7 0 0 0-.6-1.4l1.1-1.7-1.8-1.8-1.7 1.1c-.5-.3-.9-.5-1.5-.6L12.1 4H9.5l-.4 1.9c-.5.1-1 .4-1.5.6L6 5.4 4.1 7.2l1.1 1.7c-.3.5-.5.9-.6 1.4l-2 .4v2.6l2 .4c.1.5.4 1 .6 1.4l-1.1 1.7L6 18.6l1.7-1.1c.5.3.9.5 1.5.6l.4 1.9h2.6l.4-1.9c.5-.1 1-.4 1.5-.6l1.7 1.1 1.8-1.8-1.1-1.7c.3-.5.5-.9.6-1.4l2-.4Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
                       </svg>
                     </button>
-                  </div>
-                </div>
-                <p className="text-center text-[11px] font-medium text-zinc-500">Pulsa la foto para cambiar la portada</p>
+                  }
+                  helperText="Pulsa la foto para cambiar la portada"
+                  onFileChange={handleCoverChange}
+                  placeholder={<span className="text-sm font-bold text-[#c6283a]">{groupName.trim().charAt(0).toUpperCase() || "M"}</span>}
+                  previewUrl={coverPreviewUrl}
+                />
 
                 {isSettingsOpen ? (
-                  <div className="space-y-3 rounded-2xl border border-zinc-100 bg-white p-4 shadow-[0_18px_45px_rgba(24,24,27,0.14)]" ref={settingsRef}>
+                  <div className="mx-auto w-full max-w-[280px] space-y-3 rounded-2xl border border-zinc-100 bg-white p-3 shadow-[0_18px_45px_rgba(24,24,27,0.14)]" ref={settingsRef}>
                     <input name="settings_groupId" type="hidden" value={groupId} />
                     <label className="block space-y-2">
                       <span className="text-xs font-bold text-zinc-700">Edicion de lugares</span>
                       <select
-                        className="h-10 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                        className="h-9 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
                         defaultValue={placeEditPolicy}
                         name="settings_placeEditPolicy"
                       >
@@ -213,7 +214,7 @@ export function GroupOwnerControls({
                     <label className="block space-y-2">
                       <span className="text-xs font-bold text-zinc-700">Acceso al grupo</span>
                       <select
-                        className="h-10 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                        className="h-9 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
                         defaultValue={joinPolicy}
                         name="settings_joinPolicy"
                       >
@@ -228,22 +229,24 @@ export function GroupOwnerControls({
                     </div>
                     {settingsState.error ? <p className="text-xs text-rose-600">{settingsState.error}</p> : null}
                     {settingsState.success ? <p className="text-xs text-emerald-600">Configuracion actualizada.</p> : null}
-                    <Button
-                      disabled={isSettingsPending}
-                      formAction={async (formData) => {
-                        formData.set("groupId", String(formData.get("settings_groupId") || ""));
-                        formData.set("placeEditPolicy", String(formData.get("settings_placeEditPolicy") || ""));
-                        formData.set("joinPolicy", String(formData.get("settings_joinPolicy") || ""));
-                        await settingsAction(formData);
-                      }}
-                      size="sm"
-                      type="submit"
-                    >
-                      {isSettingsPending ? "Guardando..." : "Guardar ajustes"}
-                    </Button>
-                    <Button onClick={() => setIsSettingsOpen(false)} size="sm" type="button" variant="ghost">
-                      Cerrar
-                    </Button>
+                    <div className="flex items-center justify-between">
+                      <Button
+                        disabled={isSettingsPending}
+                        formAction={async (formData) => {
+                          formData.set("groupId", String(formData.get("settings_groupId") || ""));
+                          formData.set("placeEditPolicy", String(formData.get("settings_placeEditPolicy") || ""));
+                          formData.set("joinPolicy", String(formData.get("settings_joinPolicy") || ""));
+                          await settingsAction(formData);
+                        }}
+                        size="sm"
+                        type="submit"
+                      >
+                        {isSettingsPending ? "Guardando..." : "Guardar ajustes"}
+                      </Button>
+                      <Button onClick={() => setIsSettingsOpen(false)} size="sm" type="button" variant="ghost">
+                        Cerrar
+                      </Button>
+                    </div>
                   </div>
                 ) : null}
 
@@ -269,32 +272,20 @@ export function GroupOwnerControls({
                   />
                 </label>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-lg font-bold text-zinc-950">Invitar amigos</h3>
-                    <span className="rounded-full bg-[#ffdce0] px-4 py-1 text-[11px] font-bold text-[#c6283a]">{invitableFriends.length} disponibles</span>
-                  </div>
-                  {invitableFriends.length === 0 ? (
-                    <p className="rounded-2xl bg-white px-4 py-3 text-sm text-zinc-500 shadow-[0_8px_20px_rgba(198,40,58,0.08)]">
-                      {totalFriendsCount === 0
-                        ? "Anade amigos primero para poder invitarlos al grupo."
-                        : "Todos tus amigos ya estan invitados o ya son miembros de este grupo."}
-                    </p>
-                  ) : (
-                    <ul className="max-h-[220px] space-y-3 overflow-y-auto pr-1">
-                      {invitableFriends.map((friend) => (
-                        <li className="rounded-2xl bg-white px-3 py-3 shadow-[0_8px_20px_rgba(198,40,58,0.08)]" key={friend.id}>
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-bold text-zinc-950">{friend.username || "Sin username"}</p>
-                              <p className="truncate text-xs font-medium text-zinc-500">@{friend.username || "sin-username"}</p>
-                            </div>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+                <GroupFriendsSelector
+                  emptyMessage={
+                    totalFriendsCount === 0
+                      ? "Anade amigos primero para poder invitarlos al grupo."
+                      : "Todos tus amigos ya estan invitados o ya son miembros de este grupo."
+                  }
+                  friends={invitableFriends}
+                  invitingFriendId={isInviting ? invitingFriendId : null}
+                  mode="invite"
+                  onInvite={handleInvite}
+                  title="Invitar amigos"
+                />
+                {inviteState.error ? <p className="text-xs text-rose-600">{inviteState.error}</p> : null}
+                {inviteState.success ? <p className="text-xs text-emerald-600">Invitacion enviada.</p> : null}
 
                 {detailsState.error ? <p className="text-sm text-rose-600">{detailsState.error}</p> : null}
                 {detailsState.success ? <p className="text-sm text-emerald-600">Grupo actualizado.</p> : null}

@@ -1,12 +1,22 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const redirectMock = vi.fn();
-const revalidatePathMock = vi.fn();
-const getCurrentUserMock = vi.fn();
-const createPlaceMock = vi.fn();
-const updatePlaceStatusMock = vi.fn();
-const updatePlaceLocationMock = vi.fn();
-const deletePlaceMock = vi.fn();
+const {
+  redirectMock,
+  revalidatePathMock,
+  requireAuthenticatedUserMock,
+  createPlaceMock,
+  updatePlaceStatusMock,
+  updatePlaceLocationMock,
+  deletePlaceMock
+} = vi.hoisted(() => ({
+  redirectMock: vi.fn(),
+  revalidatePathMock: vi.fn(),
+  requireAuthenticatedUserMock: vi.fn(),
+  createPlaceMock: vi.fn(),
+  updatePlaceStatusMock: vi.fn(),
+  updatePlaceLocationMock: vi.fn(),
+  deletePlaceMock: vi.fn()
+}));
 
 vi.mock("next/navigation", () => ({
   redirect: redirectMock
@@ -17,7 +27,12 @@ vi.mock("next/cache", () => ({
 }));
 
 vi.mock("@/lib/auth/getCurrentUser", () => ({
-  getCurrentUser: getCurrentUserMock
+  getCurrentUser: vi.fn()
+}));
+
+vi.mock("@/lib/actions/serverAction", () => ({
+  requireAuthenticatedUser: requireAuthenticatedUserMock,
+  getValidationErrorMessage: (error: { issues?: Array<{ message?: string }> }) => error.issues?.[0]?.message ?? "Datos invalidos."
 }));
 
 vi.mock("@/lib/places", () => ({
@@ -27,31 +42,33 @@ vi.mock("@/lib/places", () => ({
   deletePlace: deletePlaceMock
 }));
 
+let placesActions: typeof import("@/app/groups/[groupId]/actions");
+
 describe("places server actions", () => {
+  beforeAll(async () => {
+    placesActions = await import("@/app/groups/[groupId]/actions");
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
+    requireAuthenticatedUserMock.mockResolvedValue({ id: "user-1" });
     redirectMock.mockImplementation(() => {
       throw new Error("redirect");
     });
   });
 
   it("addPlaceAction rejects invalid payload", async () => {
-    const { addPlaceAction } = await import("@/app/groups/[groupId]/actions");
-    getCurrentUserMock.mockResolvedValue({ id: "user-1" });
-
     const formData = new FormData();
     formData.set("groupId", "not-a-uuid");
     formData.set("name", "");
     formData.set("address", "");
 
-    const result = await addPlaceAction({ error: null, success: false }, formData);
+    const result = await placesActions.addPlaceAction({ error: null, success: false }, formData);
     expect(result.success).toBe(false);
     expect(result.error).toBe("Identificador invalido.");
   });
 
   it("updatePlaceStatusAction updates and revalidates", async () => {
-    const { updatePlaceStatusAction } = await import("@/app/groups/[groupId]/actions");
-    getCurrentUserMock.mockResolvedValue({ id: "user-1" });
     updatePlaceStatusMock.mockResolvedValue({ error: null });
 
     const formData = new FormData();
@@ -59,7 +76,7 @@ describe("places server actions", () => {
     formData.set("placeId", "22222222-2222-4222-8222-222222222222");
     formData.set("status", "visited");
 
-    const result = await updatePlaceStatusAction({ error: null, success: false }, formData);
+    const result = await placesActions.updatePlaceStatusAction({ error: null, success: false }, formData);
 
     expect(result).toEqual({ error: null, success: true });
     expect(updatePlaceStatusMock).toHaveBeenCalledWith({
@@ -73,8 +90,6 @@ describe("places server actions", () => {
   });
 
   it("updatePlaceLocationAction updates and revalidates", async () => {
-    const { updatePlaceLocationAction } = await import("@/app/groups/[groupId]/actions");
-    getCurrentUserMock.mockResolvedValue({ id: "user-1" });
     updatePlaceLocationMock.mockResolvedValue({ error: null });
 
     const formData = new FormData();
@@ -84,7 +99,7 @@ describe("places server actions", () => {
     formData.set("latitude", "40.4168");
     formData.set("longitude", "-3.7038");
 
-    const result = await updatePlaceLocationAction({ error: null, success: false }, formData);
+    const result = await placesActions.updatePlaceLocationAction({ error: null, success: false }, formData);
 
     expect(result).toEqual({ error: null, success: true });
     expect(updatePlaceLocationMock).toHaveBeenCalledWith({
