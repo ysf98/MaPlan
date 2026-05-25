@@ -61,88 +61,79 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
   }
 
   return (
-    <form action={createFormAction} className="bg-[#fff8f8]">
-      <div className="flex h-12 items-center gap-3 border-b border-rose-100 bg-white px-4">
-        <button
-          aria-label="Volver a grupos"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#c6283a] transition hover:bg-rose-50"
-          onClick={() => router.push(ROUTES.groups)}
-          type="button"
-        >
-          <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-            <path d="M15 6 9 12l6 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-          </svg>
-        </button>
-        <h1 className="text-base font-bold text-[#c6283a]">Crear nuevo grupo</h1>
+    <form action={createFormAction} className="bg-white">
+      <div className="flex h-12 items-center justify-center border-b border-rose-100 bg-white px-4">
+        <h1 className="text-center text-base font-bold text-[#c6283a]">Crear nuevo grupo</h1>
       </div>
 
-      <fieldset className="space-y-5 px-5 py-5" disabled={isCreatePending || isNavigatingToGroup}>
+      <fieldset className="relative space-y-5 px-5 py-5" disabled={isCreatePending || isNavigatingToGroup}>
         {selectedFriendIds.map((friendId) => (
           <input key={friendId} name="selectedFriendIds" type="hidden" value={friendId} />
         ))}
 
-        <div className="relative mx-auto w-fit">
-          <GroupCoverPicker
-            actionSlot={
-              <button
-                aria-expanded={isSettingsOpen}
-                aria-label="Ajustes del grupo"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-100 bg-white text-[#c6283a] shadow-sm transition hover:bg-rose-50"
-                onClick={() => setIsSettingsOpen((isOpen) => !isOpen)}
-                type="button"
-              >
-                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" strokeWidth="1.7" />
-                  <path d="M19 13.3v-2.6l-2-.4a5.7 5.7 0 0 0-.6-1.4l1.1-1.7-1.8-1.8-1.7 1.1c-.5-.3-.9-.5-1.5-.6L12.1 4H9.5l-.4 1.9c-.5.1-1 .4-1.5.6L6 5.4 4.1 7.2l1.1 1.7c-.3.5-.5.9-.6 1.4l-2 .4v2.6l2 .4c.1.5.4 1 .6 1.4l-1.1 1.7L6 18.6l1.7-1.1c.5.3.9.5 1.5.6l.4 1.9h2.6l.4-1.9c.5-.1 1-.4 1.5-.6l1.7 1.1 1.8-1.8-1.1-1.7c.3-.5.5-.9.6-1.4l2-.4Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
-                </svg>
-              </button>
-            }
-            helperText="Anadir foto de grupo"
-            inputName="coverImage"
-            onFileChange={handleCoverChange}
-            placeholder={
-              <svg aria-hidden="true" className="h-8 w-8 text-[#c6283a]/70" fill="none" viewBox="0 0 24 24">
-                <path d="M4 17.5V8a2 2 0 0 1 2-2h2l1.4-2h5.2L16 6h2a2 2 0 0 1 2 2v9.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
-                <path d="M12 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" strokeWidth="1.7" />
-              </svg>
-            }
-            previewUrl={coverPreviewUrl}
-          />
+        <div className="relative -mx-5 -mt-5 bg-[#fff8f8] px-5 pb-5 pt-5">
+          <button
+            aria-expanded={isSettingsOpen}
+            aria-label="Ajustes del grupo"
+            className="absolute right-5 top-5 inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-100 bg-white text-[#c6283a] shadow-sm transition hover:bg-rose-50"
+            onClick={() => setIsSettingsOpen((isOpen) => !isOpen)}
+            type="button"
+          >
+            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+              <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" strokeWidth="1.7" />
+              <path d="M19 13.3v-2.6l-2-.4a5.7 5.7 0 0 0-.6-1.4l1.1-1.7-1.8-1.8-1.7 1.1c-.5-.3-.9-.5-1.5-.6L12.1 4H9.5l-.4 1.9c-.5.1-1 .4-1.5.6L6 5.4 4.1 7.2l1.1 1.7c-.3.5-.5.9-.6 1.4l-2 .4v2.6l2 .4c.1.5.4 1 .6 1.4l-1.1 1.7L6 18.6l1.7-1.1c.5.3.9.5 1.5.6l.4 1.9h2.6l.4-1.9c.5-.1 1-.4 1.5-.6l1.7 1.1 1.8-1.8-1.1-1.7c.3-.5.5-.9.6-1.4l2-.4Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
+            </svg>
+          </button>
 
-          {isSettingsOpen ? (
-            <div className="absolute left-1/2 top-full z-10 mt-3 w-[270px] -translate-x-1/2 space-y-3 rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_45px_rgba(24,24,27,0.14)]">
-              <label className="block space-y-2">
-                <span className="text-xs font-bold text-zinc-700">Edicion de lugares</span>
-                <select
-                  className="h-10 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
-                  name="placeEditPolicy"
-                  onChange={(event) => setPlaceEditPolicy(event.target.value as GroupPlaceEditPolicy)}
-                  value={placeEditPolicy}
-                >
-                  <option value="members_can_edit">Todos pueden anadir lugares</option>
-                  <option value="owner_only">Solo el propietario</option>
-                </select>
-              </label>
-              <label className="block space-y-2">
-                <span className="text-xs font-bold text-zinc-700">Acceso al grupo</span>
-                <select
-                  className="h-10 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
-                  name="joinPolicy"
-                  onChange={(event) => setJoinPolicy(event.target.value as GroupJoinPolicy)}
-                  value={joinPolicy}
-                >
-                  <option value="invite_only">Solo por invitacion</option>
-                  <option value="request_to_join">Solicitud con codigo</option>
-                  <option value="open_by_code">Abierto con codigo</option>
-                </select>
-              </label>
-            </div>
-          ) : (
-            <>
-              <input name="placeEditPolicy" type="hidden" value={placeEditPolicy} />
-              <input name="joinPolicy" type="hidden" value={joinPolicy} />
-            </>
-          )}
+          <div>
+            <GroupCoverPicker
+              helperText="Anadir foto de grupo"
+              inputName="coverImage"
+              onFileChange={handleCoverChange}
+              placeholder={
+                <svg aria-hidden="true" className="h-8 w-8 text-[#c6283a]/70" fill="none" viewBox="0 0 24 24">
+                  <path d="M4 17.5V8a2 2 0 0 1 2-2h2l1.4-2h5.2L16 6h2a2 2 0 0 1 2 2v9.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
+                  <path d="M12 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" strokeWidth="1.7" />
+                </svg>
+              }
+              previewUrl={coverPreviewUrl}
+            />
+          </div>
+
+            {isSettingsOpen ? (
+              <div className="absolute left-1/2 top-full z-20 mt-3 w-[270px] -translate-x-1/2 space-y-3 rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_45px_rgba(24,24,27,0.14)]">
+                <label className="block space-y-2">
+                  <span className="text-xs font-bold text-zinc-700">Edicion de lugares</span>
+                  <select
+                    className="h-10 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                    name="placeEditPolicy"
+                    onChange={(event) => setPlaceEditPolicy(event.target.value as GroupPlaceEditPolicy)}
+                    value={placeEditPolicy}
+                  >
+                    <option value="members_can_edit">Todos pueden anadir lugares</option>
+                    <option value="owner_only">Solo el propietario</option>
+                  </select>
+                </label>
+                <label className="block space-y-2">
+                  <span className="text-xs font-bold text-zinc-700">Acceso al grupo</span>
+                  <select
+                    className="h-10 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                    name="joinPolicy"
+                    onChange={(event) => setJoinPolicy(event.target.value as GroupJoinPolicy)}
+                    value={joinPolicy}
+                  >
+                    <option value="invite_only">Solo por invitacion</option>
+                    <option value="request_to_join">Solicitud con codigo</option>
+                    <option value="open_by_code">Abierto con codigo</option>
+                  </select>
+                </label>
+              </div>
+            ) : (
+              <>
+                <input name="placeEditPolicy" type="hidden" value={placeEditPolicy} />
+                <input name="joinPolicy" type="hidden" value={joinPolicy} />
+              </>
+            )}
         </div>
         <label className="block space-y-2">
           <span className="text-[11px] font-bold text-zinc-800">Nombre del grupo</span>
