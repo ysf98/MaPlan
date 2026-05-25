@@ -25,6 +25,10 @@ export type FriendItem = {
   createdAt: string;
 };
 
+function isFriendRequestStatus(value: string): value is FriendRequestStatus {
+  return value === "pending" || value === "accepted" || value === "rejected";
+}
+
 function normalizeFriendPair(userAId: string, userBId: string) {
   return userAId < userBId ? { user_a_id: userAId, user_b_id: userBId } : { user_a_id: userBId, user_b_id: userAId };
 }
@@ -89,16 +93,24 @@ export async function getFriendRequests(userId: string): Promise<{
   const profileIds = Array.from(new Set(requests.flatMap((r) => [r.sender_id, r.receiver_id])));
   const usernameById = await getProfileUsernameMap(profileIds);
 
-  const mapped = requests.map((request) => ({
-    id: request.id,
-    senderId: request.sender_id,
-    receiverId: request.receiver_id,
-    status: request.status,
-    createdAt: request.created_at,
-    updatedAt: request.updated_at,
-    senderUsername: usernameById.get(request.sender_id) ?? null,
-    receiverUsername: usernameById.get(request.receiver_id) ?? null
-  }));
+  const mapped: FriendRequestItem[] = requests
+    .map((request) => {
+      if (!isFriendRequestStatus(request.status)) {
+        return null;
+      }
+
+      return {
+        id: request.id,
+        senderId: request.sender_id,
+        receiverId: request.receiver_id,
+        status: request.status,
+        createdAt: request.created_at,
+        updatedAt: request.updated_at,
+        senderUsername: usernameById.get(request.sender_id) ?? null,
+        receiverUsername: usernameById.get(request.receiver_id) ?? null
+      };
+    })
+    .filter((request): request is FriendRequestItem => request !== null);
 
   return {
     received: mapped.filter((request) => request.receiverId === userId && request.status === "pending"),
