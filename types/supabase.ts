@@ -1,400 +1,653 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
-
-export type PlaceStatus = "pending" | "visited" | "favorite";
-export type PlaceSource = "manual" | "google_maps" | "tiktok" | "instagram" | "website";
-export type PlaceProvider = "manual" | "mapbox" | "google_places";
-export type GroupPlaceEditPolicy = "owner_only" | "members_can_edit";
-export type GroupJoinPolicy = "invite_only" | "open_by_code" | "request_to_join";
-export type GroupJoinRequestStatus = "pending" | "approved" | "rejected";
-export type FriendRequestStatus = "pending" | "accepted" | "rejected";
-export type GroupInvitationStatus = "pending" | "accepted" | "rejected";
+﻿export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          id: string;
-          username: string | null;
-          avatar_url: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id: string;
-          username?: string | null;
-          avatar_url?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          username?: string | null;
-          avatar_url?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      groups: {
-        Row: {
-          id: string;
-          name: string;
-          description: string | null;
-          cover_image_url: string | null;
-          created_by: string;
-          join_code: string;
-          place_edit_policy: GroupPlaceEditPolicy;
-          join_policy: GroupJoinPolicy;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          description?: string | null;
-          cover_image_url?: string | null;
-          created_by: string;
-          join_code: string;
-          place_edit_policy?: GroupPlaceEditPolicy;
-          join_policy?: GroupJoinPolicy;
-          created_at?: string;
-        };
-        Update: {
-          name?: string;
-          description?: string | null;
-          cover_image_url?: string | null;
-          join_code?: string;
-          place_edit_policy?: GroupPlaceEditPolicy;
-          join_policy?: GroupJoinPolicy;
-        };
-      };
-      group_members: {
-        Row: {
-          id: string;
-          group_id: string;
-          user_id: string;
-          role: "owner" | "member";
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          group_id: string;
-          user_id: string;
-          role?: "owner" | "member";
-          created_at?: string;
-        };
-        Update: {
-          role?: "owner" | "member";
-        };
-      };
       categories: {
         Row: {
-          id: string;
-          group_id: string;
-          name: string;
-          color: string | null;
-          created_at: string;
-        };
+          color: string | null
+          created_at: string
+          group_id: string
+          id: string
+          name: string
+        }
         Insert: {
-          id?: string;
-          group_id: string;
-          name: string;
-          color?: string | null;
-          created_at?: string;
-        };
+          color?: string | null
+          created_at?: string
+          group_id: string
+          id?: string
+          name: string
+        }
         Update: {
-          name?: string;
-          color?: string | null;
-        };
-      };
-      places: {
-        Row: {
-          id: string;
-          group_id: string;
-          created_by: string;
-          category_id: string | null;
-          name: string;
-          address: string;
-          city: string | null;
-          original_url: string | null;
-          source: PlaceSource | null;
-          provider: PlaceProvider | null;
-          external_place_id: string | null;
-          google_maps_url: string | null;
-          business_status: string | null;
-          latitude: number | null;
-          longitude: number | null;
-          notes: string | null;
-          status: PlaceStatus;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          group_id: string;
-          created_by: string;
-          category_id?: string | null;
-          name: string;
-          address: string;
-          city?: string | null;
-          original_url?: string | null;
-          source?: PlaceSource | null;
-          provider?: PlaceProvider | null;
-          external_place_id?: string | null;
-          google_maps_url?: string | null;
-          business_status?: string | null;
-          latitude?: number | null;
-          longitude?: number | null;
-          notes?: string | null;
-          status?: PlaceStatus;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          category_id?: string | null;
-          name?: string;
-          address?: string;
-          city?: string | null;
-          original_url?: string | null;
-          source?: PlaceSource | null;
-          provider?: PlaceProvider | null;
-          external_place_id?: string | null;
-          google_maps_url?: string | null;
-          business_status?: string | null;
-          latitude?: number | null;
-          longitude?: number | null;
-          notes?: string | null;
-          status?: PlaceStatus;
-          updated_at?: string;
-        };
-      };
-      personal_places: {
-        Row: {
-          id: string;
-          user_id: string;
-          name: string;
-          address: string | null;
-          city: string | null;
-          latitude: number;
-          longitude: number;
-          category: string | null;
-          notes: string | null;
-          source: PlaceSource | null;
-          provider: PlaceProvider | null;
-          external_place_id: string | null;
-          google_maps_url: string | null;
-          business_status: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          name: string;
-          address?: string | null;
-          city?: string | null;
-          latitude: number;
-          longitude: number;
-          category?: string | null;
-          notes?: string | null;
-          source?: PlaceSource | null;
-          provider?: PlaceProvider | null;
-          external_place_id?: string | null;
-          google_maps_url?: string | null;
-          business_status?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          name?: string;
-          address?: string | null;
-          city?: string | null;
-          latitude?: number;
-          longitude?: number;
-          category?: string | null;
-          notes?: string | null;
-          source?: PlaceSource | null;
-          provider?: PlaceProvider | null;
-          external_place_id?: string | null;
-          google_maps_url?: string | null;
-          business_status?: string | null;
-          updated_at?: string;
-        };
-      };
-      group_join_requests: {
-        Row: {
-          id: string;
-          group_id: string;
-          user_id: string;
-          status: GroupJoinRequestStatus;
-          message: string | null;
-          reviewed_by: string | null;
-          reviewed_at: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          group_id: string;
-          user_id: string;
-          status?: GroupJoinRequestStatus;
-          message?: string | null;
-          reviewed_by?: string | null;
-          reviewed_at?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          status?: GroupJoinRequestStatus;
-          message?: string | null;
-          reviewed_by?: string | null;
-          reviewed_at?: string | null;
-          updated_at?: string;
-        };
-      };
+          color?: string | null
+          created_at?: string
+          group_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friend_requests: {
         Row: {
-          id: string;
-          sender_id: string;
-          receiver_id: string;
-          status: FriendRequestStatus;
-          created_at: string;
-          updated_at: string;
-        };
+          created_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+          status: string
+          updated_at: string
+        }
         Insert: {
-          id?: string;
-          sender_id: string;
-          receiver_id: string;
-          status?: FriendRequestStatus;
-          created_at?: string;
-          updated_at?: string;
-        };
+          created_at?: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
         Update: {
-          status?: FriendRequestStatus;
-          updated_at?: string;
-        };
-      };
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       friendships: {
         Row: {
-          id: string;
-          user_a_id: string;
-          user_b_id: string;
-          created_at: string;
-        };
+          created_at: string
+          id: string
+          user_a_id: string
+          user_b_id: string
+        }
         Insert: {
-          id?: string;
-          user_a_id: string;
-          user_b_id: string;
-          created_at?: string;
-        };
-        Update: Record<string, never>;
-      };
-      group_invitations: {
-        Row: {
-          id: string;
-          group_id: string;
-          invited_by: string;
-          invited_user_id: string;
-          status: GroupInvitationStatus;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          group_id: string;
-          invited_by: string;
-          invited_user_id: string;
-          status?: GroupInvitationStatus;
-          created_at?: string;
-          updated_at?: string;
-        };
+          created_at?: string
+          id?: string
+          user_a_id: string
+          user_b_id: string
+        }
         Update: {
-          status?: GroupInvitationStatus;
-          updated_at?: string;
-        };
-      };
+          created_at?: string
+          id?: string
+          user_a_id?: string
+          user_b_id?: string
+        }
+        Relationships: []
+      }
       group_activity_events: {
         Row: {
-          id: string;
-          group_id: string;
-          actor_user_id: string;
-          event_type: string;
-          entity_id: string | null;
-          entity_name: string | null;
-          metadata: Json | null;
-          created_at: string;
-        };
+          actor_user_id: string
+          created_at: string
+          entity_id: string | null
+          entity_name: string | null
+          event_type: string
+          group_id: string
+          id: string
+          metadata: Json | null
+        }
         Insert: {
-          id?: string;
-          group_id: string;
-          actor_user_id: string;
-          event_type: string;
-          entity_id?: string | null;
-          entity_name?: string | null;
-          metadata?: Json | null;
-          created_at?: string;
-        };
-        Update: Record<string, never>;
-      };
-    };
-    Views: Record<string, never>;
+          actor_user_id: string
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          event_type: string
+          group_id: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          event_type?: string
+          group_id?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_activity_events_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_invitations: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          invited_by: string
+          invited_user_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          invited_by: string
+          invited_user_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          invited_by?: string
+          invited_user_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_invitations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_join_requests: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          message: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_join_requests_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          join_code: string
+          join_policy: string
+          name: string
+          place_edit_policy: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          join_code: string
+          join_policy?: string
+          name: string
+          place_edit_policy?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          join_code?: string
+          join_policy?: string
+          name?: string
+          place_edit_policy?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personal_places: {
+        Row: {
+          address: string | null
+          business_status: string | null
+          category: string | null
+          city: string | null
+          created_at: string
+          external_place_id: string | null
+          google_maps_url: string | null
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          notes: string | null
+          provider: string | null
+          source: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          business_status?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          external_place_id?: string | null
+          google_maps_url?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+          notes?: string | null
+          provider?: string | null
+          source?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          business_status?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          external_place_id?: string | null
+          google_maps_url?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          notes?: string | null
+          provider?: string | null
+          source?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      places: {
+        Row: {
+          address: string
+          business_status: string | null
+          category_id: string | null
+          city: string | null
+          created_at: string
+          created_by: string
+          external_place_id: string | null
+          google_maps_url: string | null
+          group_id: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          notes: string | null
+          original_url: string | null
+          provider: string | null
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          business_status?: string | null
+          category_id?: string | null
+          city?: string | null
+          created_at?: string
+          created_by: string
+          external_place_id?: string | null
+          google_maps_url?: string | null
+          group_id: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          notes?: string | null
+          original_url?: string | null
+          provider?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          business_status?: string | null
+          category_id?: string | null
+          city?: string | null
+          created_at?: string
+          created_by?: string
+          external_place_id?: string | null
+          google_maps_url?: string | null
+          group_id?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          notes?: string | null
+          original_url?: string | null
+          provider?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "places_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "places_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "places_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
       accept_friend_request: {
-        Args: {
-          request_id: string;
-        };
-        Returns: boolean;
-      };
-      search_profiles_by_username: {
-        Args: {
-          p_query: string;
-        };
-        Returns: Array<{
-          id: string;
-          username: string | null;
-        }>;
-      };
-      get_profiles_by_ids: {
-        Args: {
-          p_ids: string[];
-        };
-        Returns: Array<{
-          id: string;
-          username: string | null;
-          avatar_url?: string | null;
-        }>;
-      };
+        Args: { request_id: string }
+        Returns: undefined
+      }
       accept_group_invitation: {
-        Args: {
-          invitation_id: string;
-        };
-        Returns: boolean;
-      };
+        Args: { invitation_id: string }
+        Returns: undefined
+      }
       approve_group_join_request: {
-        Args: {
-          p_group_id: string;
-          p_request_id: string;
-        };
-        Returns: boolean;
-      };
+        Args: { p_group_id: string; p_request_id: string }
+        Returns: undefined
+      }
       get_group_members_with_profiles: {
-        Args: {
-          p_group_id: string;
-          p_limit?: number | null;
-        };
-        Returns: Array<{
-          user_id: string;
-          role: "owner" | "member";
-          username: string | null;
-          avatar_url: string | null;
-        }>;
-      };
-      is_group_creator: {
-        Args: {
-          p_group_id: string;
-        };
-        Returns: boolean;
-      };
-    };
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
-  };
-};
+        Args: { p_group_id: string; p_limit?: number }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          role: string
+          user_id: string
+          username: string
+        }[]
+      }
+      get_profiles_by_ids: {
+        Args: { p_ids: string[] }
+        Returns: {
+          id: string
+          username: string
+        }[]
+      }
+      is_group_creator: { Args: { p_group_id: string }; Returns: boolean }
+      is_group_member: { Args: { target_group_id: string }; Returns: boolean }
+      is_group_owner: { Args: { target_group_id: string }; Returns: boolean }
+      search_profiles_by_username: {
+        Args: { p_query: string }
+        Returns: {
+          id: string
+          username: string
+        }[]
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+export type PlaceStatus = "pending" | "visited" | "favorite"
+export type PlaceSource = "manual" | "google_maps" | "tiktok" | "instagram" | "website"
+export type PlaceProvider = "manual" | "mapbox" | "google_places"
+export type GroupPlaceEditPolicy = "owner_only" | "members_can_edit"
+export type GroupJoinPolicy = "invite_only" | "open_by_code" | "request_to_join"
+export type GroupJoinRequestStatus = "pending" | "approved" | "rejected"
+export type FriendRequestStatus = "pending" | "accepted" | "rejected"
+export type GroupInvitationStatus = "pending" | "accepted" | "rejected"
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
