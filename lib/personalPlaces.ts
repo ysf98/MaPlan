@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { PlaceProvider, PlaceSource } from "@/types/supabase";
+import type { Database, PlaceProvider, PlaceSource } from "@/types/supabase";
 
 export type PersonalPlace = {
   id: string;
@@ -166,7 +166,7 @@ export async function createPersonalPlace(input: CreatePersonalPlaceInput): Prom
 }
 
 export async function updatePersonalPlace(input: UpdatePersonalPlaceInput): Promise<{ error: string | null }> {
-  const updates: Record<string, string | null> = {};
+  const updates: Database["public"]["Tables"]["personal_places"]["Update"] = {};
   if (typeof input.name === "string") updates.name = input.name.trim();
   if (typeof input.address === "string") updates.address = input.address.trim();
   if (input.city !== undefined) updates.city = input.city?.trim() || null;
