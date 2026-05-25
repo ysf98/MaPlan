@@ -110,15 +110,6 @@ export function GroupOwnerControls({
     };
   }, [isEditOpen]);
 
-  useEffect(() => {
-    if (!isEditOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isEditOpen]);
-
   function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
