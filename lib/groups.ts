@@ -316,8 +316,8 @@ export async function getGroupMembersPreviewForUser(userId: string, groupId: str
     return { members: [], allMembers: [], total };
   }
 
-  const ownProfilesResult = await supabase.rpc("get_profiles_by_ids", { p_ids: [userId] });
-  const ownProfile = (ownProfilesResult.data || [])[0];
+  const ownProfileResult = await supabase.from("profiles").select("id, username, avatar_url").eq("id", userId).maybeSingle();
+  const ownProfile = ownProfileResult.data;
   if (!isGroupRole(ownMemberResult.data.role)) {
     return { members: [], allMembers: [], total };
   }
