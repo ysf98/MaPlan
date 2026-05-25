@@ -12,7 +12,7 @@ import {
   updatePlaceLocationSchema,
   updatePlaceStatusSchema
 } from "@/lib/validation/schemas";
-import type { PlaceStatus } from "@/types/supabase";
+import type { Database, PlaceStatus } from "@/types/supabase";
 import type { PostgrestError } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
@@ -106,6 +106,7 @@ const DELETE_PLACE_INITIAL_STATE: DeletePlaceActionState = {
   error: null,
   success: false
 };
+type GroupJoinRequestUpdate = Database["public"]["Tables"]["group_join_requests"]["Update"];
 
 async function approveGroupJoinRequestRpc(
   groupId: string,
@@ -324,7 +325,7 @@ export async function reviewJoinRequestAction(
       return { error: approveResult.error.message, success: false };
     }
   } else {
-    const updatePayload = {
+    const updatePayload: GroupJoinRequestUpdate = {
       status: decision,
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString()
