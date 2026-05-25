@@ -267,7 +267,7 @@ export async function getGroupMembersPreviewForUser(userId: string, groupId: str
   }
 
   const previewRpc = await supabase.rpc("get_group_members_with_profiles", { p_group_id: groupId, p_limit: 8 });
-  const allRpc = await supabase.rpc("get_group_members_with_profiles", { p_group_id: groupId, p_limit: null });
+  const allRpc = await supabase.rpc("get_group_members_with_profiles", { p_group_id: groupId });
 
   if (!previewRpc.error && !allRpc.error) {
     const members =
