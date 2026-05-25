@@ -43,11 +43,10 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   ]);
 
   const memberships = membershipsResult.data || [];
-  const roleByGroupId: Map<string, "owner" | "member"> = new Map(
-    memberships
-      .filter((membership) => isGroupRole(membership.role))
-      .map((membership) => [membership.group_id, membership.role] as const)
+  const roleEntries: Array<[string, "owner" | "member"]> = memberships.flatMap((membership) =>
+    isGroupRole(membership.role) ? [[membership.group_id, membership.role]] : []
   );
+  const roleByGroupId = new Map<string, "owner" | "member">(roleEntries);
   const memberGroupIds = memberships.map((membership) => membership.group_id);
 
   const memberGroupsResult =
