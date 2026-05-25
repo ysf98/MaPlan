@@ -14,6 +14,10 @@ export type GroupInvitationItem = {
   updatedAt: string;
 };
 
+function isGroupInvitationStatus(value: string): value is GroupInvitationItem["status"] {
+  return value === "pending" || value === "accepted" || value === "rejected";
+}
+
 export async function getGroupInvitationsForUser(userId: string): Promise<GroupInvitationItem[]> {
   const supabase = await createSupabaseServerClient();
   const { data: invitations, error } = await supabase
@@ -37,18 +41,26 @@ export async function getGroupInvitationsForUser(userId: string): Promise<GroupI
   const groupNameById = new Map((groups || []).map((group) => [group.id, group.name]));
   const inviterNameById = new Map((profiles || []).map((profile) => [profile.id, profile.username]));
 
-  return invitations.map((invitation) => ({
-    id: invitation.id,
-    groupId: invitation.group_id,
-    groupName: groupNameById.get(invitation.group_id) ?? null,
-    invitedBy: invitation.invited_by,
-    invitedByUsername: inviterNameById.get(invitation.invited_by) ?? null,
-    invitedUserId: invitation.invited_user_id,
-    invitedUsername: undefined,
-    status: invitation.status,
-    createdAt: invitation.created_at,
-    updatedAt: invitation.updated_at
-  }));
+  return invitations
+    .map((invitation) => {
+      if (!isGroupInvitationStatus(invitation.status)) {
+        return null;
+      }
+
+      return {
+        id: invitation.id,
+        groupId: invitation.group_id,
+        groupName: groupNameById.get(invitation.group_id) ?? null,
+        invitedBy: invitation.invited_by,
+        invitedByUsername: inviterNameById.get(invitation.invited_by) ?? null,
+        invitedUserId: invitation.invited_user_id,
+        invitedUsername: undefined,
+        status: invitation.status,
+        createdAt: invitation.created_at,
+        updatedAt: invitation.updated_at
+      };
+    })
+    .filter((invitation): invitation is GroupInvitationItem => invitation !== null);
 }
 
 export async function getGroupInvitationsForGroup(ownerId: string, groupId: string): Promise<GroupInvitationItem[]> {
@@ -79,18 +91,26 @@ export async function getGroupInvitationsForGroup(ownerId: string, groupId: stri
   const { data: profiles } = await supabase.rpc("get_profiles_by_ids", { p_ids: invitedIds });
   const invitedNameById = new Map((profiles || []).map((profile) => [profile.id, profile.username]));
 
-  return invitations.map((invitation) => ({
-    id: invitation.id,
-    groupId: invitation.group_id,
-    groupName: null,
-    invitedBy: invitation.invited_by,
-    invitedByUsername: null,
-    invitedUserId: invitation.invited_user_id,
-    invitedUsername: invitedNameById.get(invitation.invited_user_id) ?? null,
-    status: invitation.status,
-    createdAt: invitation.created_at,
-    updatedAt: invitation.updated_at
-  }));
+  return invitations
+    .map((invitation) => {
+      if (!isGroupInvitationStatus(invitation.status)) {
+        return null;
+      }
+
+      return {
+        id: invitation.id,
+        groupId: invitation.group_id,
+        groupName: null,
+        invitedBy: invitation.invited_by,
+        invitedByUsername: null,
+        invitedUserId: invitation.invited_user_id,
+        invitedUsername: invitedNameById.get(invitation.invited_user_id) ?? null,
+        status: invitation.status,
+        createdAt: invitation.created_at,
+        updatedAt: invitation.updated_at
+      };
+    })
+    .filter((invitation): invitation is GroupInvitationItem => invitation !== null);
 }
 
 export async function getInvitableFriendsForGroup(ownerId: string, groupId: string): Promise<Array<{ id: string; username: string | null }>> {

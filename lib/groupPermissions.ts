@@ -5,6 +5,18 @@ export type GroupMembership = {
   role: "owner" | "member";
 };
 
+function isGroupRole(value: string): value is GroupMembership["role"] {
+  return value === "owner" || value === "member";
+}
+
+function isGroupPlaceEditPolicy(value: string): value is GroupPlaceEditPolicy {
+  return value === "owner_only" || value === "members_can_edit";
+}
+
+function isGroupJoinPolicy(value: string): value is GroupJoinPolicy {
+  return value === "invite_only" || value === "open_by_code" || value === "request_to_join";
+}
+
 export async function isGroupMember(userId: string, groupId: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
@@ -43,6 +55,10 @@ export async function getGroupMembership(userId: string, groupId: string): Promi
     return null;
   }
 
+  if (!isGroupRole(data.role)) {
+    return null;
+  }
+
   return { role: data.role };
 }
 
@@ -58,6 +74,10 @@ async function getGroupPolicies(groupId: string): Promise<{
     .maybeSingle();
 
   if (error || !data) {
+    return null;
+  }
+
+  if (!isGroupPlaceEditPolicy(data.place_edit_policy) || !isGroupJoinPolicy(data.join_policy)) {
     return null;
   }
 

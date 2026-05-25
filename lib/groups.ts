@@ -7,6 +7,23 @@ import type {
   GroupMemberPreview,
   GroupMembersPreviewResult
 } from "@/lib/groups/types";
+import type { GroupJoinPolicy, GroupPlaceEditPolicy } from "@/types/supabase";
+
+function isGroupRole(value: string): value is "owner" | "member" {
+  return value === "owner" || value === "member";
+}
+
+function isGroupPlaceEditPolicy(value: string): value is GroupPlaceEditPolicy {
+  return value === "owner_only" || value === "members_can_edit";
+}
+
+function isGroupJoinPolicy(value: string): value is GroupJoinPolicy {
+  return value === "invite_only" || value === "open_by_code" || value === "request_to_join";
+}
+
+function isGroupJoinRequestStatus(value: string): value is GroupJoinRequestItem["status"] {
+  return value === "pending" || value === "approved" || value === "rejected";
+}
 
 export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   const supabase = await createSupabaseServerClient();
@@ -20,7 +37,11 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   ]);
 
   const memberships = membershipsResult.data || [];
-  const roleByGroupId = new Map(memberships.map((membership) => [membership.group_id, membership.role]));
+  const roleByGroupId = new Map(
+    memberships
+      .filter((membership) => isGroupRole(membership.role))
+      .map((membership) => [membership.group_id, membership.role] as const)
+  );
   const memberGroupIds = memberships.map((membership) => membership.group_id);
 
   const memberGroupsResult =
@@ -44,8 +65,12 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
     }
   >();
 
-  (memberGroupsResult.data || []).forEach((group) => mergedById.set(group.id, group));
-  (createdGroupsResult.data || []).forEach((group) => mergedById.set(group.id, group));
+  (memberGroupsResult.data || [])
+    .filter((group) => isGroupPlaceEditPolicy(group.place_edit_policy) && isGroupJoinPolicy(group.join_policy))
+    .forEach((group) => mergedById.set(group.id, group));
+  (createdGroupsResult.data || [])
+    .filter((group) => isGroupPlaceEditPolicy(group.place_edit_policy) && isGroupJoinPolicy(group.join_policy))
+    .forEach((group) => mergedById.set(group.id, group));
 
   return Array.from(mergedById.values())
     .map((group) => ({
@@ -83,6 +108,9 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
   const { data: group, error: groupError } = groupResult;
 
   if (groupError || !group) {
+    return null;
+  }
+  if (!isGroupRole(membership.role) || !isGroupPlaceEditPolicy(group.place_edit_policy) || !isGroupJoinPolicy(group.join_policy)) {
     return null;
   }
 
@@ -134,20 +162,28 @@ export async function getPendingJoinRequestsForOwner(userId: string, groupId: st
     usernameByUserId.set(profile.id, profile.username);
   });
 
-  return requestsResult.data.map((request) => ({
-    id: request.id,
-    groupId: request.group_id,
-    userId: request.user_id,
-    username: usernameByUserId.get(request.user_id) ?? null,
-    userEmail: null,
-    message: request.message,
-    status: request.status,
-    createdAt: request.created_at,
-    updatedAt: request.updated_at,
-    reviewedAt: request.reviewed_at,
-    reviewedByUserId: request.reviewed_by,
-    reviewedByUsername: null
-  }));
+  return requestsResult.data
+    .map((request) => {
+      if (!isGroupJoinRequestStatus(request.status)) {
+        return null;
+      }
+
+      return {
+        id: request.id,
+        groupId: request.group_id,
+        userId: request.user_id,
+        username: usernameByUserId.get(request.user_id) ?? null,
+        userEmail: null,
+        message: request.message,
+        status: request.status,
+        createdAt: request.created_at,
+        updatedAt: request.updated_at,
+        reviewedAt: request.reviewed_at,
+        reviewedByUserId: request.reviewed_by,
+        reviewedByUsername: null
+      };
+    })
+    .filter((request): request is GroupJoinRequestItem => request !== null);
 }
 
 export async function getReviewedJoinRequestsForOwner(userId: string, groupId: string): Promise<GroupJoinRequestItem[]> {
@@ -192,20 +228,28 @@ export async function getReviewedJoinRequestsForOwner(userId: string, groupId: s
     usernameByUserId.set(profile.id, profile.username);
   });
 
-  return requestsResult.data.map((request) => ({
-    id: request.id,
-    groupId: request.group_id,
-    userId: request.user_id,
-    username: usernameByUserId.get(request.user_id) ?? null,
-    userEmail: null,
-    message: request.message,
-    status: request.status,
-    createdAt: request.created_at,
-    updatedAt: request.updated_at,
-    reviewedAt: request.reviewed_at,
-    reviewedByUserId: request.reviewed_by,
-    reviewedByUsername: request.reviewed_by ? (usernameByUserId.get(request.reviewed_by) ?? null) : null
-  }));
+  return requestsResult.data
+    .map((request) => {
+      if (!isGroupJoinRequestStatus(request.status)) {
+        return null;
+      }
+
+      return {
+        id: request.id,
+        groupId: request.group_id,
+        userId: request.user_id,
+        username: usernameByUserId.get(request.user_id) ?? null,
+        userEmail: null,
+        message: request.message,
+        status: request.status,
+        createdAt: request.created_at,
+        updatedAt: request.updated_at,
+        reviewedAt: request.reviewed_at,
+        reviewedByUserId: request.reviewed_by,
+        reviewedByUsername: request.reviewed_by ? (usernameByUserId.get(request.reviewed_by) ?? null) : null
+      };
+    })
+    .filter((request): request is GroupJoinRequestItem => request !== null);
 }
 
 export async function getGroupMembersPreviewForUser(userId: string, groupId: string): Promise<GroupMembersPreviewResult> {

@@ -51,6 +51,14 @@ type DeletePersonalPlaceInput = {
   placeId: string;
 };
 
+function isPlaceSource(value: string): value is PlaceSource {
+  return value === "manual" || value === "google_maps" || value === "tiktok" || value === "instagram" || value === "website";
+}
+
+function isPlaceProvider(value: string): value is PlaceProvider {
+  return value === "manual" || value === "mapbox" || value === "google_places";
+}
+
 export async function getPersonalPlacesForUser(userId: string): Promise<PersonalPlace[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
@@ -73,8 +81,8 @@ export async function getPersonalPlacesForUser(userId: string): Promise<Personal
     city: item.city,
     notes: item.notes,
     category: item.category,
-    source: item.source,
-    provider: item.provider,
+    source: item.source && isPlaceSource(item.source) ? item.source : null,
+    provider: item.provider && isPlaceProvider(item.provider) ? item.provider : null,
     externalPlaceId: item.external_place_id,
     googleMapsUrl: item.google_maps_url,
     businessStatus: item.business_status,

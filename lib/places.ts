@@ -45,6 +45,18 @@ type DeletePlaceInput = {
   placeId: string;
 };
 
+function isPlaceStatus(value: string): value is PlaceStatus {
+  return value === "pending" || value === "visited" || value === "favorite";
+}
+
+function isPlaceSource(value: string): value is PlaceSource {
+  return value === "manual" || value === "google_maps" || value === "tiktok" || value === "instagram" || value === "website";
+}
+
+function isPlaceProvider(value: string): value is PlaceProvider {
+  return value === "manual" || value === "mapbox" || value === "google_places";
+}
+
 function normalizeCategory(category: string | null | undefined): PlaceCategory {
   const cleaned = (category || "").trim();
   if (!cleaned) {
@@ -120,6 +132,9 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
 
   return places.map((place) => {
     const categoryName = place.category_id ? categoryNameById.get(place.category_id) : null;
+    const source = place.source && isPlaceSource(place.source) ? place.source : null;
+    const provider = place.provider && isPlaceProvider(place.provider) ? place.provider : null;
+    const status = isPlaceStatus(place.status) ? place.status : "pending";
 
     return {
       id: place.id,
@@ -128,14 +143,14 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
       city: place.city,
       notes: place.notes,
       originalUrl: place.original_url,
-      source: place.source,
-      provider: place.provider,
+      source,
+      provider,
       externalPlaceId: place.external_place_id,
       googleMapsUrl: place.google_maps_url,
       businessStatus: place.business_status,
       latitude: place.latitude,
       longitude: place.longitude,
-      status: place.status,
+      status,
       category: normalizeCategory(categoryName),
       createdAt: place.created_at
     };
