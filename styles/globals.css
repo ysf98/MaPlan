@@ -17,6 +17,8 @@ body {
   @apply antialiased;
   background-color: rgb(var(--bg));
   color: rgb(var(--text));
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 * {
