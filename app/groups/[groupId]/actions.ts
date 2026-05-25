@@ -13,6 +13,7 @@ import {
   updatePlaceStatusSchema
 } from "@/lib/validation/schemas";
 import type { PlaceStatus } from "@/types/supabase";
+import type { PostgrestError } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
 
@@ -105,6 +106,20 @@ const DELETE_PLACE_INITIAL_STATE: DeletePlaceActionState = {
   error: null,
   success: false
 };
+
+async function approveGroupJoinRequestRpc(
+  groupId: string,
+  requestId: string
+): Promise<{ error: PostgrestError | null }> {
+  const supabase = await createSupabaseServerClient();
+  return (supabase.rpc as unknown as (fn: string, args: { p_group_id: string; p_request_id: string }) => Promise<{ error: PostgrestError | null }>)(
+    "approve_group_join_request",
+    {
+      p_group_id: groupId,
+      p_request_id: requestId
+    }
+  );
+}
 
 export async function addPlaceAction(
   _previousState: AddPlaceActionState = ADD_PLACE_INITIAL_STATE,
@@ -304,10 +319,7 @@ export async function reviewJoinRequestAction(
   }
 
   if (decision === "approved") {
-    const approveResult = await supabase.rpc("approve_group_join_request", {
-      p_group_id: groupId,
-      p_request_id: requestId
-    });
+    const approveResult = await approveGroupJoinRequestRpc(groupId, requestId);
     if (approveResult.error) {
       return { error: approveResult.error.message, success: false };
     }
