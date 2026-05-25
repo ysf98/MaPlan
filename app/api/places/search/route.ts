@@ -73,19 +73,20 @@ export async function POST(request: Request) {
   const places = json.results || [];
 
   const results: GooglePlaceSuggestion[] = places
-    .map((place) => {
+    .flatMap((place) => {
       const externalPlaceId = (place.place_id || "").trim();
       const lat = place.geometry?.location?.lat;
       const lng = place.geometry?.location?.lng;
       if (!externalPlaceId || typeof lat !== "number" || typeof lng !== "number") {
-        return null;
+        return [];
       }
       const fullAddress = (place.formatted_address || "").trim();
       const parts = splitAddressParts(fullAddress);
       const parsedCity = extractCityFromFormattedAddress(fullAddress);
       const parsedProvince = extractProvinceFromFormattedAddress(fullAddress);
       const cleanAddress = stripPostalCodes(parts.street || fullAddress || "Sin direccion");
-      return {
+      return [
+        {
         externalPlaceId,
         provider: "google_places",
         name: (place.name || "").trim() || "Resultado",
@@ -97,9 +98,9 @@ export async function POST(request: Request) {
         googleMapsUrl: buildGoogleMapsUrl(externalPlaceId),
         businessStatus: (place.business_status || "").trim() || null,
         primaryType: place.types?.[0] || null
-      } satisfies GooglePlaceSuggestion;
+        } satisfies GooglePlaceSuggestion
+      ];
     })
-    .filter((value): value is GooglePlaceSuggestion => Boolean(value))
     .slice(0, 8);
 
   return NextResponse.json({ results });
