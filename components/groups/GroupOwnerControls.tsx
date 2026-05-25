@@ -153,7 +153,7 @@ export function GroupOwnerControls({
 
       {isEditOpen ? (
         <div className="fixed inset-0 z-50 bg-zinc-950/45">
-          <div className="flex h-full w-full items-start justify-center overflow-y-auto px-4 pb-48 pt-24 sm:pb-28 sm:pt-24">
+          <div className="flex h-full w-full items-start justify-center overflow-y-auto px-4 pb-44 pt-24 sm:pb-32 sm:pt-24">
             <div ref={dialogRef} className="w-full max-w-[24rem] sm:max-w-[26rem]">
             <form
               action={detailsAction}
