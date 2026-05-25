@@ -15,7 +15,7 @@ export function Input({ className, label, hint, id, ...props }: InputProps) {
       <input
         id={inputId}
         className={cn(
-          "h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100",
+          "h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-base text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100 sm:text-sm",
           className
         )}
         {...props}
