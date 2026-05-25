@@ -43,7 +43,7 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   ]);
 
   const memberships = membershipsResult.data || [];
-  const roleByGroupId = new Map(
+  const roleByGroupId: Map<string, "owner" | "member"> = new Map(
     memberships
       .filter((membership) => isGroupRole(membership.role))
       .map((membership) => [membership.group_id, membership.role] as const)
@@ -81,7 +81,7 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
       description: group.description,
       coverImageUrl: group.cover_image_url ?? null,
       createdAt: group.created_at,
-      role: roleByGroupId.get(group.id) ?? "owner",
+      role: (roleByGroupId.get(group.id) ?? "owner") as "owner" | "member",
       placeEditPolicy: group.place_edit_policy,
       joinPolicy: group.join_policy
     }))
