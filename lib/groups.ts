@@ -25,6 +25,12 @@ function isGroupJoinRequestStatus(value: string): value is GroupJoinRequestItem[
   return value === "pending" || value === "approved" || value === "rejected";
 }
 
+function hasTypedPolicies<T extends { place_edit_policy: string; join_policy: string }>(
+  group: T
+): group is T & { place_edit_policy: GroupPlaceEditPolicy; join_policy: GroupJoinPolicy } {
+  return isGroupPlaceEditPolicy(group.place_edit_policy) && isGroupJoinPolicy(group.join_policy);
+}
+
 export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   const supabase = await createSupabaseServerClient();
   const [membershipsResult, createdGroupsResult] = await Promise.all([
@@ -65,12 +71,8 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
     }
   >();
 
-  (memberGroupsResult.data || [])
-    .filter((group) => isGroupPlaceEditPolicy(group.place_edit_policy) && isGroupJoinPolicy(group.join_policy))
-    .forEach((group) => mergedById.set(group.id, group));
-  (createdGroupsResult.data || [])
-    .filter((group) => isGroupPlaceEditPolicy(group.place_edit_policy) && isGroupJoinPolicy(group.join_policy))
-    .forEach((group) => mergedById.set(group.id, group));
+  (memberGroupsResult.data || []).filter(hasTypedPolicies).forEach((group) => mergedById.set(group.id, group));
+  (createdGroupsResult.data || []).filter(hasTypedPolicies).forEach((group) => mergedById.set(group.id, group));
 
   return Array.from(mergedById.values())
     .map((group) => ({
