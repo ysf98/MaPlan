@@ -80,7 +80,7 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
       description: group.description,
       coverImageUrl: group.cover_image_url ?? null,
       createdAt: group.created_at,
-      role: (roleByGroupId.get(group.id) ?? "owner") as "owner" | "member",
+      role: roleByGroupId.get(group.id) ?? "owner",
       placeEditPolicy: group.place_edit_policy,
       joinPolicy: group.join_policy
     }))
@@ -163,28 +163,28 @@ export async function getPendingJoinRequestsForOwner(userId: string, groupId: st
     usernameByUserId.set(profile.id, profile.username);
   });
 
-  return requestsResult.data
-    .map((request) => {
+  return requestsResult.data.flatMap((request) => {
       if (!isGroupJoinRequestStatus(request.status)) {
-        return null;
+        return [];
       }
 
-      return {
-        id: request.id,
-        groupId: request.group_id,
-        userId: request.user_id,
-        username: usernameByUserId.get(request.user_id) ?? null,
-        userEmail: null,
-        message: request.message,
-        status: request.status,
-        createdAt: request.created_at,
-        updatedAt: request.updated_at,
-        reviewedAt: request.reviewed_at,
-        reviewedByUserId: request.reviewed_by,
-        reviewedByUsername: null
-      };
-    })
-    .filter((request): request is GroupJoinRequestItem => request !== null);
+      return [
+        {
+          id: request.id,
+          groupId: request.group_id,
+          userId: request.user_id,
+          username: usernameByUserId.get(request.user_id) ?? null,
+          userEmail: null,
+          message: request.message,
+          status: request.status,
+          createdAt: request.created_at,
+          updatedAt: request.updated_at,
+          reviewedAt: request.reviewed_at,
+          reviewedByUserId: request.reviewed_by,
+          reviewedByUsername: null
+        }
+      ];
+    });
 }
 
 export async function getReviewedJoinRequestsForOwner(userId: string, groupId: string): Promise<GroupJoinRequestItem[]> {
@@ -229,28 +229,28 @@ export async function getReviewedJoinRequestsForOwner(userId: string, groupId: s
     usernameByUserId.set(profile.id, profile.username);
   });
 
-  return requestsResult.data
-    .map((request) => {
+  return requestsResult.data.flatMap((request) => {
       if (!isGroupJoinRequestStatus(request.status)) {
-        return null;
+        return [];
       }
 
-      return {
-        id: request.id,
-        groupId: request.group_id,
-        userId: request.user_id,
-        username: usernameByUserId.get(request.user_id) ?? null,
-        userEmail: null,
-        message: request.message,
-        status: request.status,
-        createdAt: request.created_at,
-        updatedAt: request.updated_at,
-        reviewedAt: request.reviewed_at,
-        reviewedByUserId: request.reviewed_by,
-        reviewedByUsername: request.reviewed_by ? (usernameByUserId.get(request.reviewed_by) ?? null) : null
-      };
-    })
-    .filter((request): request is GroupJoinRequestItem => request !== null);
+      return [
+        {
+          id: request.id,
+          groupId: request.group_id,
+          userId: request.user_id,
+          username: usernameByUserId.get(request.user_id) ?? null,
+          userEmail: null,
+          message: request.message,
+          status: request.status,
+          createdAt: request.created_at,
+          updatedAt: request.updated_at,
+          reviewedAt: request.reviewed_at,
+          reviewedByUserId: request.reviewed_by,
+          reviewedByUsername: request.reviewed_by ? (usernameByUserId.get(request.reviewed_by) ?? null) : null
+        }
+      ];
+    });
 }
 
 export async function getGroupMembersPreviewForUser(userId: string, groupId: string): Promise<GroupMembersPreviewResult> {
@@ -271,20 +271,32 @@ export async function getGroupMembersPreviewForUser(userId: string, groupId: str
 
   if (!previewRpc.error && !allRpc.error) {
     const members =
-      (previewRpc.data || []).map((member) => ({
-        userId: member.user_id,
-        username: member.username ?? null,
-        avatarUrl: member.avatar_url ?? null,
-        role: member.role as "owner" | "member"
-      })) || [];
+      (previewRpc.data || []).flatMap((member) =>
+        isGroupRole(member.role)
+          ? [
+              {
+                userId: member.user_id,
+                username: member.username ?? null,
+                avatarUrl: member.avatar_url ?? null,
+                role: member.role
+              }
+            ]
+          : []
+      ) || [];
 
     const allMembers =
-      (allRpc.data || []).map((member) => ({
-        userId: member.user_id,
-        username: member.username ?? null,
-        avatarUrl: member.avatar_url ?? null,
-        role: member.role as "owner" | "member"
-      })) || [];
+      (allRpc.data || []).flatMap((member) =>
+        isGroupRole(member.role)
+          ? [
+              {
+                userId: member.user_id,
+                username: member.username ?? null,
+                avatarUrl: member.avatar_url ?? null,
+                role: member.role
+              }
+            ]
+          : []
+      ) || [];
 
     return { members, allMembers, total: allMembers.length };
   }
@@ -306,6 +318,9 @@ export async function getGroupMembersPreviewForUser(userId: string, groupId: str
 
   const ownProfilesResult = await supabase.rpc("get_profiles_by_ids", { p_ids: [userId] });
   const ownProfile = (ownProfilesResult.data || [])[0];
+  if (!isGroupRole(ownMemberResult.data.role)) {
+    return { members: [], allMembers: [], total };
+  }
   const ownMember = {
     userId,
     username: ownProfile?.username ?? null,
