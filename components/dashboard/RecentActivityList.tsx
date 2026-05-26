@@ -36,15 +36,14 @@ export function RecentActivityList({ activityFeed }: RecentActivityListProps) {
 
   return (
     <ul className="space-y-5">
-      {activityFeed.slice(0, 5).map((event, index) => (
+      {activityFeed.slice(0, 5).map((event) => (
         <li className="flex items-center gap-3" key={event.id}>
-          <span className="relative grid h-12 w-12 shrink-0 place-items-center rounded-full bg-rose-100 text-sm font-semibold text-[#c6283a] ring-4 ring-white">
-            {getInitial(event.actorUsername)}
-            <span
-              className={`absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white ${
-                index % 2 === 0 ? "bg-emerald-400" : "bg-sky-400"
-              }`}
-            />
+          <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-rose-100 text-sm font-semibold text-[#c6283a] ring-4 ring-white">
+            {event.actorAvatarUrl ? (
+              <img alt={event.actorUsername || "Avatar"} className="h-full w-full object-cover" src={event.actorAvatarUrl} />
+            ) : (
+              getInitial(event.actorUsername)
+            )}
           </span>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-zinc-800">

@@ -1,12 +1,14 @@
-"use client";
+﻿"use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { removeFriendAction, respondFriendRequestAction, sendFriendRequestAction } from "@/app/friends/actions";
 import type { FriendActionState } from "@/app/friends/actions";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { FriendItem, FriendRequestItem, UserSearchItem } from "@/lib/friends";
+import type { GroupInvitationItem } from "@/lib/groupInvitations";
+import { ROUTES } from "@/utils/constants";
 
 type FriendsPageClientProps = {
   query: string;
@@ -14,16 +16,23 @@ type FriendsPageClientProps = {
   friends: FriendItem[];
   receivedRequests: FriendRequestItem[];
   sentRequests: FriendRequestItem[];
+  groupInvitations?: GroupInvitationItem[];
 };
 
 const initialState: FriendActionState = { error: null, success: false };
+
+function getInitial(username: string | null): string {
+  const normalized = (username || "").trim();
+  return normalized ? normalized.charAt(0).toUpperCase() : "?";
+}
 
 export function FriendsPageClient({
   query,
   searchResults: initialSearchResults,
   friends,
   receivedRequests,
-  sentRequests
+  sentRequests,
+  groupInvitations = []
 }: FriendsPageClientProps) {
   const [sendState, sendAction, isSending] = useActionState(sendFriendRequestAction, initialState);
   const [respondState, respondAction, isResponding] = useActionState(respondFriendRequestAction, initialState);
@@ -75,33 +84,148 @@ export function FriendsPageClient({
     };
   }, [normalizedQuery]);
 
+  const pendingGroupInvitation = groupInvitations[0] || null;
+
   return (
-    <section className="space-y-4">
-      <Card className="rounded-3xl">
-        <h2 className="text-lg font-semibold text-zinc-950">Buscar amigos</h2>
-        <div className="mt-3">
-          <input
-            className="h-11 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
-            autoComplete="off"
-            onChange={(event) => setSearchValue(event.target.value)}
-            value={searchValue}
-            minLength={2}
-            name="q"
-            placeholder="Buscar por username"
-          />
-        </div>
-        {sendState.error ? <p className="mt-2 text-sm text-rose-600">{sendState.error}</p> : null}
-        {sendState.success ? <p className="mt-2 text-sm text-emerald-600">Solicitud enviada.</p> : null}
-        {!hasQuery ? (
-          <p className="mt-3 text-sm text-zinc-500">Escribe al menos 2 caracteres para buscar usuarios.</p>
-        ) : isSearching ? (
-          <p className="mt-3 text-sm text-zinc-500">Buscando usuarios...</p>
-        ) : liveResults.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-500">No encontramos usuarios para esa busqueda.</p>
+    <section className="space-y-5">
+      <div>
+        <label className="sr-only" htmlFor="friends-search">Buscar amigos</label>
+        <input
+          id="friends-search"
+          autoComplete="off"
+          className="h-11 w-full rounded-xl border border-rose-100 bg-rose-50/70 px-4 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+          minLength={2}
+          name="q"
+          onChange={(event) => setSearchValue(event.target.value)}
+          placeholder="Buscar amigos o @usuario"
+          value={searchValue}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-xl font-bold text-zinc-950">Invitaciones a Grupos</h2>
+        {pendingGroupInvitation ? (
+          <Link className="flex items-center justify-between rounded-2xl border border-zinc-100 bg-white p-3 shadow-sm" href={ROUTES.invitations}>
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-amber-200 via-orange-200 to-rose-200" />
+              <div>
+                <p className="text-sm font-bold text-rose-700">{pendingGroupInvitation.groupName || "Grupo"}</p>
+                <p className="text-xs text-zinc-500">Te han invitado a un nuevo grupo.</p>
+              </div>
+            </div>
+            <div className="grid h-8 w-8 place-items-center rounded-full bg-[#c6283a] text-white">›</div>
+          </Link>
         ) : (
-          <ul className="mt-3 space-y-2">
+          <p className="text-sm text-zinc-500">No tienes invitaciones de grupo pendientes.</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-zinc-950">Solicitudes</h2>
+          <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-[#c6283a]">{receivedRequests.length} pendiente{receivedRequests.length === 1 ? "" : "s"}</span>
+        </div>
+
+        {receivedRequests.length > 0 ? (
+          <ul className="space-y-2">
+            {receivedRequests.map((request) => (
+              <li className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-100 bg-white p-3" key={request.id}>
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 overflow-hidden rounded-full bg-zinc-200">
+                    {request.senderAvatarUrl ? (
+                      <img alt={request.senderUsername || "Avatar"} className="h-full w-full object-cover" src={request.senderAvatarUrl} />
+                    ) : (
+                      <div className="grid h-full w-full place-items-center text-sm font-bold text-zinc-700">
+                        {getInitial(request.senderUsername)}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-950">{request.senderUsername || "sin-username"}</p>
+                    <p className="text-xs text-zinc-500">@{request.senderUsername || "usuario"}</p>
+                  </div>
+                </div>
+                <form action={respondAction} className="flex gap-2">
+                  <input name="requestId" type="hidden" value={request.id} />
+                  <Button disabled={isResponding} name="decision" size="sm" type="submit" value="rejected" variant="secondary">✕</Button>
+                  <Button disabled={isResponding} name="decision" size="sm" type="submit" value="accepted">✓</Button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-zinc-500">No tienes solicitudes pendientes.</p>
+        )}
+        {respondState.error ? <p className="text-sm text-rose-600">{respondState.error}</p> : null}
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-xl font-bold text-zinc-950">Tus Amigos</h2>
+        {friends.length === 0 ? (
+          <EmptyState description="Cuando aceptes solicitudes apareceran aqui." title="Aun no tienes amigos" />
+        ) : (
+          <ul className="space-y-2">
+            {friends.map((friend) => (
+              <li className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-100 bg-white p-3" key={friend.userId}>
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 overflow-hidden rounded-full bg-zinc-200">
+                    {friend.avatarUrl ? (
+                      <img alt={friend.username || "Avatar"} className="h-full w-full object-cover" src={friend.avatarUrl} />
+                    ) : (
+                      <div className="grid h-full w-full place-items-center text-sm font-bold text-zinc-700">
+                        {getInitial(friend.username)}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-950">{friend.username || "sin-username"}</p>
+                    <p className="text-xs text-zinc-500">@{friend.username || "usuario"}</p>
+                  </div>
+                </div>
+                <form
+                  action={removeAction}
+                  onSubmit={(event) => {
+                    if (!window.confirm(`Seguro que quieres eliminar a @${friend.username || "sin-username"} de tus amigos?`)) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  <input name="friendUserId" type="hidden" value={friend.userId} />
+                  <Button disabled={isRemoving} size="sm" type="submit" variant="secondary">
+                    {isRemoving ? "..." : "Eliminar"}
+                  </Button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+        {removeState.error ? <p className="text-sm text-rose-600">{removeState.error}</p> : null}
+      </div>
+
+      <div className="rounded-3xl bg-[#c6283a] p-4 text-center text-white shadow-[0_10px_22px_rgba(198,40,58,0.22)]">
+        <div className="inline-flex h-8 w-8 items-center justify-center">
+          <svg aria-hidden="true" className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24">
+            <path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" strokeWidth="1.8" />
+            <path d="M3.8 18.2c0-2.4 2.2-4.2 5.2-4.2s5.2 1.8 5.2 4.2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+            <path d="M16.8 8.2h4.4M19 6v4.4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+          </svg>
+        </div>
+        <h3 className="mt-2 text-xl font-bold leading-tight">Encuentra mas exploradores</h3>
+        <p className="mt-2 text-sm text-white/90">Sincroniza tus contactos para ver quien mas esta planificando su proxima aventura en MaPlan.</p>
+        <button className="mt-3 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#c6283a]" type="button">Sincronizar contactos</button>
+      </div>
+
+      {sendState.error ? <p className="text-sm text-rose-600">{sendState.error}</p> : null}
+      {sendState.success ? <p className="text-sm text-emerald-600">Solicitud enviada.</p> : null}
+      {hasQuery ? (
+        isSearching ? (
+          <p className="text-sm text-zinc-500">Buscando usuarios...</p>
+        ) : liveResults.length === 0 ? (
+          <p className="text-sm text-zinc-500">No encontramos usuarios para esa busqueda.</p>
+        ) : (
+          <ul className="space-y-2">
             {liveResults.map((user) => (
-              <li key={user.id} className="flex items-center justify-between gap-2 rounded-xl border border-zinc-100 p-3">
+              <li className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white p-3" key={user.id}>
                 <p className="text-sm font-medium text-zinc-950">@{user.username || "sin-username"}</p>
                 {user.alreadyFriend ? (
                   <span className="text-xs text-emerald-700">Ya sois amigos</span>
@@ -118,86 +242,22 @@ export function FriendsPageClient({
               </li>
             ))}
           </ul>
-        )}
-      </Card>
-
-      {receivedRequests.length > 0 ? (
-        <Card className="rounded-3xl">
-          <h2 className="text-lg font-semibold text-zinc-950">Solicitudes recibidas</h2>
-          <ul className="mt-3 space-y-2">
-            {receivedRequests.map((request) => (
-              <li key={request.id} className="rounded-xl border border-zinc-100 p-3">
-                <p className="text-sm font-medium text-zinc-950">@{request.senderUsername || "sin-username"}</p>
-                <p className="mt-1 text-xs text-zinc-500">Estado: {request.status}</p>
-                {request.status === "pending" ? (
-                  <form action={respondAction} className="mt-2 flex gap-2">
-                    <input name="requestId" type="hidden" value={request.id} />
-                    <Button disabled={isResponding} name="decision" size="sm" type="submit" value="accepted">
-                      Aceptar
-                    </Button>
-                    <Button
-                      disabled={isResponding}
-                      name="decision"
-                      size="sm"
-                      type="submit"
-                      value="rejected"
-                      variant="secondary"
-                    >
-                      Rechazar
-                    </Button>
-                  </form>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-          {respondState.error ? <p className="mt-2 text-sm text-rose-600">{respondState.error}</p> : null}
-        </Card>
+        )
       ) : null}
 
       {sentRequests.length > 0 ? (
-        <Card className="rounded-3xl">
-          <h2 className="text-lg font-semibold text-zinc-950">Solicitudes enviadas</h2>
-          <ul className="mt-3 space-y-2">
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-zinc-700">Solicitudes enviadas</h3>
+          <ul className="space-y-2">
             {sentRequests.map((request) => (
-              <li key={request.id} className="rounded-xl border border-zinc-100 p-3">
-                <p className="text-sm font-medium text-zinc-950">@{request.receiverUsername || "sin-username"}</p>
-                <p className="mt-1 text-xs text-zinc-500">Estado: {request.status}</p>
+              <li className="rounded-xl border border-zinc-100 bg-white p-3" key={request.id}>
+                <p className="text-sm text-zinc-700">@{request.receiverUsername || "sin-username"}</p>
               </li>
             ))}
           </ul>
-        </Card>
+        </div>
       ) : null}
-
-      <Card className="rounded-3xl">
-        <h2 className="text-lg font-semibold text-zinc-950">Mis amigos</h2>
-        {friends.length === 0 ? (
-          <EmptyState description="Cuando aceptes solicitudes apareceran aqui." title="Aun no tienes amigos" />
-        ) : (
-          <ul className="mt-3 space-y-2">
-            {friends.map((friend) => (
-              <li key={friend.userId} className="rounded-xl border border-zinc-100 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-zinc-950">@{friend.username || "sin-username"}</p>
-                  <form
-                    action={removeAction}
-                    onSubmit={(event) => {
-                      if (!window.confirm(`Seguro que quieres eliminar a @${friend.username || "sin-username"} de tus amigos?`)) {
-                        event.preventDefault();
-                      }
-                    }}
-                  >
-                    <input name="friendUserId" type="hidden" value={friend.userId} />
-                    <Button disabled={isRemoving} size="sm" type="submit" variant="secondary">
-                      {isRemoving ? "Eliminando..." : "Eliminar amigo"}
-                    </Button>
-                  </form>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-        {removeState.error ? <p className="mt-2 text-sm text-rose-600">{removeState.error}</p> : null}
-      </Card>
     </section>
   );
 }
+

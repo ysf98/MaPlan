@@ -17,11 +17,14 @@ export type FriendRequestItem = {
   updatedAt: string;
   senderUsername: string | null;
   receiverUsername: string | null;
+  senderAvatarUrl: string | null;
+  receiverAvatarUrl: string | null;
 };
 
 export type FriendItem = {
   userId: string;
   username: string | null;
+  avatarUrl: string | null;
   createdAt: string;
 };
 
@@ -33,14 +36,39 @@ function normalizeFriendPair(userAId: string, userBId: string) {
   return userAId < userBId ? { user_a_id: userAId, user_b_id: userBId } : { user_a_id: userBId, user_b_id: userAId };
 }
 
-async function getProfileUsernameMap(ids: string[]): Promise<Map<string, string | null>> {
+async function getProfileMap(ids: string[]): Promise<Map<string, { username: string | null; avatarUrl: string | null }>> {
   if (ids.length === 0) {
     return new Map();
   }
 
   const supabase = await createSupabaseServerClient();
+  const directProfilesResult = await supabase
+    .from("profiles")
+    .select("id, username, avatar_url")
+    .in("id", ids);
+
+  if (!directProfilesResult.error && (directProfilesResult.data || []).length > 0) {
+    return new Map(
+      (directProfilesResult.data || []).map((profile) => [
+        profile.id,
+        {
+          username: profile.username ?? null,
+          avatarUrl: profile.avatar_url ?? null
+        }
+      ])
+    );
+  }
+
   const { data } = await supabase.rpc("get_profiles_by_ids", { p_ids: ids });
-  return new Map((data || []).map((profile) => [profile.id, profile.username]));
+  return new Map(
+    (data || []).map((profile) => [
+      profile.id,
+      {
+        username: profile.username ?? null,
+        avatarUrl: (profile as { avatar_url?: string | null }).avatar_url ?? null
+      }
+    ])
+  );
 }
 
 export async function areFriends(userAId: string, userBId: string): Promise<boolean> {
@@ -63,13 +91,14 @@ export async function getFriends(userId: string): Promise<FriendItem[]> {
   }
 
   const friendIds = friendships.map((f) => (f.user_a_id === userId ? f.user_b_id : f.user_a_id));
-  const usernameById = await getProfileUsernameMap(friendIds);
+  const profileById = await getProfileMap(friendIds);
 
   return friendships.map((f) => {
     const friendId = f.user_a_id === userId ? f.user_b_id : f.user_a_id;
     return {
       userId: friendId,
-      username: usernameById.get(friendId) ?? null,
+      username: profileById.get(friendId)?.username ?? null,
+      avatarUrl: profileById.get(friendId)?.avatarUrl ?? null,
       createdAt: f.created_at
     };
   });
@@ -91,7 +120,7 @@ export async function getFriendRequests(userId: string): Promise<{
   }
 
   const profileIds = Array.from(new Set(requests.flatMap((r) => [r.sender_id, r.receiver_id])));
-  const usernameById = await getProfileUsernameMap(profileIds);
+  const profileById = await getProfileMap(profileIds);
 
   const mapped: FriendRequestItem[] = requests.flatMap((request) => {
       if (!isFriendRequestStatus(request.status)) {
@@ -106,8 +135,10 @@ export async function getFriendRequests(userId: string): Promise<{
           status: request.status,
           createdAt: request.created_at,
           updatedAt: request.updated_at,
-          senderUsername: usernameById.get(request.sender_id) ?? null,
-          receiverUsername: usernameById.get(request.receiver_id) ?? null
+          senderUsername: profileById.get(request.sender_id)?.username ?? null,
+          receiverUsername: profileById.get(request.receiver_id)?.username ?? null,
+          senderAvatarUrl: profileById.get(request.sender_id)?.avatarUrl ?? null,
+          receiverAvatarUrl: profileById.get(request.receiver_id)?.avatarUrl ?? null
         }
       ];
     });

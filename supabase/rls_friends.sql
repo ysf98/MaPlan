@@ -249,8 +249,10 @@ $$;
 
 grant execute on function public.search_profiles_by_username(text) to authenticated;
 
+drop function if exists public.get_profiles_by_ids(uuid[]);
+
 create or replace function public.get_profiles_by_ids(p_ids uuid[])
-returns table(id uuid, username text)
+returns table(id uuid, username text, avatar_url text)
 language plpgsql
 security definer
 set search_path = public
@@ -261,7 +263,7 @@ begin
   end if;
 
   return query
-  select p.id, p.username
+  select p.id, p.username, p.avatar_url
   from public.profiles p
   where p.id = any(coalesce(p_ids, '{}'));
 end;
