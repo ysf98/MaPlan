@@ -27,17 +27,15 @@ body {
 
 .route-transition-enter {
   animation: maplan-route-enter 220ms ease-out;
-  will-change: transform, opacity;
+  will-change: opacity;
 }
 
 @keyframes maplan-route-enter {
   from {
     opacity: 0;
-    transform: translate3d(16px, 0, 0);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
   }
 }
 
