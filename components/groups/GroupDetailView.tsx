@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { GroupActivityTab } from "@/components/groups/GroupActivityTab";
 import { GroupDetailTabs } from "@/components/groups/GroupDetailTabs";
 import { GroupMapTab } from "@/components/groups/GroupMapTab";
@@ -34,6 +35,42 @@ export function GroupDetailView({
   activeTab,
   activityEvents
 }: GroupDetailViewProps) {
+  const tabs = useMemo(() => ["lugares", "actividad", "mapa"] as const, []);
+  const [currentTab, setCurrentTab] = useState<GroupDetailTab>(activeTab);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCurrentTab(activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", currentTab);
+    window.history.replaceState(null, "", url.toString());
+  }, [currentTab]);
+
+  function handleTouchStart(clientX: number) {
+    setTouchStartX(clientX);
+  }
+
+  function handleTouchEnd(clientX: number) {
+    if (touchStartX === null) return;
+
+    const delta = touchStartX - clientX;
+    const threshold = 50;
+    const currentIndex = tabs.indexOf(currentTab);
+
+    if (delta > threshold && currentIndex < tabs.length - 1) {
+      setCurrentTab(tabs[currentIndex + 1]);
+    } else if (delta < -threshold && currentIndex > 0) {
+      setCurrentTab(tabs[currentIndex - 1]);
+    }
+
+    setTouchStartX(null);
+  }
+
+  const tabIndex = tabs.indexOf(currentTab);
+
   return (
     <section className="space-y-5">
       <div className="relative">
@@ -57,11 +94,23 @@ export function GroupDetailView({
       </div>
 
       <div>
-        <GroupDetailTabs activeTab={activeTab} groupId={groupId} />
-        <div className="pt-4">
-          {activeTab === "lugares" ? <GroupPlacesTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} /> : null}
-          {activeTab === "actividad" ? <GroupActivityTab events={activityEvents} /> : null}
-          {activeTab === "mapa" ? <GroupMapTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} /> : null}
+        <GroupDetailTabs activeTab={currentTab} onTabChange={setCurrentTab} />
+        <div
+          className="overflow-hidden pt-4"
+          onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
+          onTouchStart={(event) => handleTouchStart(event.touches[0]?.clientX ?? 0)}
+        >
+          <div className="flex transition-transform duration-300 ease-out" style={{ transform: `translateX(-${tabIndex * 100}%)` }}>
+            <div className="w-full shrink-0">
+              <GroupPlacesTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} />
+            </div>
+            <div className="w-full shrink-0">
+              <GroupActivityTab events={activityEvents} />
+            </div>
+            <div className="w-full shrink-0">
+              <GroupMapTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} />
+            </div>
+          </div>
         </div>
       </div>
     </section>

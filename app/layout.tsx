@@ -1,6 +1,7 @@
-import type { Metadata, Viewport } from "next";
+﻿import type { Metadata, Viewport } from "next";
 import "@/styles/globals.css";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { RouteTransition } from "@/components/layout/RouteTransition";
 
 export const metadata: Metadata = {
   title: "MaPlan",
@@ -16,7 +17,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <RouteTransition>{children}</RouteTransition>
+      </body>
     </html>
   );
 }

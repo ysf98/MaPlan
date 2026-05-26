@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { deletePersonalPlaceAction, type DeletePersonalPlaceActionState } from "@/app/map/actions";
 import { PersonalMap } from "@/components/map/PersonalMap";
 import { PersonalMapTabs } from "@/components/map/PersonalMapTabs";
@@ -20,8 +20,43 @@ const deleteInitialState: DeletePersonalPlaceActionState = {
 };
 
 export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps) {
+  const tabs = useMemo(() => ["lugares", "mapa"] as const, []);
+  const [currentTab, setCurrentTab] = useState<PersonalMapTab>(activeTab);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [deleteState, deleteFormAction, isDeleting] = useActionState(deletePersonalPlaceAction, deleteInitialState);
+
+  useEffect(() => {
+    setCurrentTab(activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", currentTab);
+    window.history.replaceState(null, "", url.toString());
+  }, [currentTab]);
+
+  function handleTouchStart(clientX: number) {
+    setTouchStartX(clientX);
+  }
+
+  function handleTouchEnd(clientX: number) {
+    if (touchStartX === null) return;
+
+    const delta = touchStartX - clientX;
+    const threshold = 50;
+    const currentIndex = tabs.indexOf(currentTab);
+
+    if (delta > threshold && currentIndex < tabs.length - 1) {
+      setCurrentTab(tabs[currentIndex + 1]);
+    } else if (delta < -threshold && currentIndex > 0) {
+      setCurrentTab(tabs[currentIndex - 1]);
+    }
+
+    setTouchStartX(null);
+  }
+
+  const tabIndex = tabs.indexOf(currentTab);
 
   return (
     <section
@@ -42,57 +77,65 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
       </div>
 
       <div>
-        <PersonalMapTabs activeTab={activeTab} />
+        <PersonalMapTabs activeTab={currentTab} onTabChange={setCurrentTab} />
       </div>
 
-      {activeTab === "mapa" ? (
-        <div className="rounded-3xl border border-zinc-100 bg-white p-3">
-          <PersonalMap onSelectPlace={setSelectedPlaceId} places={personalPlaces} selectedPlaceId={selectedPlaceId} />
-        </div>
-      ) : null}
-
-      {activeTab === "lugares" ? (
-        personalPlaces.length > 0 ? (
-          <div>
-            <SimplePlacesList
-              cardDataAttribute="data-place-card"
-              onTogglePlace={(placeId) => setSelectedPlaceId((current) => (current === placeId ? null : placeId))}
-              places={personalPlaces}
-              renderActions={(place) => (
-                <>
-                  {place.googleMapsUrl ? (
-                    <a
-                      className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-100 px-3 text-xs font-medium text-zinc-700 hover:bg-rose-50 hover:text-[#c6283a]"
-                      href={place.googleMapsUrl}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      Ver en Google Maps
-                    </a>
-                  ) : null}
-                  <form action={deleteFormAction}>
-                    <input name="placeId" type="hidden" value={place.id} />
-                    <button
-                      className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
-                      disabled={isDeleting}
-                      type="submit"
-                    >
-                      {isDeleting ? "Eliminando..." : "Eliminar"}
-                    </button>
-                  </form>
-                </>
-              )}
-              selectedPlaceId={selectedPlaceId}
-            />
-            {deleteState.error ? <p className="mt-3 text-sm text-rose-600">{deleteState.error}</p> : null}
+      <div
+        className="overflow-hidden"
+        onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
+        onTouchStart={(event) => handleTouchStart(event.touches[0]?.clientX ?? 0)}
+      >
+        <div className="flex transition-transform duration-300 ease-out" style={{ transform: `translateX(-${tabIndex * 100}%)` }}>
+          <div className="w-full shrink-0">
+            {personalPlaces.length > 0 ? (
+              <div>
+                <SimplePlacesList
+                  cardDataAttribute="data-place-card"
+                  onTogglePlace={(placeId) => setSelectedPlaceId((current) => (current === placeId ? null : placeId))}
+                  places={personalPlaces}
+                  renderActions={(place) => (
+                    <>
+                      {place.googleMapsUrl ? (
+                        <a
+                          className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-100 px-3 text-xs font-medium text-zinc-700 hover:bg-rose-50 hover:text-[#c6283a]"
+                          href={place.googleMapsUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Ver en Google Maps
+                        </a>
+                      ) : null}
+                      <form action={deleteFormAction}>
+                        <input name="placeId" type="hidden" value={place.id} />
+                        <button
+                          className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                          disabled={isDeleting}
+                          type="submit"
+                        >
+                          {isDeleting ? "Eliminando..." : "Eliminar"}
+                        </button>
+                      </form>
+                    </>
+                  )}
+                  selectedPlaceId={selectedPlaceId}
+                />
+                {deleteState.error ? <p className="mt-3 text-sm text-rose-600">{deleteState.error}</p> : null}
+              </div>
+            ) : (
+              <EmptyState
+                description="Busca un sitio en el mapa para crear tu primer lugar personal."
+                title="Todavia no tienes lugares personales"
+              />
+            )}
           </div>
-        ) : (
-          <EmptyState
-            description="Busca un sitio en el mapa para crear tu primer lugar personal."
-            title="Todavia no tienes lugares personales"
-          />
-        )
-      ) : null}
+
+          <div className="w-full shrink-0">
+            <div className="rounded-3xl border border-zinc-100 bg-white p-3">
+              <PersonalMap onSelectPlace={setSelectedPlaceId} places={personalPlaces} selectedPlaceId={selectedPlaceId} />
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

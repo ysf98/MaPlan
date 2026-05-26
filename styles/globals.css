@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
   color-scheme: light;
@@ -23,4 +23,26 @@ body {
 
 * {
   border-color: rgb(var(--border));
+}
+
+.route-transition-enter {
+  animation: maplan-route-enter 220ms ease-out;
+  will-change: transform, opacity;
+}
+
+@keyframes maplan-route-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(16px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-transition-enter {
+    animation: none;
+  }
 }
