@@ -137,6 +137,9 @@ export function GroupOwnerControls({
   }, [isEditOpen]);
 
   function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
+    if (!canEditGroup) {
+      return;
+    }
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -195,7 +198,7 @@ export function GroupOwnerControls({
                   </button>
                   <GroupCoverPicker
                     helperText="Pulsa la foto para cambiar la portada"
-                    onFileChange={canEditGroup ? handleCoverChange : undefined}
+                    onFileChange={handleCoverChange}
                     placeholder={<span className="text-sm font-bold text-[#c6283a]">{groupName.trim().charAt(0).toUpperCase() || "M"}</span>}
                     previewUrl={coverPreviewUrl}
                   />
