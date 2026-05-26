@@ -38,6 +38,8 @@ export function GroupDetailView({
   const tabs = useMemo(() => ["lugares", "actividad", "mapa"] as const, []);
   const [currentTab, setCurrentTab] = useState<GroupDetailTab>(activeTab);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [dragOffsetPct, setDragOffsetPct] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     setCurrentTab(activeTab);
@@ -51,22 +53,34 @@ export function GroupDetailView({
 
   function handleTouchStart(clientX: number) {
     setTouchStartX(clientX);
+    setIsDragging(true);
   }
 
-  function handleTouchEnd(clientX: number) {
-    if (touchStartX === null) return;
-
-    const delta = touchStartX - clientX;
-    const threshold = 50;
+  function handleTouchMove(clientX: number, containerWidth: number) {
+    if (touchStartX === null || containerWidth <= 0) return;
+    const deltaPx = touchStartX - clientX;
+    const rawPct = (deltaPx / containerWidth) * 100;
     const currentIndex = tabs.indexOf(currentTab);
+    const draggingLeft = rawPct < 0;
+    const draggingRight = rawPct > 0;
+    const atFirst = currentIndex === 0;
+    const atLast = currentIndex === tabs.length - 1;
+    const isOverscrolling = (atFirst && draggingLeft) || (atLast && draggingRight);
+    const withResistance = isOverscrolling ? rawPct * 0.35 : rawPct;
+    const clampedPct = Math.max(-100, Math.min(100, withResistance));
+    setDragOffsetPct(clampedPct);
+  }
 
-    if (delta > threshold && currentIndex < tabs.length - 1) {
-      setCurrentTab(tabs[currentIndex + 1]);
-    } else if (delta < -threshold && currentIndex > 0) {
-      setCurrentTab(tabs[currentIndex - 1]);
-    }
+  function handleTouchEnd() {
+    if (touchStartX === null) return;
+    const currentIndex = tabs.indexOf(currentTab);
+    const projected = Math.round(currentIndex + dragOffsetPct / 100);
+    const nextIndex = Math.max(0, Math.min(tabs.length - 1, projected));
+    setCurrentTab(tabs[nextIndex]);
 
     setTouchStartX(null);
+    setDragOffsetPct(0);
+    setIsDragging(false);
   }
 
   const tabIndex = tabs.indexOf(currentTab);
@@ -97,10 +111,14 @@ export function GroupDetailView({
         <GroupDetailTabs activeTab={currentTab} onTabChange={setCurrentTab} />
         <div
           className="overflow-hidden pt-4"
-          onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
+          onTouchEnd={() => handleTouchEnd()}
+          onTouchMove={(event) => handleTouchMove(event.touches[0]?.clientX ?? 0, event.currentTarget.clientWidth)}
           onTouchStart={(event) => handleTouchStart(event.touches[0]?.clientX ?? 0)}
         >
-          <div className="flex transition-transform duration-300 ease-out" style={{ transform: `translateX(-${tabIndex * 100}%)` }}>
+          <div
+            className={`flex ${isDragging ? "" : "transition-transform duration-300 ease-out"}`}
+            style={{ transform: `translateX(calc(${-tabIndex * 100}% - ${dragOffsetPct}%))` }}
+          >
             <div className="w-full shrink-0">
               <GroupPlacesTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} />
             </div>
@@ -116,3 +134,4 @@ export function GroupDetailView({
     </section>
   );
 }
+
