@@ -57,14 +57,6 @@ function createPopupNode(place: GroupPlace): HTMLElement {
     city.textContent = place.city;
     root.appendChild(city);
   }
-  if (place.category) {
-    const category = document.createElement("p");
-    category.style.margin = "2px 0 0";
-    category.style.fontSize = "11px";
-    category.style.color = "#94a3b8";
-    category.textContent = place.category;
-    root.appendChild(category);
-  }
 
   return root;
 }
@@ -78,13 +70,15 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
   const [draftSelection, setDraftSelection] = useState<MapDraftPlace | null>(null);
   const [searchCloseSignal, setSearchCloseSignal] = useState(0);
+  const [localSelectedPlaceId, setLocalSelectedPlaceId] = useState<string | null>(null);
   const [addPlaceState, addPlaceFormAction, isAddPlacePending] = useActionState(addPlaceAction, addPlaceInitialState);
   const wasAddPlacePendingRef = useRef(false);
 
   const placesWithCoordinates = useMemo(() => places.filter((place) => hasValidCoordinates(place)), [places]);
+  const effectiveSelectedPlaceId = selectedPlaceId ?? localSelectedPlaceId;
   const internalSelectedPlace = useMemo(
-    () => placesWithCoordinates.find((place) => place.id === selectedPlaceId) ?? null,
-    [placesWithCoordinates, selectedPlaceId]
+    () => placesWithCoordinates.find((place) => place.id === effectiveSelectedPlaceId) ?? null,
+    [placesWithCoordinates, effectiveSelectedPlaceId]
   );
 
   useEffect(() => {
@@ -113,7 +107,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
 
     mapRef.current = map;
     setMapError(null);
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
     map.on("click", async (event) => {
       if (!canEdit) {
         return;
@@ -160,6 +154,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
         .addTo(map);
 
       marker.getElement().addEventListener("click", () => {
+        setLocalSelectedPlaceId(place.id);
         onSelectPlace?.(place.id);
       });
       bounds.extend([longitude, latitude]);
@@ -256,6 +251,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
       center: center ? { lng: center.lng, lat: center.lat } : null
     };
   }, []);
+  const filterChips = ["Todos", "Pendientes", "Visitados", "Favoritos"];
 
   if (!token) {
     return <EmptyState description="Define NEXT_PUBLIC_MAPBOX_TOKEN para habilitar el mapa." title="Falta configurar Mapbox" />;
@@ -267,23 +263,98 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
 
   return (
     <div className="space-y-3">
-      <MapSearchBox
-        closeSignal={searchCloseSignal}
-        getMapContext={getMapContext}
-        onManualCreate={handleManualCreateFromSearch}
-        onSelectResult={handleSelectSearchResult}
-      />
-      <div className="relative h-[420px] w-full overflow-hidden rounded-2xl border border-zinc-100">
+      <div className="relative h-[500px] w-full overflow-hidden rounded-2xl border border-zinc-100">
         <div className="h-full w-full" data-lock-swipe ref={mapContainerRef} />
+
+        <div className="pointer-events-none absolute inset-x-3 top-3 z-20">
+          <div
+            className="pointer-events-auto"
+            onPointerDownCapture={(event) => event.stopPropagation()}
+            onTouchStartCapture={(event) => event.stopPropagation()}
+          >
+            <MapSearchBox
+              closeSignal={searchCloseSignal}
+              getMapContext={getMapContext}
+              onManualCreate={handleManualCreateFromSearch}
+              onSelectResult={handleSelectSearchResult}
+            />
+          </div>
+          <div
+            className="pointer-events-auto mt-2 flex gap-2 overflow-x-auto pb-1"
+            onPointerDownCapture={(event) => event.stopPropagation()}
+            onTouchStartCapture={(event) => event.stopPropagation()}
+          >
+            {filterChips.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${
+                  chip === "Todos" ? "bg-[#c6283a] text-white" : "bg-white/95 text-zinc-600 shadow"
+                }`}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {canEdit && isResolvingLocation ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-3 z-10">
+          <div className="pointer-events-none absolute left-3 right-3 top-28 z-10">
             <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
               <p className="text-sm text-zinc-700">Cargando datos del lugar...</p>
             </Card>
           </div>
         ) : null}
+
+        {internalSelectedPlace ? (
+          <div className="pointer-events-none absolute inset-x-3 bottom-3 z-30">
+            <Card className="pointer-events-auto rounded-3xl border-zinc-100 bg-white p-3 shadow-xl">
+              <div className="flex items-start gap-3">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+                  {internalSelectedPlace.imageUrl ? (
+                    <img alt={internalSelectedPlace.name} className="h-full w-full object-cover" src={internalSelectedPlace.imageUrl} />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-lg text-zinc-400">+</div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-lg font-semibold leading-5 text-zinc-900">{internalSelectedPlace.name}</p>
+                  <p className="mt-1 truncate text-xs text-zinc-500">
+                    {internalSelectedPlace.address}
+                    {internalSelectedPlace.city ? ` · ${internalSelectedPlace.city}` : ""}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2 text-xs font-medium text-zinc-500">
+                    <button className="rounded-full bg-zinc-100 px-2 py-1" type="button">
+                      Ir
+                    </button>
+                    <button className="rounded-full bg-zinc-100 px-2 py-1" type="button">
+                      Llamar
+                    </button>
+                    {internalSelectedPlace.googleMapsUrl ? (
+                      <a
+                        className="rounded-full bg-zinc-100 px-2 py-1"
+                        href={internalSelectedPlace.googleMapsUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        Ver
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+                <button
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#c6283a] text-xl font-semibold text-white shadow"
+                  type="button"
+                >
+                  +
+                </button>
+              </div>
+            </Card>
+          </div>
+        ) : null}
+
         {canEdit && draftSelection ? (
-          <div className="pointer-events-none absolute right-3 top-3 z-10 hidden w-[360px] max-w-[calc(100%-1.5rem)] md:block">
+          <div className="pointer-events-none absolute inset-x-3 bottom-3 z-40 md:hidden">
             <MapSaveDraftCard
               draft={draftSelection}
               formAction={addPlaceFormAction}
@@ -300,8 +371,9 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
           </div>
         ) : null}
       </div>
+
       {canEdit && draftSelection ? (
-        <div className="md:hidden">
+        <div className="hidden md:block">
           <MapSaveDraftCard
             draft={draftSelection}
             formAction={addPlaceFormAction}
@@ -320,4 +392,3 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
     </div>
   );
 }
-
