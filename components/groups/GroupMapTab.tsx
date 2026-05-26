@@ -9,8 +9,9 @@ type GroupMapTabProps = {
 
 export function GroupMapTab({ groupId, places, canEditPlaces }: GroupMapTabProps) {
   return (
-    <div className="rounded-3xl border border-zinc-100 bg-white p-3" data-lock-swipe>
+    <div className="rounded-3xl border border-zinc-100 bg-white p-3">
       <GroupMap canEdit={canEditPlaces} groupId={groupId} places={places} />
     </div>
   );
 }
+

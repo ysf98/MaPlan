@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
@@ -241,7 +241,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
         onSelectResult={handleSelectSearchResult}
       />
       <div className="relative h-[420px] w-full overflow-hidden rounded-2xl border border-zinc-100">
-        <div className="h-full w-full" ref={mapContainerRef} />
+        <div className="h-full w-full" data-lock-swipe ref={mapContainerRef} />
         {isResolvingLocation ? (
           <div className="pointer-events-none absolute left-3 right-3 top-3 z-10">
             <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
@@ -287,3 +287,4 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
     </div>
   );
 }
+

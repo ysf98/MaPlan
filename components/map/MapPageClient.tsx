@@ -196,7 +196,7 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
           </div>
 
           <div className="w-full shrink-0 px-1.5">
-            <div className="rounded-3xl border border-zinc-100 bg-white p-3" data-lock-swipe>
+            <div className="rounded-3xl border border-zinc-100 bg-white p-3">
               <PersonalMap onSelectPlace={setSelectedPlaceId} places={personalPlaces} selectedPlaceId={selectedPlaceId} />
             </div>
           </div>
@@ -205,3 +205,4 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
     </section>
   );
 }
+
