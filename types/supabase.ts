@@ -266,7 +266,7 @@ export type Database = {
           join_code: string
           join_policy: string
           name: string
-          place_edit_policy: string
+          privacy: string
         }
         Insert: {
           cover_image_url?: string | null
@@ -277,7 +277,7 @@ export type Database = {
           join_code: string
           join_policy?: string
           name: string
-          place_edit_policy?: string
+          privacy?: string
         }
         Update: {
           cover_image_url?: string | null
@@ -288,7 +288,7 @@ export type Database = {
           join_code?: string
           join_policy?: string
           name?: string
-          place_edit_policy?: string
+          privacy?: string
         }
         Relationships: [
           {
@@ -523,9 +523,9 @@ export type Database = {
 export type PlaceStatus = "pending" | "visited" | "favorite"
 export type PlaceSource = "manual" | "google_maps" | "tiktok" | "instagram" | "website"
 export type PlaceProvider = "manual" | "mapbox" | "google_places"
-export type GroupPlaceEditPolicy = "owner_only" | "members_can_edit"
 export type GroupJoinPolicy = "invite_only" | "open_by_code" | "request_to_join"
 export type GroupJoinRequestStatus = "pending" | "approved" | "rejected"
+export type GroupPrivacy = "privado" | "abierto"
 export type FriendRequestStatus = "pending" | "accepted" | "rejected"
 export type GroupInvitationStatus = "pending" | "accepted" | "rejected"
 

@@ -53,7 +53,7 @@ export async function createGroupAction(
   const parsedInput = createGroupSchema.safeParse({
     name: String(formData.get("name") || ""),
     description: String(formData.get("description") || ""),
-    placeEditPolicy: String(formData.get("placeEditPolicy") || ""),
+    privacy: String(formData.get("privacy") || ""),
     joinPolicy: String(formData.get("joinPolicy") || "")
   });
 
@@ -61,7 +61,7 @@ export async function createGroupAction(
     return { error: getValidationErrorMessage(parsedInput.error), success: false, groupId: null };
   }
 
-  const { name, description, placeEditPolicy, joinPolicy } = parsedInput.data;
+  const { name, description, privacy, joinPolicy } = parsedInput.data;
   const selectedFriendIds = Array.from(
     new Set(
       formData
@@ -82,7 +82,7 @@ export async function createGroupAction(
       description,
       created_by: user.id,
       join_code: joinCode,
-      place_edit_policy: placeEditPolicy,
+      privacy,
       join_policy: joinPolicy || "invite_only"
     };
     const groupResult = await supabase.from("groups").insert(groupInsertPayload).select("id").single();
@@ -119,7 +119,17 @@ export async function createGroupAction(
   }
 
   if (selectedFriendIds.length > 0) {
-    await Promise.all(selectedFriendIds.map((friendUserId) => inviteFriendToGroup(user.id, createdGroupId, friendUserId)));
+    const inviteResults = await Promise.all(
+      selectedFriendIds.map((friendUserId) => inviteFriendToGroup(user.id, createdGroupId, friendUserId))
+    );
+    const firstInviteError = inviteResults.find((result) => result.error)?.error;
+    if (firstInviteError) {
+      return {
+        error: `Grupo creado, pero falló al invitar amigos: ${firstInviteError}`,
+        success: false,
+        groupId: createdGroupId
+      };
+    }
   }
 
   revalidatePath("/groups");

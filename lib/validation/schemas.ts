@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   GROUP_JOIN_POLICY_VALUES,
   GROUP_JOIN_REQUEST_STATUS_VALUES,
-  GROUP_PLACE_EDIT_POLICY_VALUES
+  GROUP_PRIVACY_VALUES
 } from "@/lib/groups/policies";
 
 export const PLACE_STATUS_VALUES = ["pending", "visited", "favorite"] as const;
@@ -23,13 +23,11 @@ export const createGroupSchema = z.object({
     .max(300, "La descripcion no puede superar 300 caracteres.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
-  placeEditPolicy: z
+  privacy: z
     .string()
     .optional()
-    .transform((value) => value || "members_can_edit")
-    .refine((value): value is (typeof GROUP_PLACE_EDIT_POLICY_VALUES)[number] => {
-      return GROUP_PLACE_EDIT_POLICY_VALUES.includes(value as never);
-    }, "Politica de edicion invalida."),
+    .transform((value) => value || "abierto")
+    .refine((value): value is (typeof GROUP_PRIVACY_VALUES)[number] => GROUP_PRIVACY_VALUES.includes(value as never), "Privacidad invalida."),
   joinPolicy: z
     .string()
     .optional()
@@ -231,11 +229,9 @@ export const reviewJoinRequestSchema = z.object({
 
 export const updateGroupSettingsSchema = z.object({
   groupId: uuidSchema,
-  placeEditPolicy: z
+  privacy: z
     .string()
-    .refine((value): value is (typeof GROUP_PLACE_EDIT_POLICY_VALUES)[number] => {
-      return GROUP_PLACE_EDIT_POLICY_VALUES.includes(value as never);
-    }, "Politica de edicion invalida."),
+    .refine((value): value is (typeof GROUP_PRIVACY_VALUES)[number] => GROUP_PRIVACY_VALUES.includes(value as never), "Privacidad invalida."),
   joinPolicy: z
     .string()
     .refine((value): value is (typeof GROUP_JOIN_POLICY_VALUES)[number] => {

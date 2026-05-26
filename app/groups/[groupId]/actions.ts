@@ -14,7 +14,7 @@ import {
 } from "@/lib/validation/schemas";
 import type { Database, PlaceStatus } from "@/types/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
+import { canChangeGroupPrivacy, canEditGroupDetails, canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
 
 export type AddPlaceActionState = {
   error: string | null;
@@ -338,7 +338,7 @@ export async function updateGroupSettingsAction(
 
   const parsedInput = updateGroupSettingsSchema.safeParse({
     groupId: String(formData.get("groupId") || ""),
-    placeEditPolicy: String(formData.get("placeEditPolicy") || ""),
+    privacy: String(formData.get("privacy") || ""),
     joinPolicy: String(formData.get("joinPolicy") || "")
   });
 
@@ -346,16 +346,16 @@ export async function updateGroupSettingsAction(
     return { error: getValidationErrorMessage(parsedInput.error), success: false };
   }
 
-  const { groupId, placeEditPolicy, joinPolicy } = parsedInput.data;
-  const owner = await isGroupOwner(user.id, groupId);
+  const { groupId, privacy, joinPolicy } = parsedInput.data;
+  const canChangePrivacy = await canChangeGroupPrivacy(user.id, groupId);
 
-  if (!owner) {
-    return { error: "Solo el propietario puede cambiar la configuracion del grupo.", success: false };
+  if (!canChangePrivacy) {
+    return { error: "Solo el administrador puede cambiar la privacidad del grupo.", success: false };
   }
 
   const supabase = await createSupabaseServerClient();
   const payload = {
-    place_edit_policy: placeEditPolicy,
+    privacy,
     join_policy: joinPolicy
   };
 
@@ -389,9 +389,9 @@ export async function updateGroupDetailsAction(
   }
 
   const { groupId, name, description, coverImageUrl } = parsedInput.data;
-  const owner = await isGroupOwner(user.id, groupId);
-  if (!owner) {
-    return { error: "Solo el propietario puede editar este grupo.", success: false };
+  const canEditGroup = await canEditGroupDetails(user.id, groupId);
+  if (!canEditGroup) {
+    return { error: "No tienes permisos para editar este grupo.", success: false };
   }
 
   const supabase = await createSupabaseServerClient();

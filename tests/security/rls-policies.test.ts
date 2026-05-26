@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 describe("RLS policies baseline", () => {
-  it("includes owner visibility policy for group members", () => {
+  it("includes creator/member select policy for groups", () => {
     const sql = readFileSync(resolve(process.cwd(), "supabase/rls_groups.sql"), "utf8");
-    expect(sql).toContain("create policy group_members_select_owner_group");
+    expect(sql).toContain("create policy groups_select_member_or_creator");
   });
 
   it("includes atomic RPC for friend acceptance with friendship insert", () => {

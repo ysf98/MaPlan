@@ -52,14 +52,14 @@ describe("group invitations actions", () => {
   it("inviteFriendToGroupAction returns domain security error (no owner/no friend)", async () => {
     const { inviteFriendToGroupAction } = await import("@/app/groups/[groupId]/invitations/actions");
     getCurrentUserMock.mockResolvedValue({ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
-    inviteFriendToGroupMock.mockResolvedValue({ error: "Solo el owner puede invitar amigos." });
+    inviteFriendToGroupMock.mockResolvedValue({ error: "No tienes permisos para invitar amigos a este grupo." });
 
     const formData = new FormData();
     formData.set("groupId", "11111111-1111-4111-8111-111111111111");
     formData.set("friendUserId", "22222222-2222-4222-8222-222222222222");
 
     const result = await inviteFriendToGroupAction({ error: null, success: false }, formData);
-    expect(result).toEqual({ error: "Solo el owner puede invitar amigos.", success: false });
+    expect(result).toEqual({ error: "No tienes permisos para invitar amigos a este grupo.", success: false });
   });
 
   it("inviteFriendToGroupAction rejects invalid ids", async () => {

@@ -17,11 +17,13 @@ drop policy if exists places_select_group_member on public.places;
 drop policy if exists places_insert_editor_only on public.places;
 drop policy if exists places_update_editor_only on public.places;
 drop policy if exists places_delete_owner_only on public.places;
+drop policy if exists places_delete_editor_only on public.places;
 
 drop policy if exists categories_select_group_member on public.categories;
 drop policy if exists categories_insert_editor_only on public.categories;
 drop policy if exists categories_update_editor_only on public.categories;
 drop policy if exists categories_delete_owner_only on public.categories;
+drop policy if exists categories_delete_editor_only on public.categories;
 
 drop policy if exists profiles_select_self_or_related on public.profiles;
 drop policy if exists profiles_update_self_only on public.profiles;
@@ -57,7 +59,7 @@ with check (
       join public.groups g on g.id = gm.group_id
       where gm.group_id = places.group_id
         and gm.user_id = auth.uid()
-        and g.place_edit_policy = 'members_can_edit'
+        and g.privacy = 'abierto'
     )
   )
 );
@@ -79,7 +81,7 @@ using (
     join public.groups g on g.id = gm.group_id
     where gm.group_id = places.group_id
       and gm.user_id = auth.uid()
-      and g.place_edit_policy = 'members_can_edit'
+      and g.privacy = 'abierto'
   )
 )
 with check (
@@ -96,11 +98,11 @@ with check (
     join public.groups g on g.id = gm.group_id
     where gm.group_id = places.group_id
       and gm.user_id = auth.uid()
-      and g.place_edit_policy = 'members_can_edit'
+      and g.privacy = 'abierto'
   )
 );
 
-create policy places_delete_owner_only
+create policy places_delete_editor_only
 on public.places
 for delete to authenticated
 using (
@@ -110,6 +112,14 @@ using (
     where gm.group_id = places.group_id
       and gm.user_id = auth.uid()
       and gm.role = 'owner'
+  )
+  or exists (
+    select 1
+    from public.group_members gm
+    join public.groups g on g.id = gm.group_id
+    where gm.group_id = places.group_id
+      and gm.user_id = auth.uid()
+      and g.privacy = 'abierto'
   )
 );
 
@@ -142,7 +152,7 @@ with check (
     join public.groups g on g.id = gm.group_id
     where gm.group_id = categories.group_id
       and gm.user_id = auth.uid()
-      and g.place_edit_policy = 'members_can_edit'
+      and g.privacy = 'abierto'
   )
 );
 
@@ -163,7 +173,7 @@ using (
     join public.groups g on g.id = gm.group_id
     where gm.group_id = categories.group_id
       and gm.user_id = auth.uid()
-      and g.place_edit_policy = 'members_can_edit'
+      and g.privacy = 'abierto'
   )
 )
 with check (
@@ -180,11 +190,11 @@ with check (
     join public.groups g on g.id = gm.group_id
     where gm.group_id = categories.group_id
       and gm.user_id = auth.uid()
-      and g.place_edit_policy = 'members_can_edit'
+      and g.privacy = 'abierto'
   )
 );
 
-create policy categories_delete_owner_only
+create policy categories_delete_editor_only
 on public.categories
 for delete to authenticated
 using (
@@ -194,6 +204,14 @@ using (
     where gm.group_id = categories.group_id
       and gm.user_id = auth.uid()
       and gm.role = 'owner'
+  )
+  or exists (
+    select 1
+    from public.group_members gm
+    join public.groups g on g.id = gm.group_id
+    where gm.group_id = categories.group_id
+      and gm.user_id = auth.uid()
+      and g.privacy = 'abierto'
   )
 );
 

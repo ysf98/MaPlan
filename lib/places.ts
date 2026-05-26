@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { canEditPlaces, isGroupMember, isGroupOwner } from "@/lib/groupPermissions";
+import { canEditPlaces, isGroupMember } from "@/lib/groupPermissions";
 import { recordPlaceAddedGroupActivity } from "@/lib/groupActivity";
 import { INITIAL_PLACE_CATEGORIES, type GroupPlace, type PlaceCategory } from "@/lib/places/shared";
 import type { PlaceProvider, PlaceSource, PlaceStatus } from "@/types/supabase";
@@ -336,9 +336,9 @@ export async function updatePlaceLocation(input: UpdatePlaceLocationInput): Prom
 }
 
 export async function deletePlace(input: DeletePlaceInput): Promise<{ error: string | null }> {
-  const isOwner = await isGroupOwner(input.userId, input.groupId);
-  if (!isOwner) {
-    return { error: "Solo el propietario puede eliminar lugares en este grupo." };
+  const canEdit = await canEditPlaces(input.userId, input.groupId);
+  if (!canEdit) {
+    return { error: "No tienes permisos para eliminar lugares en este grupo." };
   }
 
   const supabase = await createSupabaseServerClient();

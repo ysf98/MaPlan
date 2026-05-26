@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getFriends } from "@/lib/friends";
+import { canInviteToGroup } from "@/lib/groupPermissions";
 
 export type GroupInvitationItem = {
   id: string;
@@ -63,17 +64,10 @@ export async function getGroupInvitationsForUser(userId: string): Promise<GroupI
     });
 }
 
-export async function getGroupInvitationsForGroup(ownerId: string, groupId: string): Promise<GroupInvitationItem[]> {
+export async function getGroupInvitationsForGroup(userId: string, groupId: string): Promise<GroupInvitationItem[]> {
   const supabase = await createSupabaseServerClient();
-  const { data: ownerMembership } = await supabase
-    .from("group_members")
-    .select("id")
-    .eq("group_id", groupId)
-    .eq("user_id", ownerId)
-    .eq("role", "owner")
-    .maybeSingle();
-
-  if (!ownerMembership) {
+  const canInvite = await canInviteToGroup(userId, groupId);
+  if (!canInvite) {
     return [];
   }
 
@@ -113,28 +107,21 @@ export async function getGroupInvitationsForGroup(ownerId: string, groupId: stri
     });
 }
 
-export async function getInvitableFriendsForGroup(ownerId: string, groupId: string): Promise<Array<{ id: string; username: string | null }>> {
+export async function getInvitableFriendsForGroup(userId: string, groupId: string): Promise<Array<{ id: string; username: string | null }>> {
   const supabase = await createSupabaseServerClient();
-  const { data: ownerMembership } = await supabase
-    .from("group_members")
-    .select("id")
-    .eq("group_id", groupId)
-    .eq("user_id", ownerId)
-    .eq("role", "owner")
-    .maybeSingle();
-
-  if (!ownerMembership) {
+  const canInvite = await canInviteToGroup(userId, groupId);
+  if (!canInvite) {
     return [];
   }
 
-  const friends = await getFriends(ownerId);
+  const friends = await getFriends(userId);
   if (friends.length === 0) {
     return [];
   }
 
   const friendIds = friends.map((friend) => friend.userId);
   const [{ data: members }, { data: invitations }] = await Promise.all([
-    supabase.from("group_members").select("user_id").eq("group_id", groupId).in("user_id", friendIds),
+    supabase.rpc("get_group_members_with_profiles", { p_group_id: groupId }),
     supabase
       .from("group_invitations")
       .select("invited_user_id")
@@ -143,30 +130,26 @@ export async function getInvitableFriendsForGroup(ownerId: string, groupId: stri
       .in("invited_user_id", friendIds)
   ]);
 
-  const blockedIds = new Set<string>([...(members || []).map((m) => m.user_id), ...(invitations || []).map((i) => i.invited_user_id)]);
+  const blockedIds = new Set<string>([
+    ...(members || []).map((m) => m.user_id),
+    ...(invitations || []).map((i) => i.invited_user_id)
+  ]);
   return friends.filter((friend) => !blockedIds.has(friend.userId)).map((friend) => ({ id: friend.userId, username: friend.username }));
 }
 
-export async function inviteFriendToGroup(ownerId: string, groupId: string, friendUserId: string): Promise<{ error: string | null }> {
+export async function inviteFriendToGroup(userId: string, groupId: string, friendUserId: string): Promise<{ error: string | null }> {
   const supabase = await createSupabaseServerClient();
-  const { data: ownerMembership } = await supabase
-    .from("group_members")
-    .select("id")
-    .eq("group_id", groupId)
-    .eq("user_id", ownerId)
-    .eq("role", "owner")
-    .maybeSingle();
-
-  if (!ownerMembership) {
-    return { error: "Solo el owner puede invitar amigos." };
+  const canInvite = await canInviteToGroup(userId, groupId);
+  if (!canInvite) {
+    return { error: "No tienes permisos para invitar amigos a este grupo." };
   }
 
-  const { data: alreadyMember } = await supabase
-    .from("group_members")
-    .select("id")
-    .eq("group_id", groupId)
-    .eq("user_id", friendUserId)
-    .maybeSingle();
+  const membersRpc = await supabase.rpc("get_group_members_with_profiles", { p_group_id: groupId });
+  if (membersRpc.error) {
+    return { error: membersRpc.error.message };
+  }
+
+  const alreadyMember = (membersRpc.data || []).some((member) => member.user_id === friendUserId);
   if (alreadyMember) {
     return { error: "Ese usuario ya es miembro del grupo." };
   }
@@ -185,19 +168,22 @@ export async function inviteFriendToGroup(ownerId: string, groupId: string, frie
   if (existingInvitation) {
     const { error: updateError } = await supabase
       .from("group_invitations")
-      .update({ status: "pending", invited_by: ownerId })
+      .update({ status: "pending", invited_by: userId })
       .eq("id", existingInvitation.id);
     return { error: updateError ? updateError.message : null };
   }
 
   const { error } = await supabase.from("group_invitations").insert({
     group_id: groupId,
-    invited_by: ownerId,
+    invited_by: userId,
     invited_user_id: friendUserId,
     status: "pending"
   });
 
   if (error) {
+    if (error.code === "23505") {
+      return { error: "Ya existe una invitacion para este usuario." };
+    }
     return { error: error.message };
   }
 

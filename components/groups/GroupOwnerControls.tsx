@@ -1,17 +1,27 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { updateGroupDetailsAction, updateGroupSettingsAction } from "@/app/groups/[groupId]/actions";
-import type { UpdateGroupDetailsActionState, UpdateGroupSettingsActionState } from "@/app/groups/[groupId]/actions";
+import {
+  deleteGroupAction,
+  leaveGroupAction,
+  updateGroupDetailsAction,
+  updateGroupSettingsAction
+} from "@/app/groups/[groupId]/actions";
+import type {
+  DeleteGroupActionState,
+  LeaveGroupActionState,
+  UpdateGroupDetailsActionState,
+  UpdateGroupSettingsActionState
+} from "@/app/groups/[groupId]/actions";
 import { inviteFriendToGroupAction } from "@/app/groups/[groupId]/invitations/actions";
 import type { InviteFriendActionState } from "@/app/groups/[groupId]/invitations/actions";
 import { GroupCoverPicker } from "@/components/groups/GroupCoverPicker";
 import { GroupFriendsSelector } from "@/components/groups/GroupFriendsSelector";
 import { Button } from "@/components/ui/Button";
 import type { GroupInvitationItem } from "@/lib/groupInvitations";
-import type { GroupJoinPolicy, GroupPlaceEditPolicy } from "@/lib/groups/policies";
+import type { GroupJoinPolicy, GroupPrivacy } from "@/lib/groups/policies";
 import type { GroupJoinRequestItem } from "@/lib/groups/types";
 
 type GroupOwnerControlsProps = {
@@ -21,7 +31,9 @@ type GroupOwnerControlsProps = {
   groupCoverImageUrl: string | null;
   joinCode: string;
   role: "owner" | "member";
-  placeEditPolicy: GroupPlaceEditPolicy;
+  canEditGroup: boolean;
+  canInviteMembers: boolean;
+  privacy: GroupPrivacy;
   joinPolicy: GroupJoinPolicy;
   pendingRequests: GroupJoinRequestItem[];
   invitableFriends: Array<{ id: string; username: string | null }>;
@@ -32,6 +44,8 @@ type GroupOwnerControlsProps = {
 const settingsInitialState: UpdateGroupSettingsActionState = { error: null, success: false };
 const detailsInitialState: UpdateGroupDetailsActionState = { error: null, success: false };
 const inviteInitialState: InviteFriendActionState = { error: null, success: false };
+const leaveInitialState: LeaveGroupActionState = { error: null, success: false };
+const deleteInitialState: DeleteGroupActionState = { error: null, success: false };
 
 export function GroupOwnerControls({
   groupId,
@@ -40,12 +54,15 @@ export function GroupOwnerControls({
   groupCoverImageUrl,
   joinCode,
   role,
-  placeEditPolicy,
+  canEditGroup,
+  canInviteMembers,
+  privacy,
   joinPolicy,
   invitableFriends,
   totalFriendsCount
 }: GroupOwnerControlsProps) {
   const router = useRouter();
+  const isOwner = role === "owner";
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const settingsRef = useRef<HTMLDivElement | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -57,6 +74,8 @@ export function GroupOwnerControls({
   const [settingsState, settingsAction, isSettingsPending] = useActionState(updateGroupSettingsAction, settingsInitialState);
   const [detailsState, detailsAction, isDetailsPending] = useActionState(updateGroupDetailsAction, detailsInitialState);
   const [inviteState, inviteAction, isInviting] = useActionState(inviteFriendToGroupAction, inviteInitialState);
+  const [leaveState, leaveAction, isLeaving] = useActionState(leaveGroupAction, leaveInitialState);
+  const [deleteState, deleteAction, isDeleting] = useActionState(deleteGroupAction, deleteInitialState);
 
   useEffect(() => {
     if (settingsState.success || detailsState.success || inviteState.success) {
@@ -67,13 +86,20 @@ export function GroupOwnerControls({
     }
   }, [detailsState.success, inviteState.success, router, settingsState.success]);
 
-  async function handleInvite(friendId: string) {
+  useEffect(() => {
+    if (!isInviting) {
+      setInvitingFriendId(null);
+    }
+  }, [isInviting]);
+
+  function handleInvite(friendId: string) {
     setInvitingFriendId(friendId);
-    const formData = new FormData();
-    formData.set("groupId", groupId);
-    formData.set("friendUserId", friendId);
-    await inviteAction(formData);
-    setInvitingFriendId(null);
+    startTransition(() => {
+      const formData = new FormData();
+      formData.set("groupId", groupId);
+      formData.set("friendUserId", friendId);
+      inviteAction(formData);
+    });
   }
 
   useEffect(() => {
@@ -123,10 +149,6 @@ export function GroupOwnerControls({
     reader.readAsDataURL(file);
   }
 
-  if (role !== "owner") {
-    return null;
-  }
-
   return (
     <>
       <button
@@ -173,7 +195,7 @@ export function GroupOwnerControls({
                   </button>
                   <GroupCoverPicker
                     helperText="Pulsa la foto para cambiar la portada"
-                    onFileChange={handleCoverChange}
+                    onFileChange={canEditGroup ? handleCoverChange : undefined}
                     placeholder={<span className="text-sm font-bold text-[#c6283a]">{groupName.trim().charAt(0).toUpperCase() || "M"}</span>}
                     previewUrl={coverPreviewUrl}
                   />
@@ -183,14 +205,15 @@ export function GroupOwnerControls({
                   <div className="mx-auto w-full max-w-[280px] space-y-3 rounded-2xl border border-zinc-100 bg-white p-3 shadow-[0_18px_45px_rgba(24,24,27,0.14)]" ref={settingsRef}>
                     <input name="settings_groupId" type="hidden" value={groupId} />
                     <label className="block space-y-2">
-                      <span className="text-xs font-bold text-zinc-700">Edicion de lugares</span>
+                      <span className="text-xs font-bold text-zinc-700">Privacidad del grupo</span>
                       <select
                         className="h-9 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
-                        defaultValue={placeEditPolicy}
-                        name="settings_placeEditPolicy"
+                        defaultValue={privacy}
+                        disabled={!isOwner}
+                        name="settings_privacy"
                       >
-                        <option value="members_can_edit">Todos pueden anadir lugares</option>
-                        <option value="owner_only">Solo el propietario</option>
+                        <option value="abierto">Abierto: miembros pueden editar e invitar</option>
+                        <option value="privado">Privado: solo admin puede editar e invitar</option>
                       </select>
                     </label>
                     <label className="block space-y-2">
@@ -198,6 +221,7 @@ export function GroupOwnerControls({
                       <select
                         className="h-9 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
                         defaultValue={joinPolicy}
+                        disabled={!isOwner}
                         name="settings_joinPolicy"
                       >
                         <option value="invite_only">Solo por invitacion</option>
@@ -211,24 +235,58 @@ export function GroupOwnerControls({
                     </div>
                     {settingsState.error ? <p className="text-xs text-rose-600">{settingsState.error}</p> : null}
                     {settingsState.success ? <p className="text-xs text-emerald-600">Configuracion actualizada.</p> : null}
-                    <div className="flex items-center justify-between">
-                      <Button
-                        disabled={isSettingsPending}
-                        formAction={async (formData) => {
-                          formData.set("groupId", String(formData.get("settings_groupId") || ""));
-                          formData.set("placeEditPolicy", String(formData.get("settings_placeEditPolicy") || ""));
-                          formData.set("joinPolicy", String(formData.get("settings_joinPolicy") || ""));
-                          await settingsAction(formData);
-                        }}
-                        size="sm"
-                        type="submit"
-                      >
-                        {isSettingsPending ? "Guardando..." : "Guardar ajustes"}
-                      </Button>
-                      <Button onClick={() => setIsSettingsOpen(false)} size="sm" type="button" variant="ghost">
+                    <div className="space-y-2">
+                      {isOwner ? (
+                        <Button
+                          className="w-full"
+                          disabled={isSettingsPending}
+                          formAction={async (formData) => {
+                            formData.set("groupId", String(formData.get("settings_groupId") || ""));
+                            formData.set("privacy", String(formData.get("settings_privacy") || ""));
+                            formData.set("joinPolicy", String(formData.get("settings_joinPolicy") || ""));
+                            await settingsAction(formData);
+                          }}
+                          size="sm"
+                          type="submit"
+                        >
+                          {isSettingsPending ? "Guardando..." : "Guardar ajustes"}
+                        </Button>
+                      ) : null}
+                      {isOwner ? (
+                        <Button
+                          className="w-full"
+                          disabled={isDeleting}
+                          formAction={async (formData) => {
+                            formData.set("groupId", groupId);
+                            await deleteAction(formData);
+                          }}
+                          size="sm"
+                          type="submit"
+                          variant="ghost"
+                        >
+                          {isDeleting ? "Eliminando..." : "Eliminar grupo"}
+                        </Button>
+                      ) : (
+                        <Button
+                          className="w-full"
+                          disabled={isLeaving}
+                          formAction={async (formData) => {
+                            formData.set("groupId", groupId);
+                            await leaveAction(formData);
+                          }}
+                          size="sm"
+                          type="submit"
+                          variant="ghost"
+                        >
+                          {isLeaving ? "Saliendo..." : "Salir del grupo"}
+                        </Button>
+                      )}
+                      <Button className="w-full" onClick={() => setIsSettingsOpen(false)} size="sm" type="button" variant="ghost">
                         Cerrar
                       </Button>
                     </div>
+                    {deleteState.error ? <p className="text-xs text-rose-600">{deleteState.error}</p> : null}
+                    {leaveState.error ? <p className="text-xs text-rose-600">{leaveState.error}</p> : null}
                   </div>
                 ) : null}
 
@@ -237,6 +295,7 @@ export function GroupOwnerControls({
                   <input
                     className="h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
                     defaultValue={groupName}
+                    disabled={!canEditGroup}
                     maxLength={80}
                     name="name"
                     required
@@ -248,36 +307,45 @@ export function GroupOwnerControls({
                   <textarea
                     className="min-h-[86px] w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
                     defaultValue={groupDescription || ""}
+                    disabled={!canEditGroup}
                     maxLength={300}
                     name="description"
                     placeholder="Cual es el proposito de este grupo?"
                   />
                 </label>
 
-                <GroupFriendsSelector
-                  emptyMessage={
-                    totalFriendsCount === 0
-                      ? "Anade amigos primero para poder invitarlos al grupo."
-                      : "Todos tus amigos ya estan invitados o ya son miembros de este grupo."
-                  }
-                  friends={invitableFriends}
-                  invitingFriendId={isInviting ? invitingFriendId : null}
-                  mode="invite"
-                  onInvite={handleInvite}
-                  title="Invitar amigos"
-                />
-                {inviteState.error ? <p className="text-xs text-rose-600">{inviteState.error}</p> : null}
-                {inviteState.success ? <p className="text-xs text-emerald-600">Invitacion enviada.</p> : null}
+                {canInviteMembers ? (
+                  <>
+                    <GroupFriendsSelector
+                      emptyMessage={
+                        totalFriendsCount === 0
+                          ? "Anade amigos primero para poder invitarlos al grupo."
+                          : "Todos tus amigos ya estan invitados o ya son miembros de este grupo."
+                      }
+                      friends={invitableFriends}
+                      invitingFriendId={isInviting ? invitingFriendId : null}
+                      mode="invite"
+                      onInvite={handleInvite}
+                      title="Invitar amigos"
+                    />
+                    {inviteState.error ? <p className="text-xs text-rose-600">{inviteState.error}</p> : null}
+                    {inviteState.success ? <p className="text-xs text-emerald-600">Invitacion enviada.</p> : null}
+                  </>
+                ) : (
+                  <p className="text-xs text-zinc-500">Solo puedes consultar la configuracion del grupo.</p>
+                )}
 
                 {detailsState.error ? <p className="text-sm text-rose-600">{detailsState.error}</p> : null}
                 {detailsState.success ? <p className="text-sm text-emerald-600">Grupo actualizado.</p> : null}
 
                 <div className="flex items-center justify-end gap-2">
+                  {canEditGroup ? (
+                    <Button disabled={isDetailsPending} size="sm" type="submit">
+                      {isDetailsPending ? "Guardando..." : "Guardar cambios"}
+                    </Button>
+                  ) : null}
                   <Button onClick={() => setIsEditOpen(false)} size="sm" type="button" variant="ghost">
                     Cancelar
-                  </Button>
-                  <Button disabled={isDetailsPending} size="sm" type="submit">
-                    {isDetailsPending ? "Guardando..." : "Guardar grupo"}
                   </Button>
                 </div>
               </fieldset>

@@ -5,6 +5,8 @@ const getCurrentUserMock = vi.fn();
 const canEditPlacesMock = vi.fn();
 const canReviewJoinRequestsMock = vi.fn();
 const isGroupOwnerMock = vi.fn();
+const canChangeGroupPrivacyMock = vi.fn();
+const canEditGroupDetailsMock = vi.fn();
 const createSupabaseServerClientMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
@@ -18,6 +20,8 @@ vi.mock("@/lib/auth/getCurrentUser", () => ({
 vi.mock("@/lib/groupPermissions", () => ({
   canEditPlaces: canEditPlacesMock,
   canReviewJoinRequests: canReviewJoinRequestsMock,
+  canChangeGroupPrivacy: canChangeGroupPrivacyMock,
+  canEditGroupDetails: canEditGroupDetailsMock,
   isGroupOwner: isGroupOwnerMock,
   isGroupMember: vi.fn()
 }));
@@ -48,7 +52,7 @@ describe("security checks", () => {
     expect(result).toEqual({ error: "No tienes permisos para editar lugares en este grupo." });
   });
 
-  it("miembro no puede editar si el grupo es owner_only", async () => {
+  it("miembro no puede editar si el grupo es privado", async () => {
     canEditPlacesMock.mockResolvedValue(false);
     const { updatePlaceStatus } = await import("@/lib/places");
 
@@ -81,17 +85,17 @@ describe("security checks", () => {
 
   it("no owner no puede cambiar settings", async () => {
     getCurrentUserMock.mockResolvedValue({ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
-    isGroupOwnerMock.mockResolvedValue(false);
+    canChangeGroupPrivacyMock.mockResolvedValue(false);
     const { updateGroupSettingsAction } = await import("@/app/groups/[groupId]/actions");
 
     const formData = new FormData();
     formData.set("groupId", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
-    formData.set("placeEditPolicy", "owner_only");
+    formData.set("privacy", "privado");
     formData.set("joinPolicy", "request_to_join");
 
     const result = await updateGroupSettingsAction({ error: null, success: false }, formData);
     expect(result).toEqual({
-      error: "Solo el propietario puede cambiar la configuracion del grupo.",
+      error: "Solo el administrador puede cambiar la privacidad del grupo.",
       success: false
     });
   });
@@ -111,4 +115,3 @@ describe("security checks", () => {
     });
   });
 });
-

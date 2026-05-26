@@ -31,9 +31,9 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   }
 
   const pendingRequests = group.role === "owner" ? await getPendingJoinRequestsForOwner(user.id, groupId) : [];
-  const invitableFriends = group.role === "owner" ? await getInvitableFriendsForGroup(user.id, groupId) : [];
-  const groupInvitations = group.role === "owner" ? await getGroupInvitationsForGroup(user.id, groupId) : [];
-  const totalFriendsCount = group.role === "owner" ? (await getFriends(user.id)).length : 0;
+  const invitableFriends = group.canInviteMembers ? await getInvitableFriendsForGroup(user.id, groupId) : [];
+  const groupInvitations = group.canInviteMembers ? await getGroupInvitationsForGroup(user.id, groupId) : [];
+  const totalFriendsCount = group.canInviteMembers ? (await getFriends(user.id)).length : 0;
 
   return (
     <AppShell backHref={ROUTES.groups} currentUser={user}>

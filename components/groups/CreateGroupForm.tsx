@@ -9,7 +9,7 @@ import { GroupFriendsSelector } from "@/components/groups/GroupFriendsSelector";
 import { createGroupAction } from "@/app/groups/actions";
 import type { CreateGroupActionState } from "@/app/groups/actions";
 import type { FriendItem } from "@/lib/friends";
-import type { GroupJoinPolicy, GroupPlaceEditPolicy } from "@/lib/groups/policies";
+import type { GroupJoinPolicy, GroupPrivacy } from "@/lib/groups/policies";
 import { ROUTES } from "@/utils/constants";
 
 const createInitialState: CreateGroupActionState = { error: null, success: false, groupId: null };
@@ -24,7 +24,7 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
-  const [placeEditPolicy, setPlaceEditPolicy] = useState<GroupPlaceEditPolicy>("members_can_edit");
+  const [privacy, setPrivacy] = useState<GroupPrivacy>("abierto");
   const [joinPolicy, setJoinPolicy] = useState<GroupJoinPolicy>("invite_only");
   const [createState, createFormAction, isCreatePending] = useActionState(createGroupAction, createInitialState);
 
@@ -103,15 +103,15 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
             {isSettingsOpen ? (
               <div className="absolute left-1/2 top-full z-20 mt-3 w-[270px] -translate-x-1/2 space-y-3 rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_45px_rgba(24,24,27,0.14)]">
                 <label className="block space-y-2">
-                  <span className="text-xs font-bold text-zinc-700">Edicion de lugares</span>
+                  <span className="text-xs font-bold text-zinc-700">Privacidad del grupo</span>
                   <select
                     className="h-10 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
-                    name="placeEditPolicy"
-                    onChange={(event) => setPlaceEditPolicy(event.target.value as GroupPlaceEditPolicy)}
-                    value={placeEditPolicy}
+                    name="privacy"
+                    onChange={(event) => setPrivacy(event.target.value as GroupPrivacy)}
+                    value={privacy}
                   >
-                    <option value="members_can_edit">Todos pueden anadir lugares</option>
-                    <option value="owner_only">Solo el propietario</option>
+                    <option value="abierto">Abierto: todos los miembros pueden editar e invitar</option>
+                    <option value="privado">Privado: solo el admin puede editar e invitar</option>
                   </select>
                 </label>
                 <label className="block space-y-2">
@@ -130,7 +130,7 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
               </div>
             ) : (
               <>
-                <input name="placeEditPolicy" type="hidden" value={placeEditPolicy} />
+                <input name="privacy" type="hidden" value={privacy} />
                 <input name="joinPolicy" type="hidden" value={joinPolicy} />
               </>
             )}

@@ -78,8 +78,10 @@ export function GroupDetailView({
               invitableFriends={invitableFriends}
               joinCode={group.joinCode}
               joinPolicy={group.joinPolicy}
+              canEditGroup={group.canEditGroup}
+              canInviteMembers={group.canInviteMembers}
               pendingRequests={pendingRequests}
-              placeEditPolicy={group.placeEditPolicy}
+              privacy={group.privacy}
               role={group.role}
               totalFriendsCount={totalFriendsCount}
             />
@@ -157,7 +159,7 @@ export function GroupDetailView({
                     Ver en Google Maps
                   </a>
                 ) : null}
-                {group.role === "owner" ? (
+                {group.canEditPlaces ? (
                   <form action={deleteFormAction}>
                     <input name="groupId" type="hidden" value={groupId} />
                     <input name="placeId" type="hidden" value={place.id} />

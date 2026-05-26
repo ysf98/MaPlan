@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { GroupJoinPolicy, GroupPlaceEditPolicy } from "@/types/supabase";
+import type { GroupPrivacy } from "@/types/supabase";
 
 export type GroupMembership = {
   role: "owner" | "member";
@@ -9,12 +9,8 @@ function isGroupRole(value: string): value is GroupMembership["role"] {
   return value === "owner" || value === "member";
 }
 
-function isGroupPlaceEditPolicy(value: string): value is GroupPlaceEditPolicy {
-  return value === "owner_only" || value === "members_can_edit";
-}
-
-function isGroupJoinPolicy(value: string): value is GroupJoinPolicy {
-  return value === "invite_only" || value === "open_by_code" || value === "request_to_join";
+function isGroupPrivacy(value: string): value is GroupPrivacy {
+  return value === "privado" || value === "abierto";
 }
 
 export async function isGroupMember(userId: string, groupId: string): Promise<boolean> {
@@ -63,13 +59,12 @@ export async function getGroupMembership(userId: string, groupId: string): Promi
 }
 
 async function getGroupPolicies(groupId: string): Promise<{
-  placeEditPolicy: GroupPlaceEditPolicy;
-  joinPolicy: GroupJoinPolicy;
+  privacy: GroupPrivacy;
 } | null> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("groups")
-    .select("place_edit_policy, join_policy")
+    .select("privacy")
     .eq("id", groupId)
     .maybeSingle();
 
@@ -77,13 +72,12 @@ async function getGroupPolicies(groupId: string): Promise<{
     return null;
   }
 
-  if (!isGroupPlaceEditPolicy(data.place_edit_policy) || !isGroupJoinPolicy(data.join_policy)) {
+  if (!isGroupPrivacy(data.privacy)) {
     return null;
   }
 
   return {
-    placeEditPolicy: data.place_edit_policy,
-    joinPolicy: data.join_policy
+    privacy: data.privacy
   };
 }
 
@@ -102,9 +96,39 @@ export async function canEditPlaces(userId: string, groupId: string): Promise<bo
     return false;
   }
 
-  return policies.placeEditPolicy === "members_can_edit";
+  if (policies.privacy === "abierto") {
+    return true;
+  }
+
+  return false;
+}
+
+export async function canEditGroupDetails(userId: string, groupId: string): Promise<boolean> {
+  const membership = await getGroupMembership(userId, groupId);
+  if (!membership) {
+    return false;
+  }
+
+  if (membership.role === "owner") {
+    return true;
+  }
+
+  const policies = await getGroupPolicies(groupId);
+  if (!policies) {
+    return false;
+  }
+
+  return policies.privacy === "abierto";
+}
+
+export async function canInviteToGroup(userId: string, groupId: string): Promise<boolean> {
+  return canEditGroupDetails(userId, groupId);
 }
 
 export async function canReviewJoinRequests(userId: string, groupId: string): Promise<boolean> {
+  return isGroupOwner(userId, groupId);
+}
+
+export async function canChangeGroupPrivacy(userId: string, groupId: string): Promise<boolean> {
   return isGroupOwner(userId, groupId);
 }

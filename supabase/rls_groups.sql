@@ -8,9 +8,9 @@ do $$
 begin
   if not exists (
     select 1 from information_schema.columns
-    where table_schema = 'public' and table_name = 'groups' and column_name = 'place_edit_policy'
+    where table_schema = 'public' and table_name = 'groups' and column_name = 'privacy'
   ) then
-    alter table public.groups add column place_edit_policy text not null default 'members_can_edit';
+    alter table public.groups add column privacy text not null default 'abierto';
   end if;
 
   if not exists (
@@ -28,16 +28,16 @@ do $$
 begin
   alter table public.groups drop constraint if exists groups_join_policy_check;
 
-  if not exists (select 1 from pg_constraint where conname = 'groups_place_edit_policy_check') then
-    alter table public.groups
-      add constraint groups_place_edit_policy_check
-      check (place_edit_policy in ('owner_only', 'members_can_edit'));
-  end if;
-
   if not exists (select 1 from pg_constraint where conname = 'groups_join_policy_check') then
     alter table public.groups
       add constraint groups_join_policy_check
       check (join_policy in ('invite_only', 'open_by_code', 'request_to_join'));
+  end if;
+
+  if not exists (select 1 from pg_constraint where conname = 'groups_privacy_check') then
+    alter table public.groups
+      add constraint groups_privacy_check
+      check (privacy in ('privado', 'abierto'));
   end if;
 end $$;
 
@@ -135,23 +135,6 @@ begin
   end loop;
 end $$;
 
--- Helper to avoid RLS recursion between groups <-> group_members policies.
-create or replace function public.is_group_creator(p_group_id uuid)
-returns boolean
-language sql
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1
-    from public.groups g
-    where g.id = p_group_id
-      and g.created_by = auth.uid()
-  );
-$$;
-
-grant execute on function public.is_group_creator(uuid) to authenticated;
-
 -- 7) GROUPS policies
 -- Important: the creator must be able to read the newly created group row
 -- right after INSERT (before group_members owner row exists), otherwise
@@ -197,6 +180,14 @@ using (
       and gm.user_id = auth.uid()
       and gm.role = 'owner'
   )
+  or (
+    groups.privacy = 'abierto'
+    and exists (
+      select 1 from public.group_members gm
+      where gm.group_id = groups.id
+        and gm.user_id = auth.uid()
+    )
+  )
 )
 with check (
   exists (
@@ -204,6 +195,14 @@ with check (
     where gm.group_id = groups.id
       and gm.user_id = auth.uid()
       and gm.role = 'owner'
+  )
+  or (
+    groups.privacy = 'abierto'
+    and exists (
+      select 1 from public.group_members gm
+      where gm.group_id = groups.id
+        and gm.user_id = auth.uid()
+    )
   )
 );
 
@@ -227,12 +226,10 @@ on public.group_members
 for select to authenticated
 using (user_id = auth.uid());
 
-create policy group_members_select_owner_group
-on public.group_members
-for select to authenticated
-using (
-  public.is_group_creator(group_members.group_id)
-);
+-- NOTE:
+-- Avoid recursive checks between groups -> group_members -> groups policies.
+-- Members can always read their own membership row; richer roster access is exposed
+-- through get_group_members_with_profiles() (security definer RPC).
 
 create policy group_members_insert_self_join_allowed
 on public.group_members
@@ -265,7 +262,18 @@ with check (
   exists (
     select 1 from public.groups g
     where g.id = group_members.group_id
-      and g.created_by = auth.uid()
+      and (
+        g.created_by = auth.uid()
+        or (
+          g.privacy = 'abierto'
+          and exists (
+            select 1
+            from public.group_members gm
+            where gm.group_id = g.id
+              and gm.user_id = auth.uid()
+          )
+        )
+      )
   )
 );
 
@@ -277,7 +285,18 @@ using (
   or exists (
     select 1 from public.groups g
     where g.id = group_members.group_id
-      and g.created_by = auth.uid()
+      and (
+        g.created_by = auth.uid()
+        or (
+          g.privacy = 'abierto'
+          and exists (
+            select 1
+            from public.group_members gm
+            where gm.group_id = g.id
+              and gm.user_id = auth.uid()
+          )
+        )
+      )
   )
 );
 

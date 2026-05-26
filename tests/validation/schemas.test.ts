@@ -21,7 +21,7 @@ describe("createGroupSchema", () => {
     const result = createGroupSchema.safeParse({
       name: "Madrid Crew",
       description: "Planes de finde",
-      placeEditPolicy: "owner_only",
+      privacy: "privado",
       joinPolicy: "request_to_join"
     });
 
@@ -37,21 +37,21 @@ describe("createGroupSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("accepts invite_only join policy", () => {
+  it("accepts privacy values", () => {
     const result = createGroupSchema.safeParse({
       name: "Grupo privado",
-      joinPolicy: "invite_only"
+      privacy: "abierto"
     });
 
     expect(result.success).toBe(true);
   });
 
-  it("defaults join policy to invite_only", () => {
+  it("defaults privacy to abierto", () => {
     const result = createGroupSchema.parse({
       name: "Grupo default"
     });
 
-    expect(result.joinPolicy).toBe("invite_only");
+    expect(result.privacy).toBe("abierto");
   });
 });
 

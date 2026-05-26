@@ -7,28 +7,28 @@ import type {
   GroupMemberPreview,
   GroupMembersPreviewResult
 } from "@/lib/groups/types";
-import type { GroupJoinPolicy, GroupPlaceEditPolicy } from "@/types/supabase";
+import type { GroupJoinPolicy, GroupPrivacy } from "@/types/supabase";
 
 function isGroupRole(value: string): value is "owner" | "member" {
   return value === "owner" || value === "member";
-}
-
-function isGroupPlaceEditPolicy(value: string): value is GroupPlaceEditPolicy {
-  return value === "owner_only" || value === "members_can_edit";
 }
 
 function isGroupJoinPolicy(value: string): value is GroupJoinPolicy {
   return value === "invite_only" || value === "open_by_code" || value === "request_to_join";
 }
 
+function isGroupPrivacy(value: string): value is GroupPrivacy {
+  return value === "privado" || value === "abierto";
+}
+
 function isGroupJoinRequestStatus(value: string): value is GroupJoinRequestItem["status"] {
   return value === "pending" || value === "approved" || value === "rejected";
 }
 
-function hasTypedPolicies<T extends { place_edit_policy: string; join_policy: string }>(
+function hasTypedPolicies<T extends { privacy: string; join_policy: string }>(
   group: T
-): group is T & { place_edit_policy: GroupPlaceEditPolicy; join_policy: GroupJoinPolicy } {
-  return isGroupPlaceEditPolicy(group.place_edit_policy) && isGroupJoinPolicy(group.join_policy);
+): group is T & { privacy: GroupPrivacy; join_policy: GroupJoinPolicy } {
+  return isGroupPrivacy(group.privacy) && isGroupJoinPolicy(group.join_policy);
 }
 
 export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
@@ -37,7 +37,7 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
     supabase.from("group_members").select("group_id, role").eq("user_id", userId),
     supabase
       .from("groups")
-      .select("id, name, description, cover_image_url, created_at, place_edit_policy, join_policy")
+      .select("id, name, description, cover_image_url, created_at, privacy, join_policy")
       .eq("created_by", userId)
       .order("created_at", { ascending: false })
   ]);
@@ -53,7 +53,7 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
     memberGroupIds.length > 0
       ? await supabase
           .from("groups")
-          .select("id, name, description, cover_image_url, created_at, place_edit_policy, join_policy")
+          .select("id, name, description, cover_image_url, created_at, privacy, join_policy")
           .in("id", memberGroupIds)
       : { data: [], error: null };
 
@@ -65,7 +65,7 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
       description: string | null;
       cover_image_url: string | null;
       created_at: string;
-      place_edit_policy: GroupListItem["placeEditPolicy"];
+      privacy: GroupListItem["privacy"];
       join_policy: GroupListItem["joinPolicy"];
     }
   >();
@@ -81,7 +81,7 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
       coverImageUrl: group.cover_image_url ?? null,
       createdAt: group.created_at,
       role: roleByGroupId.get(group.id) ?? "owner",
-      placeEditPolicy: group.place_edit_policy,
+      privacy: group.privacy,
       joinPolicy: group.join_policy
     }))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -103,7 +103,7 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
 
   const groupResult = await supabase
     .from("groups")
-    .select("id, name, description, cover_image_url, join_code, created_at, place_edit_policy, join_policy")
+    .select("id, name, description, cover_image_url, join_code, created_at, privacy, join_policy")
     .eq("id", groupId)
     .maybeSingle();
   const { data: group, error: groupError } = groupResult;
@@ -111,9 +111,15 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
   if (groupError || !group) {
     return null;
   }
-  if (!isGroupRole(membership.role) || !isGroupPlaceEditPolicy(group.place_edit_policy) || !isGroupJoinPolicy(group.join_policy)) {
+  if (!isGroupRole(membership.role) || !isGroupPrivacy(group.privacy) || !isGroupJoinPolicy(group.join_policy)) {
     return null;
   }
+
+  const canEditByRole = membership.role === "owner";
+  const canEditByPrivacy = group.privacy === "abierto";
+  const canEditPlaces = canEditByRole || canEditByPrivacy;
+  const canEditGroup = canEditByRole || canEditByPrivacy;
+  const canInviteMembers = canEditByRole || canEditByPrivacy;
 
   return {
     id: group.id,
@@ -123,9 +129,11 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
     joinCode: group.join_code,
     createdAt: group.created_at,
     role: membership.role,
-    placeEditPolicy: group.place_edit_policy,
+    privacy: group.privacy,
     joinPolicy: group.join_policy,
-    canEditPlaces: membership.role === "owner" || group.place_edit_policy === "members_can_edit"
+    canEditPlaces,
+    canEditGroup,
+    canInviteMembers
   };
 }
 

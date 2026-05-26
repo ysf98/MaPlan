@@ -1,4 +1,4 @@
-import type { GroupJoinPolicy, GroupPlaceEditPolicy } from "@/lib/groups/policies";
+import type { GroupJoinPolicy, GroupPrivacy } from "@/lib/groups/policies";
 
 export type GroupListItem = {
   id: string;
@@ -7,7 +7,7 @@ export type GroupListItem = {
   coverImageUrl: string | null;
   createdAt: string;
   role: "owner" | "member";
-  placeEditPolicy: GroupPlaceEditPolicy;
+  privacy: GroupPrivacy;
   joinPolicy: GroupJoinPolicy;
 };
 
@@ -19,9 +19,11 @@ export type GroupDetail = {
   joinCode: string;
   createdAt: string;
   role: "owner" | "member";
-  placeEditPolicy: GroupPlaceEditPolicy;
+  privacy: GroupPrivacy;
   joinPolicy: GroupJoinPolicy;
   canEditPlaces: boolean;
+  canEditGroup: boolean;
+  canInviteMembers: boolean;
 };
 
 export type GroupJoinRequestItem = {

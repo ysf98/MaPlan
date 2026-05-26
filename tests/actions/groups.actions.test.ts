@@ -150,18 +150,20 @@ describe("group server actions", () => {
     const formData = new FormData();
     formData.set("name", "My Group");
     formData.set("description", "Desc");
-    formData.set("placeEditPolicy", "owner_only");
+    formData.set("privacy", "privado");
     formData.set("joinPolicy", "request_to_join");
 
     const result = await createGroupAction({ error: null, success: false, groupId: null }, formData);
 
     expect(result).toEqual({ error: null, success: true, groupId: "33333333-3333-4333-8333-333333333333" });
+    const firstInsertPayload = client.groupInsertMock.mock.calls[0]?.[0] as { privacy?: string };
+    expect(firstInsertPayload.privacy).toBe("privado");
     expect(revalidatePathMock).toHaveBeenCalledWith("/groups");
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
     expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
   });
 
-  it("createGroupAction defaults join policy to invite_only", async () => {
+  it("createGroupAction defaults privacy to abierto", async () => {
     const { createGroupAction } = await import("@/app/groups/actions");
     getCurrentUserMock.mockResolvedValue({ id: "user-1" });
     const client = createGroupsActionClient({ createdGroupId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
@@ -170,13 +172,12 @@ describe("group server actions", () => {
     const formData = new FormData();
     formData.set("name", "My Group");
     formData.set("description", "Desc");
-    formData.set("placeEditPolicy", "owner_only");
 
     const result = await createGroupAction({ error: null, success: false, groupId: null }, formData);
 
     expect(result).toEqual({ error: null, success: true, groupId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
-    const firstInsertPayload = client.groupInsertMock.mock.calls[0]?.[0] as { join_policy?: string };
-    expect(firstInsertPayload.join_policy).toBe("invite_only");
+    const firstInsertPayload = client.groupInsertMock.mock.calls[0]?.[0] as { privacy?: string };
+    expect(firstInsertPayload.privacy).toBe("abierto");
   });
 
   it("createGroupAction deletes created group if owner membership insert fails", async () => {
@@ -191,7 +192,7 @@ describe("group server actions", () => {
     const formData = new FormData();
     formData.set("name", "My Group");
     formData.set("description", "Desc");
-    formData.set("placeEditPolicy", "owner_only");
+    formData.set("privacy", "privado");
     formData.set("joinPolicy", "request_to_join");
 
     const result = await createGroupAction({ error: null, success: false, groupId: null }, formData);
