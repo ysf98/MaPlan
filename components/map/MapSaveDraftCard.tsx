@@ -36,7 +36,7 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
   }, [draft.address, draft.city, draft.latitude, draft.longitude, draft.name]);
 
   return (
-    <Card className="pointer-events-auto rounded-3xl border-zinc-100 bg-white/95 p-3 shadow-xl backdrop-blur">
+    <Card className="pointer-events-auto rounded-3xl border-zinc-100 bg-white/95 p-2 shadow-xl backdrop-blur">
       <form action={formAction} className="space-y-2">
         <input name={scopeIdName} type="hidden" value={scopeIdValue} />
         <input name="latitude" type="hidden" value={String(draft.latitude)} />
@@ -54,8 +54,54 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
 
         {mode === "confirm" ? (
           <>
-            <div className="flex items-start gap-3">
-              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+            <div className="-mt-2 flex items-center justify-between">
+              <button
+                aria-label="Cerrar"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition hover:bg-zinc-50"
+                onClick={onCancel}
+                type="button"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  aria-label={isFavorite ? "Quitar favorito" : "Marcar favorito"}
+                  className={`flex h-9 w-9 items-center justify-center rounded-full border transition ${
+                    isFavorite ? "border-rose-200 bg-rose-50 text-[#c6283a]" : "border-zinc-200 bg-white text-zinc-500"
+                  }`}
+                  onClick={() => setIsFavorite((value) => !value)}
+                  type="button"
+                >
+                  <svg className="h-5 w-5" fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="m12 21-1.5-1.35C5.4 15.08 2 12 2 8.24A4.24 4.24 0 0 1 6.24 4C8 4 9.7 4.81 10.8 6.09L12 7.5l1.2-1.41A5 5 0 0 1 17.76 4 4.24 4.24 0 0 1 22 8.24c0 3.76-3.4 6.84-8.5 11.41Z" />
+                  </svg>
+                </button>
+                <button
+                  aria-label="Guardar lugar"
+                  className="group flex h-9 w-9 items-center justify-center rounded-full bg-[#c6283a] text-white shadow transition hover:scale-105 hover:bg-[#b32033] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={isPending}
+                  type="submit"
+                >
+                  {isPending ? (
+                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                      <path className="opacity-90" d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeLinecap="round" strokeWidth="3" />
+                    </svg>
+                  ) : (
+                    <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.8" viewBox="0 0 24 24">
+                      <path d="M12 5v14" />
+                      <path d="M5 12h14" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-2 flex items-start gap-3">
+              <div className="h-[74px] w-[74px] shrink-0 overflow-hidden rounded-xl bg-zinc-100">
                 {draft.imageUrl ? (
                   <img alt={name} className="h-full w-full object-cover" src={draft.imageUrl} />
                 ) : (
@@ -69,63 +115,29 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
                   {city ? ` · ${city}` : ""}
                 </p>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  aria-label={isFavorite ? "Quitar favorito" : "Marcar favorito"}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full border transition ${
-                    isFavorite ? "border-rose-200 bg-rose-50 text-[#c6283a]" : "border-zinc-200 bg-white text-zinc-500"
-                  }`}
-                  onClick={() => setIsFavorite((value) => !value)}
-                  type="button"
-                >
-                  <svg className="h-5 w-5" fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="m12 21-1.5-1.35C5.4 15.08 2 12 2 8.24A4.24 4.24 0 0 1 6.24 4C8 4 9.7 4.81 10.8 6.09L12 7.5l1.2-1.41A5 5 0 0 1 17.76 4 4.24 4.24 0 0 1 22 8.24c0 3.76-3.4 6.84-8.5 11.41Z" />
-                  </svg>
-                </button>
-                <button
-                  aria-label="Guardar lugar"
-                  className="group flex h-12 w-12 items-center justify-center rounded-full bg-[#c6283a] text-white shadow transition hover:scale-105 hover:bg-[#b32033] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
-                  disabled={isPending}
-                  type="submit"
-                >
-                  {isPending ? (
-                    <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                      <path className="opacity-90" d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeLinecap="round" strokeWidth="3" />
-                    </svg>
-                  ) : (
-                    <span className="text-3xl font-medium leading-none">+</span>
-                  )}
-                </button>
-              </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-between border-t border-zinc-100 pt-2">
-              <button className="flex items-center gap-1 text-xs font-medium text-zinc-600" type="button">
-                <svg className="h-4 w-4 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path d="M8 17 4 21V3h16v14H8z" />
+            <div className="mt-3 flex items-center justify-between pl-[18px] pr-1 pt-1">
+              <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600" type="button">
+                <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
                 </svg>
                 Ir
               </button>
-              <button className="flex items-center gap-1 text-xs font-medium text-zinc-600" type="button">
-                <svg className="h-4 w-4 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600" type="button">
+                <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
                 </svg>
                 Llamar
               </button>
-              <button className="flex items-center gap-1 text-xs font-medium text-zinc-600" onClick={() => setMode("editName")} type="button">
-                <svg className="h-4 w-4 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600" onClick={() => setMode("editName")} type="button">
+                <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M12 20h9" />
                   <path d="m16.5 3.5 4 4L7 21H3v-4z" />
                 </svg>
                 Editar
               </button>
-            </div>
-
-            <div className="flex justify-end pt-1">
-              <Button onClick={onCancel} size="sm" type="button" variant="secondary">
-                Cancelar
-              </Button>
             </div>
           </>
         ) : (
