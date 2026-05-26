@@ -15,6 +15,7 @@ type GooglePlaceDetailsResult = {
   }>;
   geometry?: { location?: { lat?: number; lng?: number } };
   business_status?: string;
+  photos?: Array<{ photo_reference?: string }>;
 };
 
 type GooglePlaceDetailsResponse = {
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
   const params = new URLSearchParams({
     place_id: externalPlaceId,
     language: "es",
-    fields: "place_id,name,formatted_address,address_components,geometry,business_status",
+    fields: "place_id,name,formatted_address,address_components,geometry,business_status,photos",
     key: apiKey
   });
   const response = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`, {
@@ -86,7 +87,10 @@ export async function POST(request: Request) {
     latitude,
     longitude,
     googleMapsUrl: buildGoogleMapsUrl(placeId),
-    businessStatus: (result.business_status || "").trim() || null
+    businessStatus: (result.business_status || "").trim() || null,
+    imageUrl: result.photos?.[0]?.photo_reference
+      ? `/api/places/photo?photoReference=${encodeURIComponent(result.photos[0].photo_reference)}&maxWidth=800`
+      : null
   };
 
   return NextResponse.json({ place });

@@ -205,7 +205,8 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
       provider: resolved.provider,
       externalPlaceId: resolved.externalPlaceId,
       googleMapsUrl: resolved.googleMapsUrl,
-      businessStatus: resolved.businessStatus
+      businessStatus: resolved.businessStatus,
+      imageUrl: resolved.imageUrl
     };
 
     const map = mapRef.current;
@@ -244,7 +245,8 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
       provider: "manual",
       externalPlaceId: null,
       googleMapsUrl: null,
-      businessStatus: null
+      businessStatus: null,
+      imageUrl: null
     });
   }, []);
 

@@ -55,6 +55,11 @@ export function PlaceCard({ groupId, place, canEdit, canDelete }: PlaceCardProps
 
   return (
     <Card className="rounded-3xl">
+      {place.imageUrl ? (
+        <div className="mb-3 h-44 w-full overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50">
+          <img alt={place.name} className="h-full w-full object-cover" src={place.imageUrl} />
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         <CategoryBadge label={place.category} tone="plan" />
         <CategoryBadge label={statusLabel(place.status)} tone="visit" />

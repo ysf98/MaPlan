@@ -310,6 +310,7 @@ export type Database = {
           external_place_id: string | null
           google_maps_url: string | null
           id: string
+          image_url: string | null
           latitude: number
           longitude: number
           name: string
@@ -328,6 +329,7 @@ export type Database = {
           external_place_id?: string | null
           google_maps_url?: string | null
           id?: string
+          image_url?: string | null
           latitude: number
           longitude: number
           name: string
@@ -346,6 +348,7 @@ export type Database = {
           external_place_id?: string | null
           google_maps_url?: string | null
           id?: string
+          image_url?: string | null
           latitude?: number
           longitude?: number
           name?: string
@@ -369,6 +372,7 @@ export type Database = {
           google_maps_url: string | null
           group_id: string
           id: string
+          image_url: string | null
           latitude: number | null
           longitude: number | null
           name: string
@@ -390,6 +394,7 @@ export type Database = {
           google_maps_url?: string | null
           group_id: string
           id?: string
+          image_url?: string | null
           latitude?: number | null
           longitude?: number | null
           name: string
@@ -411,6 +416,7 @@ export type Database = {
           google_maps_url?: string | null
           group_id?: string
           id?: string
+          image_url?: string | null
           latitude?: number | null
           longitude?: number | null
           name?: string

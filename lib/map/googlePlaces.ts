@@ -11,6 +11,7 @@ export type GooglePlaceSuggestion = {
   longitude: number;
   googleMapsUrl: string | null;
   businessStatus: string | null;
+  imageUrl: string | null;
   primaryType: string | null;
 };
 
@@ -24,6 +25,7 @@ export type GooglePlaceFeature = {
   longitude: number;
   googleMapsUrl: string | null;
   businessStatus: string | null;
+  imageUrl: string | null;
 };
 
 export function normalizeSearchQuery(query: string): string {

@@ -19,11 +19,14 @@ type CreateGroupFormProps = {
 };
 
 export function CreateGroupForm({ friends }: CreateGroupFormProps) {
+  const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
   const router = useRouter();
   const [isNavigatingToGroup, setIsNavigatingToGroup] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
+  const [coverImageValue, setCoverImageValue] = useState<string>("");
+  const [coverError, setCoverError] = useState<string | null>(null);
   const [privacy, setPrivacy] = useState<GroupPrivacy>("abierto");
   const [joinPolicy, setJoinPolicy] = useState<GroupJoinPolicy>("invite_only");
   const [createState, createFormAction, isCreatePending] = useActionState(createGroupAction, createInitialState);
@@ -36,22 +39,21 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
     }
   }, [createState.groupId, createState.success, router]);
 
-  useEffect(() => {
-    return () => {
-      if (coverPreviewUrl) {
-        URL.revokeObjectURL(coverPreviewUrl);
-      }
-    };
-  }, [coverPreviewUrl]);
-
   function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const nextUrl = URL.createObjectURL(file);
-    setCoverPreviewUrl((previousUrl) => {
-      if (previousUrl) URL.revokeObjectURL(previousUrl);
-      return nextUrl;
-    });
+    if (file.size > MAX_IMAGE_BYTES) {
+      setCoverError("La imagen es demasiado pesada. Maximo 2MB.");
+      return;
+    }
+    setCoverError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      setCoverImageValue(result);
+      setCoverPreviewUrl(result || null);
+    };
+    reader.readAsDataURL(file);
   }
 
   function toggleFriend(friendId: string) {
@@ -70,6 +72,7 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
         {selectedFriendIds.map((friendId) => (
           <input key={friendId} name="selectedFriendIds" type="hidden" value={friendId} />
         ))}
+        <input name="coverImageUrl" type="hidden" value={coverImageValue} />
 
         <div className="relative -mx-5 -mt-5 bg-[#fff8f8] px-5 pb-5 pt-5">
           <button
@@ -99,6 +102,7 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
               previewUrl={coverPreviewUrl}
             />
           </div>
+          {coverError ? <p className="mt-2 text-center text-xs text-rose-600">{coverError}</p> : null}
 
             {isSettingsOpen ? (
               <div className="absolute left-1/2 top-full z-20 mt-3 w-[270px] -translate-x-1/2 space-y-3 rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_45px_rgba(24,24,27,0.14)]">

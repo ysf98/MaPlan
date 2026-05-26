@@ -7,6 +7,7 @@ type BasePlaceItem = {
   name: string;
   address: string | null;
   city?: string | null;
+  imageUrl?: string | null;
   googleMapsUrl?: string | null;
 };
 
@@ -42,6 +43,11 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
               {...{ [cardDataAttribute]: "" }}
             >
               <button className="w-full text-left" onClick={() => onTogglePlace(place.id)} type="button">
+                {place.imageUrl ? (
+                  <div className="mb-2 h-24 w-full overflow-hidden rounded-lg border border-zinc-100 bg-zinc-50">
+                    <img alt={place.name} className="h-full w-full object-cover" src={place.imageUrl} />
+                  </div>
+                ) : null}
                 <p className="font-medium">{place.name}</p>
                 <p className="text-xs text-zinc-500">
                   {place.address}

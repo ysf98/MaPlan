@@ -53,6 +53,7 @@ export async function createGroupAction(
   const parsedInput = createGroupSchema.safeParse({
     name: String(formData.get("name") || ""),
     description: String(formData.get("description") || ""),
+    coverImageUrl: String(formData.get("coverImageUrl") || ""),
     privacy: String(formData.get("privacy") || ""),
     joinPolicy: String(formData.get("joinPolicy") || "")
   });
@@ -61,7 +62,7 @@ export async function createGroupAction(
     return { error: getValidationErrorMessage(parsedInput.error), success: false, groupId: null };
   }
 
-  const { name, description, privacy, joinPolicy } = parsedInput.data;
+  const { name, description, coverImageUrl, privacy, joinPolicy } = parsedInput.data;
   const selectedFriendIds = Array.from(
     new Set(
       formData
@@ -80,6 +81,7 @@ export async function createGroupAction(
     const groupInsertPayload = {
       name,
       description,
+      cover_image_url: coverImageUrl,
       created_by: user.id,
       join_code: joinCode,
       privacy,

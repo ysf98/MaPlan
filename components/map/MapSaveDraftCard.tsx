@@ -44,6 +44,7 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
         <input name="externalPlaceId" type="hidden" value={draft.externalPlaceId || ""} />
         <input name="googleMapsUrl" type="hidden" value={draft.googleMapsUrl || ""} />
         <input name="businessStatus" type="hidden" value={draft.businessStatus || ""} />
+        <input name="imageUrl" type="hidden" value={draft.imageUrl || ""} />
         <input name="category" type="hidden" value={draft.category || "Otros"} />
         <input name="address" type="hidden" value={address} />
         <input name="city" type="hidden" value={city} />
@@ -51,6 +52,11 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
 
         {mode === "confirm" ? (
           <>
+            {draft.imageUrl ? (
+              <div className="mb-2 h-32 w-full overflow-hidden rounded-xl border border-zinc-100 bg-zinc-50">
+                <img alt={name} className="h-full w-full object-cover" src={draft.imageUrl} />
+              </div>
+            ) : null}
             <p className="text-sm font-semibold text-zinc-950">Deseas guardar ese lugar?</p>
             <p className="text-xs text-zinc-500">{name}</p>
             <div className="mt-2 flex gap-2">
@@ -67,6 +73,11 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
           </>
         ) : (
           <>
+            {draft.imageUrl ? (
+              <div className="mb-2 h-28 w-full overflow-hidden rounded-xl border border-zinc-100 bg-zinc-50">
+                <img alt={name} className="h-full w-full object-cover" src={draft.imageUrl} />
+              </div>
+            ) : null}
             <p className="text-sm font-semibold text-zinc-950">Editar nombre antes de guardar</p>
             <label className="mt-2 block space-y-1">
               <span className="text-xs font-medium text-zinc-700">Nombre</span>

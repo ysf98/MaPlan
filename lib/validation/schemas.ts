@@ -23,6 +23,16 @@ export const createGroupSchema = z.object({
     .max(300, "La descripcion no puede superar 300 caracteres.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
+  coverImageUrl: z
+    .string()
+    .trim()
+    .max(3_000_000, "La imagen es demasiado pesada. Maximo 2MB.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine(
+      (value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(value),
+      "URL de imagen invalida."
+    ),
   privacy: z
     .string()
     .optional()
@@ -113,6 +123,13 @@ export const createPlaceSchema = z.object({
     .max(80, "El estado del negocio no es valido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
+  imageUrl: z
+    .string()
+    .trim()
+    .max(1500, "La URL de imagen es demasiado larga.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen invalida."),
   latitude: z
     .preprocess(
       (value) => (value === "" || value === null || value === undefined ? undefined : value),
@@ -185,6 +202,13 @@ export const createPersonalPlaceSchema = z.object({
     .max(80, "El estado del negocio no es valido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
+  imageUrl: z
+    .string()
+    .trim()
+    .max(1500, "La URL de imagen es demasiado larga.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen invalida."),
   latitude: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
   longitude: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
 });
@@ -255,7 +279,7 @@ export const updateGroupDetailsSchema = z.object({
   coverImageUrl: z
     .string()
     .trim()
-    .max(2_000_000, "La imagen es demasiado larga.")
+    .max(3_000_000, "La imagen es demasiado pesada. Maximo 2MB.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine(
@@ -327,7 +351,7 @@ export const updateProfileSchema = z.object({
   avatarUrl: z
     .string()
     .trim()
-    .max(2_000_000, "La imagen es demasiado larga.")
+    .max(3_000_000, "La imagen es demasiado pesada. Maximo 2MB.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine(

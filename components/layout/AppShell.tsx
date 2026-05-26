@@ -54,7 +54,7 @@ export async function AppShell({ backHref, children, currentUser }: AppShellProp
       ) : (
         <Navbar />
       )}
-      <main className="mx-auto w-full max-w-6xl px-4 pb-32 pt-6">
+      <main className="mx-auto w-full max-w-3xl px-5 pb-32 pt-6">
         <div className="w-full">{children}</div>
       </main>
       <BottomDockNav isAuthenticated={Boolean(user)} />

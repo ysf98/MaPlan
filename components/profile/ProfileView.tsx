@@ -38,9 +38,11 @@ function StatCard({ label, value, valueClassName }: { label: string; value: numb
 }
 
 export function ProfileView({ initialAvatarUrl, initialUsername, handle, quickLists, stats }: ProfileViewProps) {
+  const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [avatarValue, setAvatarValue] = useState(initialAvatarUrl || "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialAvatarUrl);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const [state, formAction, isPending] = useActionState(updateProfileAction, initialState);
 
   useEffect(() => {
@@ -60,6 +62,11 @@ export function ProfileView({ initialAvatarUrl, initialUsername, handle, quickLi
 
   function onAvatarChange(file?: File) {
     if (!file) return;
+    if (file.size > MAX_IMAGE_BYTES) {
+      setAvatarError("La imagen es demasiado pesada. Maximo 2MB.");
+      return;
+    }
+    setAvatarError(null);
     const reader = new FileReader();
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : "";
@@ -212,6 +219,7 @@ export function ProfileView({ initialAvatarUrl, initialUsername, handle, quickLi
             </label>
 
             {state.error ? <p className="text-sm text-rose-600">{state.error}</p> : null}
+            {avatarError ? <p className="text-sm text-rose-600">{avatarError}</p> : null}
             {state.success ? <p className="text-sm text-emerald-600">Perfil actualizado.</p> : null}
 
             <div className="flex justify-end gap-2">

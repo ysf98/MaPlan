@@ -61,6 +61,7 @@ export function GroupOwnerControls({
   invitableFriends,
   totalFriendsCount
 }: GroupOwnerControlsProps) {
+  const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
   const router = useRouter();
   const isOwner = role === "owner";
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -70,6 +71,7 @@ export function GroupOwnerControls({
   const [invitingFriendId, setInvitingFriendId] = useState<string | null>(null);
   const [coverValue, setCoverValue] = useState(groupCoverImageUrl || "");
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(groupCoverImageUrl);
+  const [coverError, setCoverError] = useState<string | null>(null);
 
   const [settingsState, settingsAction, isSettingsPending] = useActionState(updateGroupSettingsAction, settingsInitialState);
   const [detailsState, detailsAction, isDetailsPending] = useActionState(updateGroupDetailsAction, detailsInitialState);
@@ -142,6 +144,11 @@ export function GroupOwnerControls({
     }
     const file = event.target.files?.[0];
     if (!file) return;
+    if (file.size > MAX_IMAGE_BYTES) {
+      setCoverError("La imagen es demasiado pesada. Maximo 2MB.");
+      return;
+    }
+    setCoverError(null);
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -339,6 +346,7 @@ export function GroupOwnerControls({
                 )}
 
                 {detailsState.error ? <p className="text-sm text-rose-600">{detailsState.error}</p> : null}
+                {coverError ? <p className="text-sm text-rose-600">{coverError}</p> : null}
                 {detailsState.success ? <p className="text-sm text-emerald-600">Grupo actualizado.</p> : null}
 
                 <div className="flex items-center justify-end gap-2">
