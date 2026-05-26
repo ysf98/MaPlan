@@ -1,14 +1,17 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useState } from "react";
 import { deletePersonalPlaceAction, type DeletePersonalPlaceActionState } from "@/app/map/actions";
 import { PersonalMap } from "@/components/map/PersonalMap";
+import { PersonalMapTabs } from "@/components/map/PersonalMapTabs";
 import { SimplePlacesList } from "@/components/map/SimplePlacesList";
 import { EmptyState } from "@/components/ui/EmptyState";
+import type { PersonalMapTab } from "@/lib/map/tabs";
 import type { PersonalPlace } from "@/lib/personalPlaces";
 
 type MapPageClientProps = {
   personalPlaces: PersonalPlace[];
+  activeTab: PersonalMapTab;
 };
 
 const deleteInitialState: DeletePersonalPlaceActionState = {
@@ -16,7 +19,7 @@ const deleteInitialState: DeletePersonalPlaceActionState = {
   success: false
 };
 
-export function MapPageClient({ personalPlaces }: MapPageClientProps) {
+export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps) {
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [deleteState, deleteFormAction, isDeleting] = useActionState(deletePersonalPlaceAction, deleteInitialState);
 
@@ -38,51 +41,58 @@ export function MapPageClient({ personalPlaces }: MapPageClientProps) {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-zinc-100 bg-white p-3">
-        <PersonalMap onSelectPlace={setSelectedPlaceId} places={personalPlaces} selectedPlaceId={selectedPlaceId} />
+      <div>
+        <PersonalMapTabs activeTab={activeTab} />
       </div>
 
-      {personalPlaces.length > 0 ? (
-        <div>
-          <SimplePlacesList
-            cardDataAttribute="data-place-card"
-            onTogglePlace={(placeId) => setSelectedPlaceId((current) => (current === placeId ? null : placeId))}
-            places={personalPlaces}
-            renderActions={(place) => (
-              <>
-                {place.googleMapsUrl ? (
-                  <a
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-100 px-3 text-xs font-medium text-zinc-700 hover:bg-rose-50 hover:text-[#c6283a]"
-                    href={place.googleMapsUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    Ver en Google Maps
-                  </a>
-                ) : null}
-                <form action={deleteFormAction}>
-                  <input name="placeId" type="hidden" value={place.id} />
-                  <button
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
-                    disabled={isDeleting}
-                    type="submit"
-                  >
-                    {isDeleting ? "Eliminando..." : "Eliminar"}
-                  </button>
-                </form>
-              </>
-            )}
-            selectedPlaceId={selectedPlaceId}
-            title="Lugares"
-          />
-          {deleteState.error ? <p className="mt-3 text-sm text-rose-600">{deleteState.error}</p> : null}
+      {activeTab === "mapa" ? (
+        <div className="rounded-3xl border border-zinc-100 bg-white p-3">
+          <PersonalMap onSelectPlace={setSelectedPlaceId} places={personalPlaces} selectedPlaceId={selectedPlaceId} />
         </div>
-      ) : (
-        <EmptyState
-          description="Busca un sitio en el mapa o toca cualquier punto para crear tu primer lugar."
-          title="Todavia no tienes lugares personales"
-        />
-      )}
+      ) : null}
+
+      {activeTab === "lugares" ? (
+        personalPlaces.length > 0 ? (
+          <div>
+            <SimplePlacesList
+              cardDataAttribute="data-place-card"
+              onTogglePlace={(placeId) => setSelectedPlaceId((current) => (current === placeId ? null : placeId))}
+              places={personalPlaces}
+              renderActions={(place) => (
+                <>
+                  {place.googleMapsUrl ? (
+                    <a
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-100 px-3 text-xs font-medium text-zinc-700 hover:bg-rose-50 hover:text-[#c6283a]"
+                      href={place.googleMapsUrl}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      Ver en Google Maps
+                    </a>
+                  ) : null}
+                  <form action={deleteFormAction}>
+                    <input name="placeId" type="hidden" value={place.id} />
+                    <button
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                      disabled={isDeleting}
+                      type="submit"
+                    >
+                      {isDeleting ? "Eliminando..." : "Eliminar"}
+                    </button>
+                  </form>
+                </>
+              )}
+              selectedPlaceId={selectedPlaceId}
+            />
+            {deleteState.error ? <p className="mt-3 text-sm text-rose-600">{deleteState.error}</p> : null}
+          </div>
+        ) : (
+          <EmptyState
+            description="Busca un sitio en el mapa para crear tu primer lugar personal."
+            title="Todavia no tienes lugares personales"
+          />
+        )
+      ) : null}
     </section>
   );
 }
