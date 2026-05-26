@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { TouchEvent } from "react";
 import { GroupActivityTab } from "@/components/groups/GroupActivityTab";
 import { GroupDetailTabs } from "@/components/groups/GroupDetailTabs";
 import { GroupMapTab } from "@/components/groups/GroupMapTab";
@@ -38,8 +39,10 @@ export function GroupDetailView({
   const tabs = useMemo(() => ["lugares", "actividad", "mapa"] as const, []);
   const [currentTab, setCurrentTab] = useState<GroupDetailTab>(activeTab);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [dragOffsetPct, setDragOffsetPct] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [dragAxis, setDragAxis] = useState<"x" | "y" | null>(null);
 
   useEffect(() => {
     setCurrentTab(activeTab);
@@ -51,14 +54,40 @@ export function GroupDetailView({
     window.history.replaceState(null, "", url.toString());
   }, [currentTab]);
 
-  function handleTouchStart(clientX: number) {
+  function handleTouchStart(clientX: number, clientY: number) {
     setTouchStartX(clientX);
+    setTouchStartY(clientY);
     setIsDragging(true);
+    setDragAxis(null);
   }
 
-  function handleTouchMove(clientX: number, containerWidth: number) {
-    if (touchStartX === null || containerWidth <= 0) return;
-    const deltaPx = touchStartX - clientX;
+  function handleTouchMove(event: TouchEvent<HTMLDivElement>, containerWidth: number) {
+    const clientX = event.touches[0]?.clientX ?? 0;
+    const clientY = event.touches[0]?.clientY ?? 0;
+    if (touchStartX === null || touchStartY === null || containerWidth <= 0) return;
+
+    const deltaX = touchStartX - clientX;
+    const deltaY = touchStartY - clientY;
+
+    let axis = dragAxis;
+    if (!axis) {
+      if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
+        axis = Math.abs(deltaX) > Math.abs(deltaY) ? "x" : "y";
+        setDragAxis(axis);
+      } else {
+        return;
+      }
+    }
+
+    if (axis === "y") {
+      return;
+    }
+
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+
+    const deltaPx = deltaX;
     const rawPct = (deltaPx / containerWidth) * 100;
     const currentIndex = tabs.indexOf(currentTab);
     const draggingLeft = rawPct < 0;
@@ -74,13 +103,15 @@ export function GroupDetailView({
   function handleTouchEnd() {
     if (touchStartX === null) return;
     const currentIndex = tabs.indexOf(currentTab);
-    const projected = Math.round(currentIndex + dragOffsetPct / 100);
-    const nextIndex = Math.max(0, Math.min(tabs.length - 1, projected));
+    const step = dragOffsetPct > 22 ? 1 : dragOffsetPct < -22 ? -1 : 0;
+    const nextIndex = Math.max(0, Math.min(tabs.length - 1, currentIndex + step));
     setCurrentTab(tabs[nextIndex]);
 
     setTouchStartX(null);
+    setTouchStartY(null);
     setDragOffsetPct(0);
     setIsDragging(false);
+    setDragAxis(null);
   }
 
   const tabIndex = tabs.indexOf(currentTab);
@@ -88,7 +119,7 @@ export function GroupDetailView({
   return (
     <section className="space-y-5">
       <div className="relative">
-        <div className="absolute right-4 top-4 z-20">
+        <div className="absolute right-4 top-4 z-10">
           <GroupOwnerControls
             canEditGroup={group.canEditGroup}
             canInviteMembers={group.canInviteMembers}
@@ -112,8 +143,8 @@ export function GroupDetailView({
         <div
           className="overflow-hidden pt-4"
           onTouchEnd={() => handleTouchEnd()}
-          onTouchMove={(event) => handleTouchMove(event.touches[0]?.clientX ?? 0, event.currentTarget.clientWidth)}
-          onTouchStart={(event) => handleTouchStart(event.touches[0]?.clientX ?? 0)}
+          onTouchMove={(event) => handleTouchMove(event, event.currentTarget.clientWidth)}
+          onTouchStart={(event) => handleTouchStart(event.touches[0]?.clientX ?? 0, event.touches[0]?.clientY ?? 0)}
         >
           <div
             className={`flex ${isDragging ? "" : "transition-transform duration-300 ease-out"}`}
