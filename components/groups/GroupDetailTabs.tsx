@@ -17,20 +17,21 @@ const tabs: Array<{ key: GroupDetailTab; label: string }> = [
 export function GroupDetailTabs({ groupId, activeTab }: GroupDetailTabsProps) {
   return (
     <div aria-label="Secciones de grupo" className="border-b border-zinc-200" role="tablist">
-      <div className="flex items-center gap-5">
+      <div className="flex w-full items-end justify-center gap-14">
         {tabs.map((tab) => {
           const isActive = tab.key === activeTab;
           return (
             <Link
               aria-selected={isActive}
-              className={`-mb-px border-b-2 px-1 py-2 text-sm font-semibold transition ${
-                isActive ? "border-[#c6283a] text-[#c6283a]" : "border-transparent text-zinc-500 hover:text-zinc-800"
+              className={`relative px-1 pb-3 pt-1 text-sm font-semibold transition ${
+                isActive ? "text-[#c6283a]" : "text-zinc-500 hover:text-zinc-800"
               }`}
               href={`/groups/${groupId}?tab=${tab.key}`}
               key={tab.key}
               role="tab"
             >
               {tab.label}
+              {isActive ? <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-[#c6283a]" /> : null}
             </Link>
           );
         })}

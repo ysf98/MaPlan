@@ -271,13 +271,17 @@ export async function getGroupMembersPreviewForUser(userId: string, groupId: str
     .maybeSingle();
 
   if (membershipResult.error || !membershipResult.data) {
-    return { members: [], allMembers: [], total: 0 };
+    return { members: [], total: 0 };
   }
 
   const previewRpc = await supabase.rpc("get_group_members_with_profiles", { p_group_id: groupId, p_limit: 8 });
-  const allRpc = await supabase.rpc("get_group_members_with_profiles", { p_group_id: groupId });
+  const countResult = await supabase
+    .from("group_members")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", groupId);
+  const total = countResult.count ?? 0;
 
-  if (!previewRpc.error && !allRpc.error) {
+  if (!previewRpc.error) {
     const members =
       (previewRpc.data || []).flatMap((member) =>
         isGroupRole(member.role)
@@ -292,28 +296,9 @@ export async function getGroupMembersPreviewForUser(userId: string, groupId: str
           : []
       ) || [];
 
-    const allMembers =
-      (allRpc.data || []).flatMap((member) =>
-        isGroupRole(member.role)
-          ? [
-              {
-                userId: member.user_id,
-                username: member.username ?? null,
-                avatarUrl: member.avatar_url ?? null,
-                role: member.role
-              }
-            ]
-          : []
-      ) || [];
-
-    return { members, allMembers, total: allMembers.length };
+    return { members, total };
   }
 
-  const countResult = await supabase
-    .from("group_members")
-    .select("id", { count: "exact", head: true })
-    .eq("group_id", groupId);
-  const total = countResult.count ?? 0;
   const ownMemberResult = await supabase
     .from("group_members")
     .select("user_id, role")
@@ -321,13 +306,13 @@ export async function getGroupMembersPreviewForUser(userId: string, groupId: str
     .eq("user_id", userId)
     .maybeSingle();
   if (ownMemberResult.error || !ownMemberResult.data) {
-    return { members: [], allMembers: [], total };
+    return { members: [], total };
   }
 
   const ownProfileResult = await supabase.from("profiles").select("id, username, avatar_url").eq("id", userId).maybeSingle();
   const ownProfile = ownProfileResult.data;
   if (!isGroupRole(ownMemberResult.data.role)) {
-    return { members: [], allMembers: [], total };
+    return { members: [], total };
   }
   const ownMember = {
     userId,
@@ -335,5 +320,5 @@ export async function getGroupMembersPreviewForUser(userId: string, groupId: str
     avatarUrl: ownProfile?.avatar_url ?? null,
     role: ownMemberResult.data.role
   };
-  return { members: [ownMember], allMembers: [ownMember], total };
+  return { members: [ownMember], total };
 }

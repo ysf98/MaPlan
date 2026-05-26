@@ -20,9 +20,7 @@ import type { InviteFriendActionState } from "@/app/groups/[groupId]/invitations
 import { GroupCoverPicker } from "@/components/groups/GroupCoverPicker";
 import { GroupFriendsSelector } from "@/components/groups/GroupFriendsSelector";
 import { Button } from "@/components/ui/Button";
-import type { GroupInvitationItem } from "@/lib/groupInvitations";
 import type { GroupJoinPolicy, GroupPrivacy } from "@/lib/groups/policies";
-import type { GroupJoinRequestItem } from "@/lib/groups/types";
 
 type GroupOwnerControlsProps = {
   groupId: string;
@@ -35,9 +33,7 @@ type GroupOwnerControlsProps = {
   canInviteMembers: boolean;
   privacy: GroupPrivacy;
   joinPolicy: GroupJoinPolicy;
-  pendingRequests: GroupJoinRequestItem[];
   invitableFriends: Array<{ id: string; username: string | null }>;
-  groupInvitations: GroupInvitationItem[];
   totalFriendsCount: number;
 };
 

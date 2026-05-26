@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { GroupActivityTab } from "@/components/groups/GroupActivityTab";
 import { GroupDetailTabs } from "@/components/groups/GroupDetailTabs";
@@ -7,9 +7,8 @@ import { GroupOverviewHeader } from "@/components/groups/GroupOverviewHeader";
 import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
 import { GroupPlacesTab } from "@/components/groups/GroupPlacesTab";
 import type { GroupActivityFeedItem } from "@/lib/groupActivity";
-import type { GroupInvitationItem } from "@/lib/groupInvitations";
 import type { GroupDetailTab } from "@/lib/groups/tabs";
-import type { GroupDetail, GroupJoinRequestItem, GroupMemberPreview } from "@/lib/groups/types";
+import type { GroupDetail, GroupMemberPreview } from "@/lib/groups/types";
 import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupDetailViewProps = {
@@ -17,11 +16,8 @@ type GroupDetailViewProps = {
   groupId: string;
   places: GroupPlace[];
   membersPreview: GroupMemberPreview[];
-  allMembers: GroupMemberPreview[];
   totalMembersCount: number;
-  pendingRequests: GroupJoinRequestItem[];
   invitableFriends: Array<{ id: string; username: string | null }>;
-  groupInvitations: GroupInvitationItem[];
   totalFriendsCount: number;
   activeTab: GroupDetailTab;
   activityEvents: GroupActivityFeedItem[];
@@ -33,9 +29,7 @@ export function GroupDetailView({
   places,
   membersPreview,
   totalMembersCount,
-  pendingRequests,
   invitableFriends,
-  groupInvitations,
   totalFriendsCount,
   activeTab,
   activityEvents
@@ -50,12 +44,10 @@ export function GroupDetailView({
             groupCoverImageUrl={group.coverImageUrl}
             groupDescription={group.description}
             groupId={groupId}
-            groupInvitations={groupInvitations}
             groupName={group.name}
             invitableFriends={invitableFriends}
             joinCode={group.joinCode}
             joinPolicy={group.joinPolicy}
-            pendingRequests={pendingRequests}
             privacy={group.privacy}
             role={group.role}
             totalFriendsCount={totalFriendsCount}
