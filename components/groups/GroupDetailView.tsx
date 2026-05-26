@@ -43,6 +43,7 @@ export function GroupDetailView({
   const [dragOffsetPct, setDragOffsetPct] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragAxis, setDragAxis] = useState<"x" | "y" | null>(null);
+  const [lockSwipeGesture, setLockSwipeGesture] = useState(false);
 
   useEffect(() => {
     setCurrentTab(activeTab);
@@ -54,7 +55,14 @@ export function GroupDetailView({
     window.history.replaceState(null, "", url.toString());
   }, [currentTab]);
 
-  function handleTouchStart(clientX: number, clientY: number) {
+  function handleTouchStart(clientX: number, clientY: number, target: EventTarget | null) {
+    const element = target as HTMLElement | null;
+    if (element?.closest("[data-lock-swipe]")) {
+      setLockSwipeGesture(true);
+      return;
+    }
+
+    setLockSwipeGesture(false);
     setTouchStartX(clientX);
     setTouchStartY(clientY);
     setIsDragging(true);
@@ -62,6 +70,8 @@ export function GroupDetailView({
   }
 
   function handleTouchMove(event: TouchEvent<HTMLDivElement>, containerWidth: number) {
+    if (lockSwipeGesture) return;
+
     const clientX = event.touches[0]?.clientX ?? 0;
     const clientY = event.touches[0]?.clientY ?? 0;
     if (touchStartX === null || touchStartY === null || containerWidth <= 0) return;
@@ -87,8 +97,7 @@ export function GroupDetailView({
       event.preventDefault();
     }
 
-    const deltaPx = deltaX;
-    const rawPct = (deltaPx / containerWidth) * 100;
+    const rawPct = (deltaX / containerWidth) * 100;
     const currentIndex = tabs.indexOf(currentTab);
     const draggingLeft = rawPct < 0;
     const draggingRight = rawPct > 0;
@@ -101,6 +110,11 @@ export function GroupDetailView({
   }
 
   function handleTouchEnd() {
+    if (lockSwipeGesture) {
+      setLockSwipeGesture(false);
+      return;
+    }
+
     if (touchStartX === null) return;
     const currentIndex = tabs.indexOf(currentTab);
     const step = dragOffsetPct > 22 ? 1 : dragOffsetPct < -22 ? -1 : 0;
@@ -112,6 +126,7 @@ export function GroupDetailView({
     setDragOffsetPct(0);
     setIsDragging(false);
     setDragAxis(null);
+    setLockSwipeGesture(false);
   }
 
   const tabIndex = tabs.indexOf(currentTab);
@@ -144,19 +159,21 @@ export function GroupDetailView({
           className="overflow-hidden pt-4"
           onTouchEnd={() => handleTouchEnd()}
           onTouchMove={(event) => handleTouchMove(event, event.currentTarget.clientWidth)}
-          onTouchStart={(event) => handleTouchStart(event.touches[0]?.clientX ?? 0, event.touches[0]?.clientY ?? 0)}
+          onTouchStart={(event) =>
+            handleTouchStart(event.touches[0]?.clientX ?? 0, event.touches[0]?.clientY ?? 0, event.target)
+          }
         >
           <div
-            className={`flex ${isDragging ? "" : "transition-transform duration-300 ease-out"}`}
+            className={`flex ${isDragging ? "" : "transition-transform duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]"}`}
             style={{ transform: `translateX(calc(${-tabIndex * 100}% - ${dragOffsetPct}%))` }}
           >
-            <div className="w-full shrink-0">
+            <div className="w-full shrink-0 px-1.5">
               <GroupPlacesTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} />
             </div>
-            <div className="w-full shrink-0">
+            <div className="w-full shrink-0 px-1.5">
               <GroupActivityTab events={activityEvents} />
             </div>
-            <div className="w-full shrink-0">
+            <div className="w-full shrink-0 px-1.5">
               <GroupMapTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} />
             </div>
           </div>
@@ -165,4 +182,3 @@ export function GroupDetailView({
     </section>
   );
 }
-

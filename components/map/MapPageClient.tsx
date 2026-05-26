@@ -28,6 +28,7 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
   const [dragOffsetPct, setDragOffsetPct] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragAxis, setDragAxis] = useState<"x" | "y" | null>(null);
+  const [lockSwipeGesture, setLockSwipeGesture] = useState(false);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [deleteState, deleteFormAction, isDeleting] = useActionState(deletePersonalPlaceAction, deleteInitialState);
 
@@ -41,7 +42,14 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
     window.history.replaceState(null, "", url.toString());
   }, [currentTab]);
 
-  function handleTouchStart(clientX: number, clientY: number) {
+  function handleTouchStart(clientX: number, clientY: number, target: EventTarget | null) {
+    const element = target as HTMLElement | null;
+    if (element?.closest("[data-lock-swipe]")) {
+      setLockSwipeGesture(true);
+      return;
+    }
+
+    setLockSwipeGesture(false);
     setTouchStartX(clientX);
     setTouchStartY(clientY);
     setIsDragging(true);
@@ -49,6 +57,8 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
   }
 
   function handleTouchMove(event: TouchEvent<HTMLDivElement>, containerWidth: number) {
+    if (lockSwipeGesture) return;
+
     const clientX = event.touches[0]?.clientX ?? 0;
     const clientY = event.touches[0]?.clientY ?? 0;
     if (touchStartX === null || touchStartY === null || containerWidth <= 0) return;
@@ -74,8 +84,7 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
       event.preventDefault();
     }
 
-    const deltaPx = deltaX;
-    const rawPct = (deltaPx / containerWidth) * 100;
+    const rawPct = (deltaX / containerWidth) * 100;
     const currentIndex = tabs.indexOf(currentTab);
     const draggingLeft = rawPct < 0;
     const draggingRight = rawPct > 0;
@@ -88,6 +97,11 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
   }
 
   function handleTouchEnd() {
+    if (lockSwipeGesture) {
+      setLockSwipeGesture(false);
+      return;
+    }
+
     if (touchStartX === null) return;
     const currentIndex = tabs.indexOf(currentTab);
     const step = dragOffsetPct > 22 ? 1 : dragOffsetPct < -22 ? -1 : 0;
@@ -99,6 +113,7 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
     setDragOffsetPct(0);
     setIsDragging(false);
     setDragAxis(null);
+    setLockSwipeGesture(false);
   }
 
   const tabIndex = tabs.indexOf(currentTab);
@@ -129,13 +144,15 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
         className="overflow-hidden"
         onTouchEnd={() => handleTouchEnd()}
         onTouchMove={(event) => handleTouchMove(event, event.currentTarget.clientWidth)}
-        onTouchStart={(event) => handleTouchStart(event.touches[0]?.clientX ?? 0, event.touches[0]?.clientY ?? 0)}
+        onTouchStart={(event) =>
+          handleTouchStart(event.touches[0]?.clientX ?? 0, event.touches[0]?.clientY ?? 0, event.target)
+        }
       >
         <div
-          className={`flex ${isDragging ? "" : "transition-transform duration-300 ease-out"}`}
+          className={`flex ${isDragging ? "" : "transition-transform duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]"}`}
           style={{ transform: `translateX(calc(${-tabIndex * 100}% - ${dragOffsetPct}%))` }}
         >
-          <div className="w-full shrink-0">
+          <div className="w-full shrink-0 px-1.5">
             {personalPlaces.length > 0 ? (
               <div>
                 <SimplePlacesList
@@ -178,8 +195,8 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
             )}
           </div>
 
-          <div className="w-full shrink-0">
-            <div className="rounded-3xl border border-zinc-100 bg-white p-3">
+          <div className="w-full shrink-0 px-1.5">
+            <div className="rounded-3xl border border-zinc-100 bg-white p-3" data-lock-swipe>
               <PersonalMap onSelectPlace={setSelectedPlaceId} places={personalPlaces} selectedPlaceId={selectedPlaceId} />
             </div>
           </div>
@@ -188,4 +205,3 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
     </section>
   );
 }
-
