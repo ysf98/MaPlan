@@ -12,14 +12,15 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "MaPlan",
-  description: "App social de mapas para grupos"
+  description: "App social de mapas para grupos",
+  themeColor: "#f3d7db"
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#fff8f7"
+  themeColor: "#f3d7db"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
