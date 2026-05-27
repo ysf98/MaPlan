@@ -1,5 +1,5 @@
 ﻿import { LoginForm } from "@/components/auth/LoginForm";
-import { APP_NAME } from "@/utils/constants";
+import { APP_NAME, ROUTES } from "@/utils/constants";
 
 function CompassGlyph({ className }: { className: string }) {
   return (
@@ -10,7 +10,15 @@ function CompassGlyph({ className }: { className: string }) {
   );
 }
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const resolvedSearchParams = (await searchParams) || {};
+  const nextParam = resolvedSearchParams.next;
+  const nextPath = typeof nextParam === "string" && nextParam.startsWith("/") ? nextParam : ROUTES.dashboard;
+
   return (
     <div className="relative min-h-[100dvh] overflow-hidden bg-[#fff8f7] text-zinc-900">
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -36,7 +44,7 @@ export default function LoginPage() {
           <p className="mt-1 text-sm text-zinc-600">Explora y comparte tus lugares favoritos.</p>
         </section>
 
-        <LoginForm />
+        <LoginForm nextPath={nextPath} />
 
         <div className="mt-auto pb-2 pt-8">
           <div className="relative h-28 w-full overflow-hidden rounded-3xl border border-white/50 shadow-[0_14px_34px_rgba(181,35,48,0.14)]">
