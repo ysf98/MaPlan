@@ -72,8 +72,8 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
   }
 
   return (
-    <nav className="bottom-dock-nav fixed inset-x-0 bottom-0 z-30 px-3 pb-3">
-      <div className="vc-glass mx-auto grid h-20 max-w-3xl grid-cols-5 items-center rounded-t-[28px] border border-[rgb(var(--border)/0.6)] px-2 shadow-[0_-14px_35px_rgba(var(--primary-strong)/0.12)] sm:mb-4 sm:rounded-[32px]">
+    <nav className="bottom-dock-nav fixed inset-x-0 bottom-0 z-30 w-full">
+      <div className="vc-glass grid h-20 w-full grid-cols-5 items-center border-t border-[rgb(var(--border)/0.6)] px-2 shadow-[0_-14px_35px_rgba(var(--primary-strong)/0.12)]">
         {items.slice(0, 2).map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (

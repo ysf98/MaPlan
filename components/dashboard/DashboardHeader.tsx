@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MaplanMinimalIcon } from "@/components/branding/MaplanMinimalIcon";
 import { APP_NAME, ROUTES } from "@/utils/constants";
 
 type DashboardHeaderProps = {
@@ -32,8 +33,13 @@ export function DashboardHeader({ avatarUrl, backHref, displayName, hasNotificat
             <ProfileLink avatarUrl={avatarUrl} displayName={displayName} />
           )}
         </div>
-        <Link className="justify-self-center text-lg font-bold tracking-tight text-[rgb(var(--primary-strong))]" href={ROUTES.dashboard} prefetch={false}>
-          {APP_NAME}
+        <Link
+          className="justify-self-center inline-flex items-center gap-2 text-lg font-bold tracking-tight text-[rgb(var(--primary-strong))]"
+          href={ROUTES.dashboard}
+          prefetch={false}
+        >
+          <MaplanMinimalIcon size="sm" />
+          <span>{APP_NAME}</span>
         </Link>
         <div className="flex min-w-24 justify-end gap-2">
           {backHref ? <ProfileLink avatarUrl={avatarUrl} displayName={displayName} /> : null}

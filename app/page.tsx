@@ -12,8 +12,8 @@ const avatars = [
 
 export default function LandingPage() {
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-[#fff8f7] text-zinc-900">
-      <main className="relative flex min-h-[100dvh] flex-col items-center justify-between pt-2">
+    <div className="relative min-h-screen min-h-[100svh] w-full overflow-hidden bg-[#fff8f7] text-zinc-900">
+      <main className="relative flex min-h-screen min-h-[100svh] w-full flex-col items-center justify-between pt-2">
         <div className="absolute inset-0 z-0">
           <img alt="Amigos explorando la ciudad" className="h-full w-full object-cover object-center opacity-75" src={HERO_IMAGE} />
           <div className="absolute inset-0 bg-gradient-to-b from-[#fff8f700] via-[#fff8f780] to-[#fff8f7f0]" />
@@ -56,11 +56,13 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <footer className="relative z-10 w-full px-6 pb-6 text-center">
-          <p className="text-xs font-semibold text-zinc-500">
-            Al continuar, aceptas nuestros <a className="font-bold text-[rgb(var(--vc-coral))] underline" href="#">Términos</a> y{" "}
-            <a className="font-bold text-[rgb(var(--vc-coral))] underline" href="#">Privacidad</a>
-          </p>
+        <footer className="vc-glass fixed inset-x-0 bottom-0 z-30 w-full border-t border-[rgb(var(--border)/0.6)]">
+          <div className="mx-auto w-full max-w-3xl px-[20px] pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 text-center">
+            <p className="text-xs font-semibold text-zinc-500">
+              Al continuar, aceptas nuestros <a className="font-bold text-[rgb(var(--vc-coral))] underline" href="#">Términos</a> y{" "}
+              <a className="font-bold text-[rgb(var(--vc-coral))] underline" href="#">Privacidad</a>
+            </p>
+          </div>
         </footer>
       </main>
     </div>
