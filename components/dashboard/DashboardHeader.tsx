@@ -14,13 +14,13 @@ function getInitial(name: string): string {
 
 export function DashboardHeader({ avatarUrl, backHref, displayName, hasNotifications }: DashboardHeaderProps) {
   return (
-    <header className="sticky top-0 z-20 border-b border-zinc-100 bg-white/90 backdrop-blur-xl">
-      <div className="mx-auto grid h-16 w-full max-w-3xl grid-cols-3 items-center px-5">
+    <header className="vc-glass sticky top-0 z-20 border-b border-[rgb(var(--border)/0.55)]">
+      <div className="mx-auto grid h-16 w-full max-w-3xl grid-cols-3 items-center px-[20px]">
         <div className="flex min-w-24 justify-start">
           {backHref ? (
             <Link
               aria-label="Volver"
-              className="grid h-10 w-10 place-items-center rounded-full text-[#c6283a] transition hover:bg-rose-50"
+              className="grid h-10 w-10 place-items-center rounded-full text-[rgb(var(--primary-strong))] transition hover:bg-[rgb(var(--surface-soft))]"
               href={backHref}
               prefetch={false}
             >
@@ -32,14 +32,14 @@ export function DashboardHeader({ avatarUrl, backHref, displayName, hasNotificat
             <ProfileLink avatarUrl={avatarUrl} displayName={displayName} />
           )}
         </div>
-        <Link className="justify-self-center text-lg font-bold tracking-tight text-[#c6283a]" href={ROUTES.dashboard} prefetch={false}>
+        <Link className="justify-self-center text-lg font-bold tracking-tight text-[rgb(var(--primary-strong))]" href={ROUTES.dashboard} prefetch={false}>
           {APP_NAME}
         </Link>
         <div className="flex min-w-24 justify-end gap-2">
           {backHref ? <ProfileLink avatarUrl={avatarUrl} displayName={displayName} /> : null}
           <Link
             aria-label="Notificaciones"
-            className="relative grid h-10 w-10 place-items-center rounded-full text-[#c6283a] transition hover:bg-rose-100"
+            className="relative grid h-10 w-10 place-items-center rounded-full text-[rgb(var(--primary-strong))] transition hover:bg-[rgb(var(--ring))]"
             href={ROUTES.notifications}
             prefetch={false}
           >
@@ -53,7 +53,7 @@ export function DashboardHeader({ avatarUrl, backHref, displayName, hasNotificat
               />
               <path d="M10 19a2.2 2.2 0 0 0 4 0" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
             </svg>
-            {hasNotifications ? <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#c6283a] ring-2 ring-white" /> : null}
+            {hasNotifications ? <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[rgb(var(--primary-strong))] ring-2 ring-white" /> : null}
           </Link>
         </div>
       </div>
@@ -65,7 +65,7 @@ function ProfileLink({ avatarUrl, displayName }: { avatarUrl: string | null; dis
   return (
     <Link
       aria-label="Ir al perfil"
-      className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-rose-100 bg-rose-50 text-sm font-semibold text-[#c6283a] shadow-sm"
+      className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-[rgb(var(--border)/0.7)] bg-[rgb(var(--surface-soft))] text-sm font-semibold text-[rgb(var(--primary-strong))] shadow-sm"
       href={ROUTES.profile}
       prefetch={false}
     >

@@ -11,16 +11,16 @@ export function Input({ className, label, hint, id, ...props }: InputProps) {
 
   return (
     <label className="block space-y-2">
-      {label ? <span className="text-sm font-medium text-zinc-700">{label}</span> : null}
+      {label ? <span className="text-sm font-semibold text-[rgb(var(--muted))]">{label}</span> : null}
       <input
         id={inputId}
         className={cn(
-          "h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-base text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100 sm:text-sm",
+          "h-14 w-full rounded-2xl border border-transparent bg-[#f3f4f6] px-4 text-base text-[rgb(var(--text))] placeholder:text-[rgb(var(--muted))] focus:border-[rgb(var(--primary))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] sm:text-sm",
           className
         )}
         {...props}
       />
-      {hint ? <span className="text-xs text-zinc-500">{hint}</span> : null}
+      {hint ? <span className="text-xs text-[rgb(var(--muted))]">{hint}</span> : null}
     </label>
   );
 }

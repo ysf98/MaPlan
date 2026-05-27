@@ -73,18 +73,17 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
 
   return (
     <nav className="bottom-dock-nav fixed inset-x-0 bottom-0 z-30 px-3 pb-3">
-      <div className="mx-auto grid h-20 max-w-3xl grid-cols-5 items-center rounded-t-[28px] border border-rose-100 bg-white/95 px-2 shadow-[0_-14px_35px_rgba(198,40,58,0.12)] backdrop-blur-xl sm:mb-4 sm:rounded-[32px]">
+      <div className="vc-glass mx-auto grid h-20 max-w-3xl grid-cols-5 items-center rounded-t-[28px] border border-[rgb(var(--border)/0.6)] px-2 shadow-[0_-14px_35px_rgba(var(--primary-strong)/0.12)] sm:mb-4 sm:rounded-[32px]">
         {items.slice(0, 2).map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link
               className={cn(
                 "flex flex-col items-center justify-center gap-1 rounded-2xl py-2 text-[11px] font-semibold transition",
-                active ? "bg-rose-100 text-[#c6283a]" : "text-zinc-500 hover:text-[#c6283a]"
+                active ? "bg-[rgb(var(--ring))] text-[rgb(var(--primary-strong))]" : "text-[rgb(var(--muted))] hover:text-[rgb(var(--primary-strong))]"
               )}
               href={item.href}
               key={item.href}
-              prefetch={false}
             >
               <NavIcon name={item.icon} />
               {item.label}
@@ -94,9 +93,8 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
 
         <Link
           aria-label="Guardar lugar"
-          className="mx-auto grid h-14 w-14 -translate-y-5 place-items-center rounded-2xl bg-[#c6283a] text-white shadow-[0_12px_24px_rgba(198,40,58,0.35)] transition hover:bg-[#a91f31]"
+          className="mx-auto grid h-14 w-14 -translate-y-5 place-items-center rounded-2xl bg-[rgb(var(--primary-strong))] text-white shadow-[0_12px_24px_rgba(var(--primary-strong)/0.35)] transition hover:bg-[rgb(var(--primary))]"
           href={ROUTES.map}
-          prefetch={false}
         >
           <NavIcon name="pin" />
         </Link>
@@ -107,11 +105,10 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
             <Link
               className={cn(
                 "flex flex-col items-center justify-center gap-1 rounded-2xl py-2 text-[11px] font-semibold transition",
-                active ? "bg-rose-100 text-[#c6283a]" : "text-zinc-500 hover:text-[#c6283a]"
+                active ? "bg-[rgb(var(--ring))] text-[rgb(var(--primary-strong))]" : "text-[rgb(var(--muted))] hover:text-[rgb(var(--primary-strong))]"
               )}
               href={item.href}
               key={item.href}
-              prefetch={false}
             >
               <NavIcon name={item.icon} />
               {item.label}

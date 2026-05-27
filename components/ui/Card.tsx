@@ -7,5 +7,5 @@ type CardProps = {
 };
 
 export function Card({ children, className }: CardProps) {
-  return <section className={cn("rounded-3xl border border-zinc-100 bg-white p-5 shadow-sm", className)}>{children}</section>;
+  return <section className={cn("vc-surface-card p-4 md:p-5", className)}>{children}</section>;
 }

@@ -1,20 +1,25 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 :root {
   color-scheme: light;
   --vc-coral: 255 90 95;
-  --vc-coral-strong: 230 76 81;
+  --vc-coral-strong: 181 35 48;
+  --vc-blue: 74 144 226;
+  --vc-emerald: 39 174 96;
+  --vc-amber: 242 153 74;
   --vc-radius-sm: 8px;
   --vc-radius-md: 12px;
-  --bg: 255 255 255;
+  --vc-radius-lg: 16px;
+  --vc-radius-xl: 24px;
+  --bg: 255 248 247;
   --surface: 255 255 255;
-  --surface-soft: 255 244 244;
-  --text: 9 9 11;
-  --muted: 82 82 91;
-  --border: 244 244 245;
+  --surface-soft: 255 240 239;
+  --text: 38 24 23;
+  --muted: 90 64 63;
+  --border: 226 190 188;
   --primary: var(--vc-coral);
   --primary-strong: var(--vc-coral-strong);
-  --ring: 255 214 215;
+  --ring: 255 218 216;
 }
 
 body {
@@ -38,16 +43,51 @@ body {
   border-radius: var(--vc-radius-md);
 }
 
-.route-transition-enter {
-  animation: maplan-route-enter 220ms ease-out;
-  will-change: opacity;
+.vc-surface-card {
+  background: rgb(var(--surface));
+  border: 1px solid rgb(var(--border) / 0.5);
+  border-radius: var(--vc-radius-xl);
+  box-shadow: 0 10px 30px rgba(var(--primary-strong) / 0.1);
 }
 
-@keyframes maplan-route-enter {
+.vc-glass {
+  background: rgb(var(--surface) / 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.route-transition-enter {
+  animation-duration: 90ms;
+  animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.route-transition-forward {
+  animation-name: maplan-route-enter-forward;
+}
+
+.route-transition-backward {
+  animation-name: maplan-route-enter-backward;
+}
+
+@keyframes maplan-route-enter-forward {
   from {
-    opacity: 0;
+    transform: translateX(4px);
+    opacity: 0.96;
   }
   to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes maplan-route-enter-backward {
+  from {
+    transform: translateX(-4px);
+    opacity: 0.96;
+  }
+  to {
+    transform: translateX(0);
     opacity: 1;
   }
 }

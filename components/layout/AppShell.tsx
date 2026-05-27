@@ -45,7 +45,7 @@ export async function AppShell({ backHref, children, currentUser }: AppShellProp
     : "";
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[rgb(var(--bg))] text-[rgb(var(--text))]">
       {user ? (
         <DashboardHeader
           avatarUrl={profile?.avatar_url || null}
@@ -56,7 +56,7 @@ export async function AppShell({ backHref, children, currentUser }: AppShellProp
       ) : (
         <Navbar />
       )}
-      <main className="mx-auto w-full max-w-3xl px-5 pb-32 pt-6">
+      <main className="mx-auto w-full max-w-3xl px-[20px] pb-32 pt-6">
         <div className="w-full">{children}</div>
       </main>
       <BottomDockNav isAuthenticated={Boolean(user)} />
