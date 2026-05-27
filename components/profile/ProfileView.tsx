@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/Card";
 
 type ProfileViewProps = {
   initialAvatarUrl: string | null;
-  initialUsername: string;
+  initialFullName: string;
   handle: string;
   stats: {
     places: number;
@@ -37,7 +37,7 @@ function StatCard({ label, value, valueClassName }: { label: string; value: numb
   );
 }
 
-export function ProfileView({ initialAvatarUrl, initialUsername, handle, quickLists, stats }: ProfileViewProps) {
+export function ProfileView({ initialAvatarUrl, initialFullName, handle, quickLists, stats }: ProfileViewProps) {
   const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [avatarValue, setAvatarValue] = useState(initialAvatarUrl || "");
@@ -83,9 +83,9 @@ export function ProfileView({ initialAvatarUrl, initialUsername, handle, quickLi
           <div className="relative">
             <div className="h-28 w-28 overflow-hidden rounded-full border-[3px] border-[#d84d5d] bg-rose-50 shadow-[0_10px_26px_rgba(198,40,58,0.2)]">
               {avatarPreview ? (
-                <img alt={`Avatar de ${initialUsername}`} className="h-full w-full object-cover" src={avatarPreview} />
+                <img alt={`Avatar de ${initialFullName}`} className="h-full w-full object-cover" src={avatarPreview} />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-[#c6283a]">{getInitial(initialUsername)}</div>
+                <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-[#c6283a]">{getInitial(initialFullName)}</div>
               )}
             </div>
             <button
@@ -101,7 +101,7 @@ export function ProfileView({ initialAvatarUrl, initialUsername, handle, quickLi
             </button>
           </div>
 
-          <h1 className="mt-4 text-3xl font-bold tracking-tight text-zinc-950">{initialUsername}</h1>
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-zinc-950">{initialFullName}</h1>
           <p className="text-sm text-zinc-500">@{handle}</p>
           <Button className="mt-4 w-full max-w-sm rounded-xl" onClick={() => setIsEditOpen(true)} size="lg" type="button">
             Editar Perfil
@@ -181,39 +181,51 @@ export function ProfileView({ initialAvatarUrl, initialUsername, handle, quickLi
             action={formAction}
             className="w-full max-w-md space-y-4 rounded-2xl border border-zinc-100 bg-white p-5 shadow-[0_18px_45px_rgba(24,24,27,0.14)]"
           >
-            <div className="flex items-center justify-between">
+            <div className="relative flex items-center justify-center">
+              <button
+                aria-label="Cerrar"
+                className="absolute left-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800"
+                onClick={() => setIsEditOpen(false)}
+                type="button"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
               <h3 className="text-lg font-bold text-zinc-950">Editar perfil</h3>
-              <Button onClick={() => setIsEditOpen(false)} size="sm" type="button" variant="ghost">
-                Cerrar
-              </Button>
-            </div>
-
-            <div className="mx-auto h-20 w-20 overflow-hidden rounded-full border border-rose-100 bg-rose-50">
-              {avatarPreview ? (
-                <img alt={`Avatar de ${initialUsername}`} className="h-full w-full object-cover" src={avatarPreview} />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-xl font-bold text-[#c6283a]">{getInitial(initialUsername)}</div>
-              )}
             </div>
 
             <input name="avatarUrl" type="hidden" value={avatarValue} />
-            <label className="block space-y-2">
-              <span className="text-xs font-semibold text-zinc-700">Foto de perfil</span>
-              <input
-                accept="image/*"
-                className="block w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-rose-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[#c6283a]"
-                onChange={(event) => onAvatarChange(event.target.files?.[0])}
-                type="file"
-              />
+            <label className="mx-auto block w-fit cursor-pointer">
+              <input accept="image/*" className="sr-only" onChange={(event) => onAvatarChange(event.target.files?.[0])} type="file" />
+              <div className="mx-auto h-24 w-24 overflow-hidden rounded-full border border-rose-100 bg-rose-50">
+                {avatarPreview ? (
+                  <img alt={`Avatar de ${initialFullName}`} className="h-full w-full object-cover" src={avatarPreview} />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-[#c6283a]">{getInitial(initialFullName)}</div>
+                )}
+              </div>
             </label>
 
             <label className="block space-y-2">
               <span className="text-xs font-semibold text-zinc-700">Nombre</span>
               <input
                 className="h-11 w-full rounded-xl border border-zinc-200 px-3 text-sm text-zinc-900 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
-                defaultValue={initialUsername}
+                defaultValue={initialFullName}
                 maxLength={80}
+                name="fullName"
+                required
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="text-xs font-semibold text-zinc-700">@usuario</span>
+              <input
+                className="h-11 w-full rounded-xl border border-zinc-200 px-3 text-sm text-zinc-900 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                defaultValue={handle}
+                maxLength={30}
                 name="username"
+                pattern="[A-Za-z0-9_.-]+"
                 required
               />
             </label>

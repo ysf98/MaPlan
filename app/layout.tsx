@@ -1,7 +1,14 @@
 ﻿import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "@/styles/globals.css";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { RouteTransition } from "@/components/layout/RouteTransition";
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-vc",
+  display: "swap"
+});
 
 export const metadata: Metadata = {
   title: "MaPlan",
@@ -17,7 +24,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body>
+      <body className={`${plusJakartaSans.variable} font-sans`}>
         <RouteTransition>{children}</RouteTransition>
       </body>
     </html>

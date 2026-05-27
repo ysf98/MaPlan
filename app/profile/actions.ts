@@ -17,6 +17,7 @@ export async function updateProfileAction(
 ): Promise<UpdateProfileActionState> {
   const user = await requireAuthenticatedUser(ROUTES.profile);
   const parsed = updateProfileSchema.safeParse({
+    fullName: String(formData.get("fullName") || ""),
     username: String(formData.get("username") || ""),
     avatarUrl: String(formData.get("avatarUrl") || "")
   });
@@ -29,12 +30,16 @@ export async function updateProfileAction(
   const { error } = await supabase
     .from("profiles")
     .update({
-      username: parsed.data.username,
+      full_name: parsed.data.fullName,
+      username: parsed.data.username.toLowerCase(),
       avatar_url: parsed.data.avatarUrl
     })
     .eq("id", user.id);
 
   if (error) {
+    if ((error as { code?: string }).code === "23505") {
+      return { error: "Ese @usuario ya esta en uso. Elige otro distinto.", success: false };
+    }
     return { error: error.message, success: false };
   }
 

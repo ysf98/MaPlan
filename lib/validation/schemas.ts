@@ -343,11 +343,17 @@ export const googlePlaceDetailsSchema = z.object({
 });
 
 export const updateProfileSchema = z.object({
-  username: z
+  fullName: z
     .string()
     .trim()
     .min(1, "El nombre es obligatorio.")
     .max(80, "El nombre no puede superar 80 caracteres."),
+  username: z
+    .string()
+    .trim()
+    .min(3, "El @usuario debe tener al menos 3 caracteres.")
+    .max(30, "El @usuario no puede superar 30 caracteres.")
+    .regex(/^[a-z0-9_.-]+$/i, "El @usuario solo puede contener letras, numeros, punto, guion y guion bajo."),
   avatarUrl: z
     .string()
     .trim()

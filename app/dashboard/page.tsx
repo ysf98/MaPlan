@@ -15,6 +15,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ROUTES } from "@/utils/constants";
 
 type DashboardProfileRow = {
+  full_name: string | null;
   username: string | null;
   avatar_url: string | null;
 };
@@ -27,7 +28,7 @@ export default async function DashboardPage() {
   }
 
   const supabase = await createSupabaseServerClient();
-  const profileResult = await supabase.from("profiles").select("username, avatar_url").eq("id", user.id).maybeSingle();
+  const profileResult = await supabase.from("profiles").select("full_name, username, avatar_url").eq("id", user.id).maybeSingle();
   const profile = profileResult.data as DashboardProfileRow | null;
 
   const [groups, activityFeed, groupsWithActivity, notifications] = await Promise.all([
@@ -51,6 +52,7 @@ export default async function DashboardPage() {
   const displayName = resolveDisplayName({
     email: user.email,
     metadataUsername: user.user_metadata?.username,
+    profileFullName: profile?.full_name,
     profileUsername: profile?.username
   });
   const pendingInvitation = notifications.pendingInvitations[0]?.kind === "group_invitation" ? notifications.pendingInvitations[0] : null;

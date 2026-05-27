@@ -14,6 +14,7 @@ type AppShellProps = {
 };
 
 type AppShellProfileRow = {
+  full_name: string | null;
   username: string | null;
   avatar_url: string | null;
 };
@@ -27,7 +28,7 @@ export async function AppShell({ backHref, children, currentUser }: AppShellProp
     const supabase = await createSupabaseServerClient();
     const [notificationsCount, profileResult] = await Promise.all([
       getPendingNotificationsCountForUser(user.id),
-      supabase.from("profiles").select("username, avatar_url").eq("id", user.id).maybeSingle()
+      supabase.from("profiles").select("full_name, username, avatar_url").eq("id", user.id).maybeSingle()
     ]);
 
     pendingNotificationsCount = notificationsCount;
@@ -38,6 +39,7 @@ export async function AppShell({ backHref, children, currentUser }: AppShellProp
     ? resolveDisplayName({
         email: user.email,
         metadataUsername: user.user_metadata?.username,
+        profileFullName: profile?.full_name,
         profileUsername: profile?.username
       })
     : "";

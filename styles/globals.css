@@ -2,19 +2,24 @@
 
 :root {
   color-scheme: light;
+  --vc-coral: 255 90 95;
+  --vc-coral-strong: 230 76 81;
+  --vc-radius-sm: 8px;
+  --vc-radius-md: 12px;
   --bg: 255 255 255;
   --surface: 255 255 255;
-  --surface-soft: 255 241 242;
+  --surface-soft: 255 244 244;
   --text: 9 9 11;
   --muted: 82 82 91;
   --border: 244 244 245;
-  --primary: 198 40 58;
-  --primary-strong: 169 31 49;
-  --ring: 254 205 211;
+  --primary: var(--vc-coral);
+  --primary-strong: var(--vc-coral-strong);
+  --ring: 255 214 215;
 }
 
 body {
   @apply antialiased;
+  font-family: var(--font-vc), ui-sans-serif, system-ui, sans-serif;
   background-color: rgb(var(--bg));
   color: rgb(var(--text));
   -webkit-text-size-adjust: 100%;
@@ -23,6 +28,14 @@ body {
 
 * {
   border-color: rgb(var(--border));
+}
+
+.vc-radius-sm {
+  border-radius: var(--vc-radius-sm);
+}
+
+.vc-radius-md {
+  border-radius: var(--vc-radius-md);
 }
 
 .route-transition-enter {

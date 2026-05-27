@@ -15,7 +15,7 @@ export default async function ProfilePage() {
 
   const supabase = await createSupabaseServerClient();
   const [profileResult, personalPlacesResult, createdPlacesResult, groupsResult] = await Promise.all([
-    supabase.from("profiles").select("username, avatar_url").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("full_name, username, avatar_url").eq("id", user.id).maybeSingle(),
     supabase.from("personal_places").select("id, created_at", { count: "exact" }).eq("user_id", user.id),
     supabase.from("places").select("id, status", { count: "exact" }).eq("created_by", user.id),
     supabase.from("group_members").select("group_id", { count: "exact" }).eq("user_id", user.id)
@@ -25,20 +25,21 @@ export default async function ProfilePage() {
   const displayName = resolveDisplayName({
     email: user.email,
     metadataUsername: user.user_metadata?.username,
+    profileFullName: profile?.full_name,
     profileUsername: profile?.username
   });
   const favoriteCount = (createdPlacesResult.data || []).filter((place) => place.status === "favorite").length;
   const visitedCount = (createdPlacesResult.data || []).filter((place) => place.status === "visited").length;
   const pendingCount = (createdPlacesResult.data || []).filter((place) => place.status === "pending").length;
   const totalPlaces = (personalPlacesResult.count || 0) + (createdPlacesResult.count || 0);
-  const handle = displayName.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_.-]/g, "") || "usuario";
+  const handle = (profile?.username || "").trim().toLowerCase() || "usuario";
 
   return (
     <AppShell backHref={ROUTES.dashboard} currentUser={user}>
       <ProfileView
         handle={handle}
         initialAvatarUrl={profile?.avatar_url || null}
-        initialUsername={displayName}
+        initialFullName={displayName}
         quickLists={{
           favorites: favoriteCount,
           history: visitedCount,
