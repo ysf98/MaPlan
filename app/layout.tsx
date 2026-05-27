@@ -12,8 +12,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "MaPlan",
-  description: "App social de mapas para grupos",
-  themeColor: "#f3d7db"
+  description: "App social de mapas para grupos"
 };
 
 export const viewport: Viewport = {

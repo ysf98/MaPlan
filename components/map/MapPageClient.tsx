@@ -205,4 +205,3 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
     </section>
   );
 }
-

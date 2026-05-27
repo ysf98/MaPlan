@@ -106,7 +106,7 @@ spacing:
 
 ## Brand & Style
 
-El sistema de diseño se centra en la conexión social a través de la exploración geográfica. La personalidad es vibrante, enérgica y sofisticada, diseñada para evocar una sensación de descubrimiento compartido y fiabilidad técnica. 
+El sistema de diseño se centra en la conexión social a través de la exploración geográfica. La personalidad es vibrante, enérgica y sofisticada, diseñada para evocar una sensación de descubrimiento compartido y fiabilidad técnica.
 
 El estilo visual es **Corporate / Modern** con influencias de **Glassmorphism** ligero para mantener la interfaz fresca y mobile-first. Se prioriza la legibilidad sobre mapas y la claridad en entornos de uso dinámico. La estética busca un equilibrio entre la utilidad de una herramienta de navegación y la calidez de una red social premium, utilizando superficies blancas puras y fondos neutros cálidos para permitir que el contenido generado por el usuario y los indicadores del mapa sean los protagonistas.
 

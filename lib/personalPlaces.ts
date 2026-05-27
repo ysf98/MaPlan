@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { Database, PlaceProvider, PlaceSource } from "@/types/supabase";
+import type { PlaceProvider, PlaceSource } from "@/types/supabase";
 
 export type PersonalPlace = {
   id: string;
@@ -36,16 +36,6 @@ type CreatePersonalPlaceInput = {
   imageUrl?: string | null;
   latitude: number;
   longitude: number;
-};
-
-type UpdatePersonalPlaceInput = {
-  userId: string;
-  placeId: string;
-  name?: string;
-  address?: string;
-  city?: string | null;
-  notes?: string | null;
-  category?: string | null;
 };
 
 type DeletePersonalPlaceInput = {
@@ -166,34 +156,6 @@ export async function createPersonalPlace(input: CreatePersonalPlaceInput): Prom
     return { error: error.message };
   }
 
-  return { error: null };
-}
-
-export async function updatePersonalPlace(input: UpdatePersonalPlaceInput): Promise<{ error: string | null }> {
-  const updates: Database["public"]["Tables"]["personal_places"]["Update"] = {};
-  if (typeof input.name === "string") updates.name = input.name.trim();
-  if (typeof input.address === "string") updates.address = input.address.trim();
-  if (input.city !== undefined) updates.city = input.city?.trim() || null;
-  if (input.notes !== undefined) updates.notes = input.notes?.trim() || null;
-  if (input.category !== undefined) updates.category = input.category?.trim() || null;
-
-  if (updates.name !== undefined && !updates.name) {
-    return { error: "El nombre del lugar es obligatorio." };
-  }
-  if (updates.address !== undefined && !updates.address) {
-    return { error: "La direccion del lugar es obligatoria." };
-  }
-
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
-    .from("personal_places")
-    .update(updates)
-    .eq("id", input.placeId)
-    .eq("user_id", input.userId);
-
-  if (error) {
-    return { error: error.message };
-  }
   return { error: null };
 }
 

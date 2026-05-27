@@ -14,4 +14,3 @@ export function GroupMapTab({ groupId, places, canEditPlaces }: GroupMapTabProps
     </div>
   );
 }
-

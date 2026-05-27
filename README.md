@@ -45,7 +45,6 @@ Create `.env` with:
 
 Optional:
 
-- `SUPABASE_SERVICE_ROLE_KEY` (backend-only flows)
 - `E2E_EMAIL`
 - `E2E_PASSWORD`
 - `E2E_RUN_SIGNUP=1`
@@ -75,20 +74,21 @@ pnpm test:e2e:report
 ## Supabase SQL order (recommended)
 Run in Supabase SQL Editor:
 
-1. `supabase/rls_friends.sql`
-2. `supabase/rls_groups.sql`
-3. `supabase/rls_group_invitations.sql`
-4. `supabase/rls_group_activity.sql`
-5. `supabase/rls_places.sql`
-6. `supabase/places_images.sql`
-7. `supabase/places_links.sql`
-8. `supabase/places_external_provider.sql`
-9. `supabase/places_city.sql`
-10. `supabase/rls_personal_places.sql`
+1. `supabase/profiles_full_name.sql`
+2. `supabase/rls_friends.sql`
+3. `supabase/groups_cover_image_url.sql`
+4. `supabase/groups_privacy.sql`
+5. `supabase/rls_groups.sql`
+6. `supabase/rls_group_invitations.sql`
+7. `supabase/rls_group_activity.sql`
+8. `supabase/places_links.sql`
+9. `supabase/places_external_provider.sql`
+10. `supabase/places_city.sql`
+11. `supabase/rls_places.sql`
+12. `supabase/rls_personal_places.sql`
+13. `supabase/places_images.sql`
 
-Optional/legacy migration helpers:
-- `supabase/groups_privacy.sql`
-- `supabase/groups_cover_image_url.sql`
+`groups_privacy.sql` migra los flags legacy si existen y es seguro volver a ejecutarlo. `groups_cover_image_url.sql` y `profiles_full_name.sql` no son opcionales para la version actual de la aplicacion.
 
 ### Important SQL note
 If you change the return shape of `get_profiles_by_ids(uuid[])`, Postgres can fail with:
@@ -126,3 +126,4 @@ Then re-run `supabase/rls_friends.sql`.
 - Personal map aligned to group detail style with tabs.
 - Friends page redesigned and integrated with group invitations.
 - Permission model enforced in UI + server actions + RLS.
+- Group membership RLS avoids policy recursion and protects owner/creator fields from direct client mutations.
