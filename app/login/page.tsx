@@ -1,14 +1,6 @@
 ﻿import { LoginForm } from "@/components/auth/LoginForm";
+import { MaplanMinimalIcon } from "@/components/branding/MaplanMinimalIcon";
 import { APP_NAME, ROUTES } from "@/utils/constants";
-
-function CompassGlyph({ className }: { className: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24">
-      <path d="M12 4.4 19.6 12 12 19.6 4.4 12Z" fill="currentColor" />
-      <path d="M12 8.1 15.9 12 12 15.9 10.4 12Z" fill="white" />
-    </svg>
-  );
-}
 
 type LoginPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -30,11 +22,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <main className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-8 pt-10">
         <header className="mb-8 flex items-center justify-center">
           <div className="flex flex-col items-center gap-1">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[rgb(var(--vc-coral))]">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white">
-                <CompassGlyph className="h-4 w-4 text-[rgb(var(--vc-coral))]" />
-              </span>
-            </span>
+            <MaplanMinimalIcon size="md" />
             <h1 className="text-4xl font-extrabold tracking-tight text-[rgb(var(--vc-coral))]">{APP_NAME}</h1>
           </div>
         </header>

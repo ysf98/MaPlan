@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import { MaplanMinimalIcon } from "@/components/branding/MaplanMinimalIcon";
 import { APP_NAME, ROUTES } from "@/utils/constants";
 
 const HERO_IMAGE = "/landing-hero.png";
@@ -9,30 +10,10 @@ const avatars = [
   "https://lh3.googleusercontent.com/aida-public/AB6AXuAz80EaqKoNxfH8bnXeS4lZaT8ZL_5fYjsz_rn7nBipVow8hs9WjUUVan-h1T7GseyxE7n7G2C1qOtyk9jvwlo92emrX15Y7oRst8nxTujDWUVd5F7MNqeEWVNXcn3McVIlWivtAd-69NpuQwVO7a1mckSlO-jeuIw46wdC4AUWQgJ69tYGJey4FyOGuMNZjR6C1RKn7DsnbM6l77FuIq1QE7Z0X193HyuKMqtlb7r3t3YDr2qUGD1Aod6pEgro8MMfjfHtJIx1Dww"
 ];
 
-function CompassGlyph({ className }: { className: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24">
-      <path d="M12 4.4 19.6 12 12 19.6 4.4 12Z" fill="currentColor" />
-      <path d="M12 8.1 15.9 12 12 15.9 10.4 12Z" fill="white" />
-    </svg>
-  );
-}
-
 export default function LandingPage() {
   return (
     <div className="relative min-h-[100dvh] overflow-hidden bg-[#fff8f7] text-zinc-900">
-      <header className="fixed inset-x-0 top-0 z-20 flex h-14 items-center justify-center border-b border-zinc-200/50 bg-[#fff8f7]/85 backdrop-blur">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[rgb(var(--vc-coral))]">
-            <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white">
-              <CompassGlyph className="h-2.5 w-2.5 text-[rgb(var(--vc-coral))]" />
-            </span>
-          </span>
-          <p className="text-lg font-bold tracking-tight text-[rgb(var(--vc-coral))]">{APP_NAME}</p>
-        </div>
-      </header>
-
-      <main className="relative flex min-h-[100dvh] flex-col items-center justify-between pt-14">
+      <main className="relative flex min-h-[100dvh] flex-col items-center justify-between pt-2">
         <div className="absolute inset-0 z-0">
           <img alt="Amigos explorando la ciudad" className="h-full w-full object-cover object-center opacity-75" src={HERO_IMAGE} />
           <div className="absolute inset-0 bg-gradient-to-b from-[#fff8f700] via-[#fff8f780] to-[#fff8f7f0]" />
@@ -40,10 +21,8 @@ export default function LandingPage() {
 
         <section className="relative z-10 mt-auto w-full max-w-md px-6 pb-8 text-center">
           <div className="mb-6 space-y-3">
-            <div className="mx-auto inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-[rgb(var(--vc-coral))] text-white shadow-[0_18px_40px_rgba(255,90,95,0.35)]">
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white">
-                <CompassGlyph className="h-7 w-7 text-[rgb(var(--vc-coral))]" />
-              </span>
+            <div className="mx-auto">
+              <MaplanMinimalIcon size="lg" />
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight">{APP_NAME}</h1>
             <p className="mx-auto max-w-xs text-2xl font-bold leading-8 text-zinc-800">Descubre y comparte tus lugares favoritos con amigos</p>
