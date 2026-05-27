@@ -25,15 +25,24 @@
 body {
   @apply antialiased;
   font-family: var(--font-vc), ui-sans-serif, system-ui, sans-serif;
-  background-color: rgb(var(--bg));
+  background: transparent;
   color: rgb(var(--text));
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  overscroll-behavior-y: none;
 }
 
 html,
 body {
   min-height: 100%;
+}
+
+html {
+  background-color: rgb(var(--bg));
+  background-image:
+    radial-gradient(62% 52% at 88% 12%, rgba(255, 90, 95, 0.2), transparent 72%),
+    radial-gradient(66% 56% at 12% 86%, rgba(56, 189, 248, 0.18), transparent 70%);
+  background-attachment: fixed;
 }
 
 * {
