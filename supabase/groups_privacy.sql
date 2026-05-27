@@ -11,13 +11,20 @@ begin
   end if;
 end $$;
 
-update public.groups
-set privacy = case
-  when place_edit_policy = 'owner_only' then 'privado'
-  else 'abierto'
-end
-where privacy is null
-   or privacy not in ('privado', 'abierto');
+-- Map legacy behavior once, before removing the old policy column.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'groups' and column_name = 'place_edit_policy'
+  ) then
+    update public.groups
+    set privacy = case
+      when place_edit_policy = 'owner_only' then 'privado'
+      else 'abierto'
+    end;
+  end if;
+end $$;
 
 alter table public.groups drop constraint if exists groups_privacy_check;
 alter table public.groups

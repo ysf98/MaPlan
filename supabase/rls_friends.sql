@@ -168,18 +168,9 @@ on public.friendships
 for delete to authenticated
 using (auth.uid() in (user_a_id, user_b_id));
 
--- Allow username discovery for friend search.
--- This policy only exposes rows that have a non-empty username and only to authenticated users.
+-- Profile discovery is served by the restricted RPC below. Do not keep a
+-- broad table policy, because it would also expose non-search profile fields.
 drop policy if exists profiles_select_for_friend_search on public.profiles;
-
-create policy profiles_select_for_friend_search
-on public.profiles
-for select to authenticated
-using (
-  auth.uid() is not null
-  and username is not null
-  and btrim(username) <> ''
-);
 
 -- Atomic acceptance: request -> accepted + friendship insert in one transaction.
 create or replace function public.accept_friend_request(request_id uuid)
@@ -221,6 +212,7 @@ begin
 end;
 $$;
 
+revoke execute on function public.accept_friend_request(uuid) from public;
 grant execute on function public.accept_friend_request(uuid) to authenticated;
 
 -- Stable user search endpoint for authenticated users.
@@ -247,6 +239,7 @@ begin
 end;
 $$;
 
+revoke execute on function public.search_profiles_by_username(text) from public;
 grant execute on function public.search_profiles_by_username(text) to authenticated;
 
 drop function if exists public.get_profiles_by_ids(uuid[]);
@@ -269,4 +262,5 @@ begin
 end;
 $$;
 
+revoke execute on function public.get_profiles_by_ids(uuid[]) from public;
 grant execute on function public.get_profiles_by_ids(uuid[]) to authenticated;

@@ -495,22 +495,24 @@ export type Database = {
       get_group_members_with_profiles: {
         Args: { p_group_id: string; p_limit?: number }
         Returns: {
-          avatar_url: string
+          avatar_url: string | null
           created_at: string
           role: string
           user_id: string
-          username: string
+          username: string | null
         }[]
       }
       get_profiles_by_ids: {
         Args: { p_ids: string[] }
         Returns: {
-          avatar_url: string
+          avatar_url: string | null
           id: string
-          username: string
+          username: string | null
         }[]
       }
-      is_group_creator: { Args: { p_group_id: string }; Returns: boolean }
+      can_join_group_as_member: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
+      can_manage_group_members: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
+      is_group_creator: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
       is_group_member: { Args: { target_group_id: string }; Returns: boolean }
       is_group_owner: { Args: { target_group_id: string }; Returns: boolean }
       search_profiles_by_username: {

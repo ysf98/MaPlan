@@ -42,30 +42,13 @@ async function getProfileMap(ids: string[]): Promise<Map<string, { username: str
   }
 
   const supabase = await createSupabaseServerClient();
-  const directProfilesResult = await supabase
-    .from("profiles")
-    .select("id, username, avatar_url")
-    .in("id", ids);
-
-  if (!directProfilesResult.error && (directProfilesResult.data || []).length > 0) {
-    return new Map(
-      (directProfilesResult.data || []).map((profile) => [
-        profile.id,
-        {
-          username: profile.username ?? null,
-          avatarUrl: profile.avatar_url ?? null
-        }
-      ])
-    );
-  }
-
   const { data } = await supabase.rpc("get_profiles_by_ids", { p_ids: ids });
   return new Map(
     (data || []).map((profile) => [
       profile.id,
       {
         username: profile.username ?? null,
-        avatarUrl: (profile as { avatar_url?: string | null }).avatar_url ?? null
+        avatarUrl: profile.avatar_url ?? null
       }
     ])
   );

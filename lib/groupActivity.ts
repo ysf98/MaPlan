@@ -83,7 +83,7 @@ export async function getGroupActivityFeedForUser(userId: string, limit = 20): P
 
   const [groupsResult, profilesResult] = await Promise.all([
     supabase.from("groups").select("id, name").in("id", uniqueGroupIds),
-    supabase.from("profiles").select("id, username, avatar_url").in("id", uniqueActorIds)
+    supabase.rpc("get_profiles_by_ids", { p_ids: uniqueActorIds })
   ]);
 
   const groupNameById = new Map<string, string>();
@@ -124,9 +124,7 @@ export async function getGroupActivityFeedForUser(userId: string, limit = 20): P
   });
 }
 
-export async function getGroupsWithRecentActivityForUser(userId: string, maxGroups = 5): Promise<GroupWithActivityItem[]> {
-  const events = await getGroupActivityFeedForUser(userId, 100);
-
+export function summarizeGroupsWithRecentActivity(events: GroupActivityFeedItem[], maxGroups = 5): GroupWithActivityItem[] {
   if (events.length === 0) {
     return [];
   }

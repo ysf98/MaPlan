@@ -59,6 +59,7 @@ alter table public.group_invitations enable row level security;
 
 drop policy if exists group_invitations_select_invited_or_owner on public.group_invitations;
 drop policy if exists group_invitations_insert_owner_only on public.group_invitations;
+drop policy if exists group_invitations_insert_manager on public.group_invitations;
 drop policy if exists group_invitations_update_invited_decision on public.group_invitations;
 drop policy if exists group_invitations_update_owner_reinvite on public.group_invitations;
 drop policy if exists group_members_insert_self_invitation_accepted on public.group_members;
@@ -87,6 +88,7 @@ as $$
   );
 $$;
 
+revoke execute on function public.can_manage_group_invitations(uuid, uuid) from public;
 grant execute on function public.can_manage_group_invitations(uuid, uuid) to authenticated;
 
 create policy group_invitations_select_invited_or_owner
@@ -97,7 +99,7 @@ using (
   or public.can_manage_group_invitations(group_invitations.group_id, auth.uid())
 );
 
-create policy group_invitations_insert_owner_only
+create policy group_invitations_insert_manager
 on public.group_invitations
 for insert to authenticated
 with check (
@@ -213,4 +215,5 @@ begin
 end;
 $$;
 
+revoke execute on function public.accept_group_invitation(uuid) from public;
 grant execute on function public.accept_group_invitation(uuid) to authenticated;

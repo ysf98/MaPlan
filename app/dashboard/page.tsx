@@ -7,7 +7,7 @@ import { PendingInvitationCard } from "@/components/dashboard/PendingInvitationC
 import { RecentActivityList } from "@/components/dashboard/RecentActivityList";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { getDashboardGroupSummaries, getDashboardPlaceStats } from "@/lib/dashboard";
-import { getGroupActivityFeedForUser, getGroupsWithRecentActivityForUser } from "@/lib/groupActivity";
+import { getGroupActivityFeedForUser, summarizeGroupsWithRecentActivity } from "@/lib/groupActivity";
 import { getUserGroups } from "@/lib/groups";
 import { getPendingNotificationsForUser } from "@/lib/notifications";
 import { resolveDisplayName } from "@/lib/profile";
@@ -31,13 +31,14 @@ export default async function DashboardPage() {
   const profileResult = await supabase.from("profiles").select("full_name, username, avatar_url").eq("id", user.id).maybeSingle();
   const profile = profileResult.data as DashboardProfileRow | null;
 
-  const [groups, activityFeed, groupsWithActivity, notifications] = await Promise.all([
+  const [groups, allRecentActivity, notifications] = await Promise.all([
     getUserGroups(user.id),
-    getGroupActivityFeedForUser(user.id, 8),
-    getGroupsWithRecentActivityForUser(user.id, 4),
+    getGroupActivityFeedForUser(user.id, 100),
     getPendingNotificationsForUser(user.id)
   ]);
 
+  const activityFeed = allRecentActivity.slice(0, 8);
+  const groupsWithActivity = summarizeGroupsWithRecentActivity(allRecentActivity, 4);
   const groupById = new Map(groups.map((group) => [group.id, group]));
   const groupsOrderedByActivity = groupsWithActivity
     .map((item) => groupById.get(item.groupId))

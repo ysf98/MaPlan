@@ -164,7 +164,7 @@ export async function getPendingJoinRequestsForOwner(userId: string, groupId: st
   }
 
   const userIds = requestsResult.data.map((request) => request.user_id);
-  const profilesResult = await supabase.from("profiles").select("id, username").in("id", userIds);
+  const profilesResult = await supabase.rpc("get_profiles_by_ids", { p_ids: userIds });
 
   const usernameByUserId = new Map<string, string | null>();
   (profilesResult.data || []).forEach((profile) => {
@@ -230,7 +230,7 @@ export async function getReviewedJoinRequestsForOwner(userId: string, groupId: s
     )
   );
 
-  const profilesResult = await supabase.from("profiles").select("id, username").in("id", relatedUserIds);
+  const profilesResult = await supabase.rpc("get_profiles_by_ids", { p_ids: relatedUserIds });
 
   const usernameByUserId = new Map<string, string | null>();
   (profilesResult.data || []).forEach((profile) => {

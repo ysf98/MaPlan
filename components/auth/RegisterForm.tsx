@@ -61,24 +61,6 @@ export function RegisterForm() {
       return;
     }
 
-    if (data.user) {
-      const profileUpsert = await supabase.from("profiles").upsert({
-        id: data.user.id,
-        full_name: fullName,
-        username: normalizedUsername || null
-      });
-
-      if (profileUpsert.error) {
-        setIsLoading(false);
-        if ((profileUpsert.error as { code?: string }).code === "23505") {
-          setErrorMessage("Ese @usuario ya esta en uso.");
-          return;
-        }
-        setErrorMessage(profileUpsert.error.message);
-        return;
-      }
-    }
-
     setIsLoading(false);
 
     if (data.session) {
