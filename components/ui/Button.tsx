@@ -11,16 +11,17 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: "bg-teal-500 text-white shadow-sm hover:bg-teal-600",
-  secondary: "bg-white text-slate-800 border border-slate-200 hover:bg-slate-50",
-  ghost: "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-  danger: "bg-rose-600 text-white shadow-sm hover:bg-rose-700 focus-visible:ring-rose-300"
+  primary: "bg-[rgb(var(--primary))] text-white shadow-[0_8px_20px_rgba(var(--primary-strong)/0.25)] hover:bg-[rgb(var(--primary-strong))]",
+  secondary:
+    "border border-[rgb(var(--border))] bg-[rgb(var(--surface-soft))] text-[rgb(var(--text))] hover:bg-[rgb(var(--ring))]",
+  ghost: "bg-transparent text-[rgb(var(--muted))] hover:bg-[rgb(var(--surface-soft))] hover:text-[rgb(var(--primary-strong))]",
+  danger: "bg-rose-600 text-white shadow-sm hover:bg-rose-700 focus-visible:ring-rose-200"
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "h-9 px-3 text-sm",
-  md: "h-10 px-4 text-sm",
-  lg: "h-12 px-5 text-base"
+  sm: "h-10 px-3 text-sm",
+  md: "h-11 px-4 text-sm",
+  lg: "h-14 px-5 text-base"
 };
 
 export function Button({
@@ -33,7 +34,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300 disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--ring))] disabled:cursor-not-allowed disabled:opacity-50",
         variantStyles[variant],
         sizeStyles[size],
         fullWidth && "w-full",

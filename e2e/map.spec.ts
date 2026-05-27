@@ -12,7 +12,8 @@ test.describe("map", () => {
 
     await loginWithEnvUser(page);
     await page.goto("/map");
-    await expect(page.getByText("- Mapa")).toBeVisible();
-    await expect(page.getByPlaceholder("Buscar bares, restaurantes, poblaciones...")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tus lugares guardados" })).toBeVisible();
+    await page.getByRole("tab", { name: "Mapa" }).click();
+    await expect(page.getByPlaceholder("Buscar lugares cercanos o pegar un enlace de sitio")).toBeVisible();
   });
 });

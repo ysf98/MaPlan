@@ -1,14 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const createSupabaseServerClientMock = vi.fn();
+const canInviteToGroupMock = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: createSupabaseServerClientMock
 }));
 
+vi.mock("@/lib/groupPermissions", () => ({
+  canInviteToGroup: canInviteToGroupMock
+}));
+
 describe("group invitations domain", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    canInviteToGroupMock.mockResolvedValue(true);
   });
 
   it("aceptar invitacion usa RPC atomica", async () => {
@@ -31,24 +37,9 @@ describe("group invitations domain", () => {
   });
 
   it("no owner no puede invitar", async () => {
-    const maybeSingleMock = vi.fn().mockResolvedValue({ data: null });
+    canInviteToGroupMock.mockResolvedValue(false);
     createSupabaseServerClientMock.mockResolvedValue({
-      from: vi.fn().mockImplementation((table: string) => {
-        if (table === "group_members") {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                  eq: vi.fn(() => ({
-                    maybeSingle: maybeSingleMock
-                  }))
-                }))
-              }))
-            }))
-          };
-        }
-        throw new Error("Unexpected table");
-      })
+      from: vi.fn()
     });
 
     const { inviteFriendToGroup } = await import("@/lib/groupInvitations");
@@ -58,29 +49,37 @@ describe("group invitations domain", () => {
       "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
     );
 
-    expect(result).toEqual({ error: "Solo el owner puede invitar amigos." });
+    expect(result).toEqual({ error: "No tienes permisos para invitar amigos a este grupo." });
   });
 
   it("no se puede invitar a usuario ya miembro", async () => {
-    const ownerMembershipMock = vi.fn().mockResolvedValueOnce({ data: { id: "owner-membership" } });
-    const alreadyMemberMock = vi.fn().mockResolvedValueOnce({ data: { id: "existing-member" } });
     createSupabaseServerClientMock.mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({
+        data: [
+          {
+            user_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+            role: "member",
+            created_at: new Date().toISOString(),
+            username: "friend",
+            avatar_url: null
+          }
+        ],
+        error: null
+      }),
       from: vi.fn().mockImplementation((table: string) => {
-        if (table === "group_members") {
+        if (table === "group_invitations") {
           return {
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
                 eq: vi.fn(() => ({
-                  eq: vi.fn(() => ({
-                    maybeSingle: ownerMembershipMock
-                  })),
-                  maybeSingle: alreadyMemberMock
+                  maybeSingle: vi.fn().mockResolvedValue({ data: null })
                 }))
               }))
-            }))
+            })),
+            insert: vi.fn()
           };
         }
-        throw new Error("Unexpected table");
+        throw new Error(`Unexpected table ${table}`);
       })
     });
 

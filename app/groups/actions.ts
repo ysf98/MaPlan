@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
+import { inviteFriendToGroup } from "@/lib/groupInvitations";
 import { createGroupSchema, joinGroupSchema } from "@/lib/validation/schemas";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GroupJoinPolicy } from "@/types/supabase";
@@ -52,7 +53,8 @@ export async function createGroupAction(
   const parsedInput = createGroupSchema.safeParse({
     name: String(formData.get("name") || ""),
     description: String(formData.get("description") || ""),
-    placeEditPolicy: String(formData.get("placeEditPolicy") || ""),
+    coverImageUrl: String(formData.get("coverImageUrl") || ""),
+    privacy: String(formData.get("privacy") || ""),
     joinPolicy: String(formData.get("joinPolicy") || "")
   });
 
@@ -60,7 +62,15 @@ export async function createGroupAction(
     return { error: getValidationErrorMessage(parsedInput.error), success: false, groupId: null };
   }
 
-  const { name, description, placeEditPolicy, joinPolicy } = parsedInput.data;
+  const { name, description, coverImageUrl, privacy, joinPolicy } = parsedInput.data;
+  const selectedFriendIds = Array.from(
+    new Set(
+      formData
+        .getAll("selectedFriendIds")
+        .map((value) => String(value))
+        .filter((value) => /^[0-9a-f-]{36}$/i.test(value))
+    )
+  );
 
   const supabase = await createSupabaseServerClient();
   let createdGroupId: string | null = null;
@@ -71,9 +81,10 @@ export async function createGroupAction(
     const groupInsertPayload = {
       name,
       description,
+      cover_image_url: coverImageUrl,
       created_by: user.id,
       join_code: joinCode,
-      place_edit_policy: placeEditPolicy,
+      privacy,
       join_policy: joinPolicy || "invite_only"
     };
     const groupResult = await supabase.from("groups").insert(groupInsertPayload).select("id").single();
@@ -109,9 +120,22 @@ export async function createGroupAction(
     return { error: memberError.message, success: false, groupId: null };
   }
 
+  let invitationWarning: string | null = null;
+
+  if (selectedFriendIds.length > 0) {
+    const inviteResults = await Promise.all(
+      selectedFriendIds.map((friendUserId) => inviteFriendToGroup(user.id, createdGroupId, friendUserId))
+    );
+    const firstInviteError = inviteResults.find((result) => result.error)?.error;
+    if (firstInviteError) {
+      invitationWarning = `Grupo creado, pero no se pudo invitar a todos los amigos: ${firstInviteError}`;
+    }
+  }
+
   revalidatePath("/groups");
   revalidatePath("/dashboard");
-  return { error: null, success: true, groupId: createdGroupId };
+  revalidatePath("/invitations");
+  return { error: invitationWarning, success: true, groupId: createdGroupId };
 }
 
 export async function joinGroupAction(

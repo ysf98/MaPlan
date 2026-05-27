@@ -14,6 +14,7 @@ export type PersonalPlace = {
   externalPlaceId: string | null;
   googleMapsUrl: string | null;
   businessStatus: string | null;
+  imageUrl?: string | null;
   latitude: number;
   longitude: number;
   createdAt: string;
@@ -32,18 +33,9 @@ type CreatePersonalPlaceInput = {
   externalPlaceId?: string | null;
   googleMapsUrl?: string | null;
   businessStatus?: string | null;
+  imageUrl?: string | null;
   latitude: number;
   longitude: number;
-};
-
-type UpdatePersonalPlaceInput = {
-  userId: string;
-  placeId: string;
-  name?: string;
-  address?: string;
-  city?: string | null;
-  notes?: string | null;
-  category?: string | null;
 };
 
 type DeletePersonalPlaceInput = {
@@ -51,12 +43,20 @@ type DeletePersonalPlaceInput = {
   placeId: string;
 };
 
+function isPlaceSource(value: string): value is PlaceSource {
+  return value === "manual" || value === "google_maps" || value === "tiktok" || value === "instagram" || value === "website";
+}
+
+function isPlaceProvider(value: string): value is PlaceProvider {
+  return value === "manual" || value === "mapbox" || value === "google_places";
+}
+
 export async function getPersonalPlacesForUser(userId: string): Promise<PersonalPlace[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("personal_places")
     .select(
-      "id, user_id, name, address, city, notes, category, source, provider, external_place_id, google_maps_url, business_status, latitude, longitude, created_at, updated_at"
+      "id, user_id, name, address, city, notes, category, source, provider, external_place_id, google_maps_url, business_status, image_url, latitude, longitude, created_at, updated_at"
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -73,11 +73,12 @@ export async function getPersonalPlacesForUser(userId: string): Promise<Personal
     city: item.city,
     notes: item.notes,
     category: item.category,
-    source: item.source,
-    provider: item.provider,
+    source: item.source && isPlaceSource(item.source) ? item.source : null,
+    provider: item.provider && isPlaceProvider(item.provider) ? item.provider : null,
     externalPlaceId: item.external_place_id,
     googleMapsUrl: item.google_maps_url,
     businessStatus: item.business_status,
+    imageUrl: item.image_url,
     latitude: item.latitude,
     longitude: item.longitude,
     createdAt: item.created_at,
@@ -143,6 +144,7 @@ export async function createPersonalPlace(input: CreatePersonalPlaceInput): Prom
     external_place_id: externalPlaceId,
     google_maps_url: input.googleMapsUrl?.trim() || null,
     business_status: input.businessStatus?.trim() || null,
+    image_url: input.imageUrl?.trim() || null,
     latitude: input.latitude,
     longitude: input.longitude
   });
@@ -154,34 +156,6 @@ export async function createPersonalPlace(input: CreatePersonalPlaceInput): Prom
     return { error: error.message };
   }
 
-  return { error: null };
-}
-
-export async function updatePersonalPlace(input: UpdatePersonalPlaceInput): Promise<{ error: string | null }> {
-  const updates: Record<string, string | null> = {};
-  if (typeof input.name === "string") updates.name = input.name.trim();
-  if (typeof input.address === "string") updates.address = input.address.trim();
-  if (input.city !== undefined) updates.city = input.city?.trim() || null;
-  if (input.notes !== undefined) updates.notes = input.notes?.trim() || null;
-  if (input.category !== undefined) updates.category = input.category?.trim() || null;
-
-  if (updates.name !== undefined && !updates.name) {
-    return { error: "El nombre del lugar es obligatorio." };
-  }
-  if (updates.address !== undefined && !updates.address) {
-    return { error: "La direccion del lugar es obligatoria." };
-  }
-
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
-    .from("personal_places")
-    .update(updates)
-    .eq("id", input.placeId)
-    .eq("user_id", input.userId);
-
-  if (error) {
-    return { error: error.message };
-  }
   return { error: null };
 }
 

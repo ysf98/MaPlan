@@ -1,5 +1,6 @@
 import { getFriendRequests } from "@/lib/friends";
 import { getGroupInvitationsForUser } from "@/lib/groupInvitations";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type NotificationItem =
   | {
@@ -68,6 +69,19 @@ export async function getPendingNotificationsForUser(userId: string): Promise<Pe
 }
 
 export async function getPendingNotificationsCountForUser(userId: string): Promise<number> {
-  const pending = await getPendingNotificationsForUser(userId);
-  return pending.total;
+  const supabase = await createSupabaseServerClient();
+  const [invitationsResult, friendRequestsResult] = await Promise.all([
+    supabase
+      .from("group_invitations")
+      .select("id", { count: "exact", head: true })
+      .eq("invited_user_id", userId)
+      .eq("status", "pending"),
+    supabase
+      .from("friend_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("receiver_id", userId)
+      .eq("status", "pending")
+  ]);
+
+  return (invitationsResult.count || 0) + (friendRequestsResult.count || 0);
 }

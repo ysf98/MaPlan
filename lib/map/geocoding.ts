@@ -33,6 +33,7 @@ export type MapDraftPlace = {
   externalPlaceId?: string | null;
   googleMapsUrl?: string | null;
   businessStatus?: string | null;
+  imageUrl?: string | null;
 };
 
 export function pickFirstNonEmpty(...values: Array<string | undefined>): string {

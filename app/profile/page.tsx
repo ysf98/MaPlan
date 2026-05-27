@@ -1,8 +1,9 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { SignOutButton } from "@/components/auth/SignOutButton";
-import { Card } from "@/components/ui/Card";
+import { ProfileView } from "@/components/profile/ProfileView";
+import { resolveDisplayName } from "@/lib/profile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { ROUTES } from "@/utils/constants";
 import { redirect } from "next/navigation";
 
 export default async function ProfilePage() {
@@ -13,24 +14,43 @@ export default async function ProfilePage() {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle();
+  const [profileResult, personalPlacesResult, createdPlacesResult, groupsResult] = await Promise.all([
+    supabase.from("profiles").select("full_name, username, avatar_url").eq("id", user.id).maybeSingle(),
+    supabase.from("personal_places").select("id, created_at", { count: "exact" }).eq("user_id", user.id),
+    supabase.from("places").select("id, status", { count: "exact" }).eq("created_by", user.id),
+    supabase.from("group_members").select("group_id", { count: "exact" }).eq("user_id", user.id)
+  ]);
 
-  const displayName = profile?.username?.trim() || user.user_metadata?.username || user.email || "Usuario";
+  const profile = profileResult.data;
+  const displayName = resolveDisplayName({
+    email: user.email,
+    metadataUsername: user.user_metadata?.username,
+    profileFullName: profile?.full_name,
+    profileUsername: profile?.username
+  });
+  const favoriteCount = (createdPlacesResult.data || []).filter((place) => place.status === "favorite").length;
+  const visitedCount = (createdPlacesResult.data || []).filter((place) => place.status === "visited").length;
+  const pendingCount = (createdPlacesResult.data || []).filter((place) => place.status === "pending").length;
+  const totalPlaces = (personalPlacesResult.count || 0) + (createdPlacesResult.count || 0);
+  const handle = (profile?.username || "").trim().toLowerCase() || "usuario";
 
   return (
-    <AppShell>
-      <section className="space-y-4">
-        <Card className="rounded-3xl">
-          <p className="text-sm text-slate-500">Nombre</p>
-          <p className="mt-1 text-xl font-semibold text-slate-900">{displayName}</p>
-        </Card>
-        <Card className="rounded-3xl">
-          <p className="text-sm text-slate-500">Sesion</p>
-          <div className="mt-2">
-            <SignOutButton />
-          </div>
-        </Card>
-      </section>
+    <AppShell backHref={ROUTES.dashboard} currentUser={user}>
+      <ProfileView
+        handle={handle}
+        initialAvatarUrl={profile?.avatar_url || null}
+        initialFullName={displayName}
+        quickLists={{
+          favorites: favoriteCount,
+          history: visitedCount,
+          toVisit: pendingCount
+        }}
+        stats={{
+          favorites: favoriteCount,
+          groups: groupsResult.count || 0,
+          places: totalPlaces
+        }}
+      />
     </AppShell>
   );
 }

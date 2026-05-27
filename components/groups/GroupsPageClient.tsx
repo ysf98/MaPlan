@@ -1,52 +1,46 @@
 "use client";
 
 import Link from "next/link";
-import { CategoryBadge } from "@/components/ui/CategoryBadge";
+import { GroupPreviewCard } from "@/components/dashboard/GroupPreviewCard";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ROUTES } from "@/utils/constants";
-import type { GroupListItem } from "@/lib/groups/types";
+import type { DashboardGroupSummary } from "@/lib/dashboard";
 
 type GroupsPageClientProps = {
-  groups: GroupListItem[];
+  groups: DashboardGroupSummary[];
 };
 
 export function GroupsPageClient({ groups }: GroupsPageClientProps) {
   return (
     <>
-      <Card className="rounded-3xl">
-        <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Link href={`${ROUTES.groups}/new`}>
-              <Card className="rounded-2xl border-dashed transition hover:-translate-y-0.5 hover:shadow-md">
-                <p className="text-sm font-medium text-slate-900">Crear nuevo grupo</p>
-                <p className="mt-1 text-xs text-slate-500">Define nombre, permisos de edicion y tipo de acceso.</p>
-              </Card>
-            </Link>
-            <Link href={`${ROUTES.groups}/join`}>
-              <Card className="rounded-2xl border-dashed transition hover:-translate-y-0.5 hover:shadow-md">
-                <p className="text-sm font-medium text-slate-900">Unirse con codigo</p>
-                <p className="mt-1 text-xs text-slate-500">Introduce un codigo de 8 caracteres para entrar a un grupo.</p>
-              </Card>
-            </Link>
-          </div>
-        </div>
-      </Card>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#c6283a] px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(198,40,58,0.24)] transition hover:bg-[#a91f31]"
+          href={`${ROUTES.groups}/new`}
+        >
+          Crear Grupo
+          <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+            <path d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" strokeWidth="1.8" />
+            <path d="M3.5 19c.5-3 2.2-5 4.5-5s4 2 4.5 5M14 18h6M17 15v6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+          </svg>
+        </Link>
+        <Link
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#c6283a] px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(198,40,58,0.24)] transition hover:bg-[#a91f31]"
+          href={`${ROUTES.groups}/join`}
+        >
+          Unirse con Codigo
+          <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+            <path d="M9 12h6M12 9v6M12 21s7-5.2 7-12A7 7 0 0 0 5 9c0 6.8 7 12 7 12Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+          </svg>
+        </Link>
+      </div>
 
       {groups.length > 0 ? (
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {groups.map((group, index) => (
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {groups.map((group) => (
             <li key={group.id}>
-              <Link href={`${ROUTES.groups}/${group.id}`}>
-                <Card className="rounded-3xl transition hover:-translate-y-0.5 hover:shadow-md">
-                  <CategoryBadge label={group.role === "owner" ? "Admin" : "Member"} tone={index % 2 === 0 ? "plan" : "visit"} />
-                  <h2 className="mt-3 text-lg font-semibold text-slate-900">{group.name}</h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {group.description || "Ver recomendaciones y mapa colaborativo"}
-                  </p>
-                </Card>
-              </Link>
+              <GroupPreviewCard className="w-full" group={group} />
             </li>
           ))}
         </ul>
@@ -57,7 +51,7 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
           action={
             <Link href={`${ROUTES.groups}/new`}>
               <Button type="button" variant="secondary">
-              Crear grupo
+                Crear grupo
               </Button>
             </Link>
           }

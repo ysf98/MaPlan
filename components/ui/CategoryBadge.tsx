@@ -6,11 +6,11 @@ type CategoryBadgeProps = {
 };
 
 const toneStyles = {
-  food: "bg-orange-100 text-orange-700",
-  coffee: "bg-amber-100 text-amber-700",
-  party: "bg-pink-100 text-pink-700",
-  visit: "bg-sky-100 text-sky-700",
-  plan: "bg-teal-100 text-teal-700"
+  food: "bg-[rgb(242_153_74/0.18)] text-[rgb(161_98_7)]",
+  coffee: "bg-[rgb(242_153_74/0.18)] text-[rgb(146_64_14)]",
+  party: "bg-[rgb(255_90_95/0.16)] text-[rgb(var(--primary-strong))]",
+  visit: "bg-[rgb(var(--vc-blue)/0.16)] text-[rgb(0_62_115)]",
+  plan: "bg-[rgb(var(--ring))] text-[rgb(var(--primary-strong))]"
 } as const;
 
 export function CategoryBadge({ label, tone = "plan" }: CategoryBadgeProps) {

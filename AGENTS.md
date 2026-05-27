@@ -175,10 +175,14 @@ Migration files currently include policies and schema changes such as:
 - `supabase/rls_groups.sql`
 - `supabase/rls_places.sql`
 - `supabase/places_links.sql`
+- `supabase/places_images.sql`
 - `supabase/rls_friends.sql`
 - `supabase/rls_group_invitations.sql`
+- `supabase/rls_group_activity.sql`
 - `supabase/places_external_provider.sql`
 - `supabase/rls_personal_places.sql`
+- `supabase/groups_privacy.sql`
+- `supabase/groups_cover_image_url.sql`
 
 When changing database behavior:
 
@@ -312,6 +316,8 @@ Styling uses Tailwind CSS.
 
 UI direction:
 
+- Follow `DESIGN.md`, the **Vibrant Cartography System**, as the visual source of truth.
+- Use its warm `surface` backgrounds, coral actions (`#ff5a5f`) and `Plus Jakarta Sans` typography rather than introducing unrelated themes.
 - Modern, clean, social-app feel.
 - Mobile-first responsive layout.
 - Rounded cards and soft borders are common patterns.

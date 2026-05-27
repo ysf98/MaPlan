@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { canEditPlaces, isGroupMember, isGroupOwner } from "@/lib/groupPermissions";
+import { canEditPlaces, isGroupMember } from "@/lib/groupPermissions";
 import { recordPlaceAddedGroupActivity } from "@/lib/groupActivity";
 import { INITIAL_PLACE_CATEGORIES, type GroupPlace, type PlaceCategory } from "@/lib/places/shared";
 import type { PlaceProvider, PlaceSource, PlaceStatus } from "@/types/supabase";
@@ -18,6 +18,7 @@ type CreatePlaceInput = {
   externalPlaceId?: string | null;
   googleMapsUrl?: string | null;
   businessStatus?: string | null;
+  imageUrl?: string | null;
   latitude?: number | null;
   longitude?: number | null;
 };
@@ -44,6 +45,18 @@ type DeletePlaceInput = {
   groupId: string;
   placeId: string;
 };
+
+function isPlaceStatus(value: string): value is PlaceStatus {
+  return value === "pending" || value === "visited" || value === "favorite";
+}
+
+function isPlaceSource(value: string): value is PlaceSource {
+  return value === "manual" || value === "google_maps" || value === "tiktok" || value === "instagram" || value === "website";
+}
+
+function isPlaceProvider(value: string): value is PlaceProvider {
+  return value === "manual" || value === "mapbox" || value === "google_places";
+}
 
 function normalizeCategory(category: string | null | undefined): PlaceCategory {
   const cleaned = (category || "").trim();
@@ -97,7 +110,7 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
   const supabase = await createSupabaseServerClient();
   const { data: places, error } = await supabase
     .from("places")
-    .select("id, name, address, city, notes, status, created_at, category_id, original_url, source, provider, external_place_id, google_maps_url, business_status, latitude, longitude")
+    .select("id, name, address, city, notes, status, created_at, category_id, original_url, source, provider, external_place_id, google_maps_url, business_status, image_url, latitude, longitude")
     .eq("group_id", groupId)
     .order("created_at", { ascending: false });
 
@@ -120,6 +133,9 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
 
   return places.map((place) => {
     const categoryName = place.category_id ? categoryNameById.get(place.category_id) : null;
+    const source = place.source && isPlaceSource(place.source) ? place.source : null;
+    const provider = place.provider && isPlaceProvider(place.provider) ? place.provider : null;
+    const status = isPlaceStatus(place.status) ? place.status : "pending";
 
     return {
       id: place.id,
@@ -128,14 +144,15 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
       city: place.city,
       notes: place.notes,
       originalUrl: place.original_url,
-      source: place.source,
-      provider: place.provider,
+      source,
+      provider,
       externalPlaceId: place.external_place_id,
       googleMapsUrl: place.google_maps_url,
       businessStatus: place.business_status,
+      imageUrl: place.image_url,
       latitude: place.latitude,
       longitude: place.longitude,
-      status: place.status,
+      status,
       category: normalizeCategory(categoryName),
       createdAt: place.created_at
     };
@@ -214,6 +231,7 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
       external_place_id: externalPlaceId,
       google_maps_url: input.googleMapsUrl?.trim() || null,
       business_status: input.businessStatus?.trim() || null,
+      image_url: input.imageUrl?.trim() || null,
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
       notes: input.notes?.trim() || null,
@@ -321,9 +339,9 @@ export async function updatePlaceLocation(input: UpdatePlaceLocationInput): Prom
 }
 
 export async function deletePlace(input: DeletePlaceInput): Promise<{ error: string | null }> {
-  const isOwner = await isGroupOwner(input.userId, input.groupId);
-  if (!isOwner) {
-    return { error: "Solo el propietario puede eliminar lugares en este grupo." };
+  const canEdit = await canEditPlaces(input.userId, input.groupId);
+  if (!canEdit) {
+    return { error: "No tienes permisos para eliminar lugares en este grupo." };
   }
 
   const supabase = await createSupabaseServerClient();

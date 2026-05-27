@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import type { GooglePlaceFeature } from "@/lib/map/googlePlaces";
 import { pickCityFromComponents, pickStreetFromComponents, splitAddressParts } from "@/lib/map/addressParsing";
+import { googlePlaceDetailsSchema } from "@/lib/validation/schemas";
 
 type GooglePlaceDetailsResult = {
   place_id?: string;
@@ -13,6 +15,7 @@ type GooglePlaceDetailsResult = {
   }>;
   geometry?: { location?: { lat?: number; lng?: number } };
   business_status?: string;
+  photos?: Array<{ photo_reference?: string }>;
 };
 
 type GooglePlaceDetailsResponse = {
@@ -25,21 +28,27 @@ function buildGoogleMapsUrl(placeId: string): string {
 }
 
 export async function POST(request: Request) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "GOOGLE_PLACES_API_KEY no configurada." }, { status: 500 });
   }
 
-  const payload = (await request.json().catch(() => null)) as { externalPlaceId?: string } | null;
-  const externalPlaceId = String(payload?.externalPlaceId || "").trim();
-  if (!externalPlaceId) {
-    return NextResponse.json({ place: null satisfies GooglePlaceFeature | null });
+  const payload = await request.json().catch(() => null);
+  const parsedPayload = googlePlaceDetailsSchema.safeParse(payload);
+  if (!parsedPayload.success) {
+    return NextResponse.json({ error: "Payload invalido." }, { status: 400 });
   }
 
+  const { externalPlaceId } = parsedPayload.data;
   const params = new URLSearchParams({
     place_id: externalPlaceId,
     language: "es",
-    fields: "place_id,name,formatted_address,address_components,geometry,business_status",
+    fields: "place_id,name,formatted_address,address_components,geometry,business_status,photos",
     key: apiKey
   });
   const response = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`, {
@@ -78,7 +87,10 @@ export async function POST(request: Request) {
     latitude,
     longitude,
     googleMapsUrl: buildGoogleMapsUrl(placeId),
-    businessStatus: (result.business_status || "").trim() || null
+    businessStatus: (result.business_status || "").trim() || null,
+    imageUrl: result.photos?.[0]?.photo_reference
+      ? `/api/places/photo?photoReference=${encodeURIComponent(result.photos[0].photo_reference)}&maxWidth=800`
+      : null
   };
 
   return NextResponse.json({ place });

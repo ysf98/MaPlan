@@ -4,7 +4,7 @@ const redirectMock = vi.fn();
 const revalidatePathMock = vi.fn();
 const getCurrentUserMock = vi.fn();
 const createSupabaseServerClientMock = vi.fn();
-const createSupabaseAdminClientMock = vi.fn();
+const inviteFriendToGroupMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   redirect: redirectMock
@@ -22,8 +22,8 @@ vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: createSupabaseServerClientMock
 }));
 
-vi.mock("@/lib/supabase/admin", () => ({
-  createSupabaseAdminClient: createSupabaseAdminClientMock
+vi.mock("@/lib/groupInvitations", () => ({
+  inviteFriendToGroup: inviteFriendToGroupMock
 }));
 
 function createGroupsActionClient({
@@ -121,6 +121,7 @@ function createGroupsActionClient({
 describe("group server actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    inviteFriendToGroupMock.mockResolvedValue({ error: null });
     redirectMock.mockImplementation(() => {
       throw new Error("redirect");
     });
@@ -150,18 +151,19 @@ describe("group server actions", () => {
     const formData = new FormData();
     formData.set("name", "My Group");
     formData.set("description", "Desc");
-    formData.set("placeEditPolicy", "owner_only");
+    formData.set("privacy", "privado");
     formData.set("joinPolicy", "request_to_join");
 
     const result = await createGroupAction({ error: null, success: false, groupId: null }, formData);
 
     expect(result).toEqual({ error: null, success: true, groupId: "33333333-3333-4333-8333-333333333333" });
+    const firstInsertPayload = client.groupInsertMock.mock.calls[0]?.[0] as { privacy?: string };
+    expect(firstInsertPayload.privacy).toBe("privado");
     expect(revalidatePathMock).toHaveBeenCalledWith("/groups");
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
-    expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
   });
 
-  it("createGroupAction defaults join policy to invite_only", async () => {
+  it("createGroupAction defaults privacy to abierto", async () => {
     const { createGroupAction } = await import("@/app/groups/actions");
     getCurrentUserMock.mockResolvedValue({ id: "user-1" });
     const client = createGroupsActionClient({ createdGroupId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
@@ -170,13 +172,12 @@ describe("group server actions", () => {
     const formData = new FormData();
     formData.set("name", "My Group");
     formData.set("description", "Desc");
-    formData.set("placeEditPolicy", "owner_only");
 
     const result = await createGroupAction({ error: null, success: false, groupId: null }, formData);
 
     expect(result).toEqual({ error: null, success: true, groupId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
-    const firstInsertPayload = client.groupInsertMock.mock.calls[0]?.[0] as { join_policy?: string };
-    expect(firstInsertPayload.join_policy).toBe("invite_only");
+    const firstInsertPayload = client.groupInsertMock.mock.calls[0]?.[0] as { privacy?: string };
+    expect(firstInsertPayload.privacy).toBe("abierto");
   });
 
   it("createGroupAction deletes created group if owner membership insert fails", async () => {
@@ -191,14 +192,33 @@ describe("group server actions", () => {
     const formData = new FormData();
     formData.set("name", "My Group");
     formData.set("description", "Desc");
-    formData.set("placeEditPolicy", "owner_only");
+    formData.set("privacy", "privado");
     formData.set("joinPolicy", "request_to_join");
 
     const result = await createGroupAction({ error: null, success: false, groupId: null }, formData);
 
     expect(result).toEqual({ error: "membership insert failed", success: false, groupId: null });
     expect(client.groupDeleteEqMock).toHaveBeenCalledWith("id", "77777777-7777-4777-8777-777777777777");
-    expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
+  });
+
+  it("createGroupAction keeps successful creation when one invitation fails", async () => {
+    const { createGroupAction } = await import("@/app/groups/actions");
+    getCurrentUserMock.mockResolvedValue({ id: "user-1" });
+    createSupabaseServerClientMock.mockResolvedValue(
+      createGroupsActionClient({ createdGroupId: "88888888-8888-4888-8888-888888888888" })
+    );
+    inviteFriendToGroupMock.mockResolvedValue({ error: "No se pudo enviar la invitacion." });
+
+    const formData = new FormData();
+    formData.set("name", "My Group");
+    formData.append("selectedFriendIds", "99999999-9999-4999-8999-999999999999");
+
+    const result = await createGroupAction({ error: null, success: false, groupId: null }, formData);
+
+    expect(result.success).toBe(true);
+    expect(result.groupId).toBe("88888888-8888-4888-8888-888888888888");
+    expect(result.error).toContain("Grupo creado");
+    expect(revalidatePathMock).toHaveBeenCalledWith("/invitations");
   });
 
   it("joinGroupAction returns group id and revalidates", async () => {

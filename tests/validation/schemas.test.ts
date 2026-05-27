@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   createGroupSchema,
+  friendSearchQuerySchema,
+  googlePlaceDetailsSchema,
+  googlePlacesSearchSchema,
   inviteFriendToGroupSchema,
   joinGroupSchema,
   createPlaceSchema,
@@ -18,7 +21,7 @@ describe("createGroupSchema", () => {
     const result = createGroupSchema.safeParse({
       name: "Madrid Crew",
       description: "Planes de finde",
-      placeEditPolicy: "owner_only",
+      privacy: "privado",
       joinPolicy: "request_to_join"
     });
 
@@ -34,21 +37,21 @@ describe("createGroupSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("accepts invite_only join policy", () => {
+  it("accepts privacy values", () => {
     const result = createGroupSchema.safeParse({
       name: "Grupo privado",
-      joinPolicy: "invite_only"
+      privacy: "abierto"
     });
 
     expect(result.success).toBe(true);
   });
 
-  it("defaults join policy to invite_only", () => {
+  it("defaults privacy to abierto", () => {
     const result = createGroupSchema.parse({
       name: "Grupo default"
     });
 
-    expect(result.joinPolicy).toBe("invite_only");
+    expect(result.privacy).toBe("abierto");
   });
 });
 
@@ -250,5 +253,35 @@ describe("group invitation schemas", () => {
         decision: "pending"
       }).success
     ).toBe(false);
+  });
+});
+
+describe("api schemas", () => {
+  it("friendSearchQuerySchema trims and enforces length", () => {
+    expect(friendSearchQuerySchema.parse({ q: "  ana " }).q).toBe("ana");
+    expect(friendSearchQuerySchema.safeParse({ q: "a" }).success).toBe(false);
+    expect(friendSearchQuerySchema.safeParse({ q: "a".repeat(81) }).success).toBe(false);
+  });
+
+  it("googlePlacesSearchSchema validates query and center", () => {
+    expect(
+      googlePlacesSearchSchema.safeParse({
+        query: "cafeterias madrid",
+        center: { lat: 40.4168, lng: -3.7038 }
+      }).success
+    ).toBe(true);
+    expect(googlePlacesSearchSchema.safeParse({ query: "ca" }).success).toBe(false);
+    expect(
+      googlePlacesSearchSchema.safeParse({
+        query: "cafeterias madrid",
+        center: { lat: 120, lng: -3.7038 }
+      }).success
+    ).toBe(false);
+  });
+
+  it("googlePlaceDetailsSchema validates external place id", () => {
+    expect(googlePlaceDetailsSchema.parse({ externalPlaceId: "  ChIJ123 " }).externalPlaceId).toBe("ChIJ123");
+    expect(googlePlaceDetailsSchema.safeParse({ externalPlaceId: "" }).success).toBe(false);
+    expect(googlePlaceDetailsSchema.safeParse({ externalPlaceId: "a".repeat(256) }).success).toBe(false);
   });
 });

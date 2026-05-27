@@ -4,10 +4,17 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
 import { createPlace, deletePlace, updatePlaceLocation, updatePlaceStatus } from "@/lib/places";
-import { createPlaceSchema, reviewJoinRequestSchema, updateGroupSettingsSchema, updatePlaceLocationSchema, updatePlaceStatusSchema } from "@/lib/validation/schemas";
-import type { PlaceStatus } from "@/types/supabase";
+import {
+  createPlaceSchema,
+  reviewJoinRequestSchema,
+  updateGroupDetailsSchema,
+  updateGroupSettingsSchema,
+  updatePlaceLocationSchema,
+  updatePlaceStatusSchema
+} from "@/lib/validation/schemas";
+import type { Database, PlaceStatus } from "@/types/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
+import { canChangeGroupPrivacy, canEditGroupDetails, canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
 
 export type AddPlaceActionState = {
   error: string | null;
@@ -40,6 +47,11 @@ export type DeleteGroupActionState = {
 };
 
 export type UpdateGroupSettingsActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type UpdateGroupDetailsActionState = {
   error: string | null;
   success: boolean;
 };
@@ -84,17 +96,21 @@ const UPDATE_GROUP_SETTINGS_INITIAL_STATE: UpdateGroupSettingsActionState = {
   success: false
 };
 
+const UPDATE_GROUP_DETAILS_INITIAL_STATE: UpdateGroupDetailsActionState = {
+  error: null,
+  success: false
+};
+
 const DELETE_PLACE_INITIAL_STATE: DeletePlaceActionState = {
   error: null,
   success: false
 };
+type GroupJoinRequestUpdate = Database["public"]["Tables"]["group_join_requests"]["Update"];
 
 export async function addPlaceAction(
   _previousState: AddPlaceActionState = ADD_PLACE_INITIAL_STATE,
   formData: FormData
 ): Promise<AddPlaceActionState> {
-  const user = await requireAuthenticatedUser("/groups");
-
   const parsedInput = createPlaceSchema.safeParse({
     groupId: String(formData.get("groupId") || ""),
     name: String(formData.get("name") || ""),
@@ -108,6 +124,7 @@ export async function addPlaceAction(
     externalPlaceId: String(formData.get("externalPlaceId") || ""),
     googleMapsUrl: String(formData.get("googleMapsUrl") || ""),
     businessStatus: String(formData.get("businessStatus") || ""),
+    imageUrl: String(formData.get("imageUrl") || ""),
     latitude: formData.get("latitude"),
     longitude: formData.get("longitude")
   });
@@ -119,7 +136,9 @@ export async function addPlaceAction(
     };
   }
 
-  const { groupId, name, address, city, notes, category, originalUrl, source, provider, externalPlaceId, googleMapsUrl, businessStatus, latitude, longitude } = parsedInput.data;
+  const user = await requireAuthenticatedUser("/groups");
+
+  const { groupId, name, address, city, notes, category, originalUrl, source, provider, externalPlaceId, googleMapsUrl, businessStatus, imageUrl, latitude, longitude } = parsedInput.data;
 
   const result = await createPlace({
     userId: user.id,
@@ -135,6 +154,7 @@ export async function addPlaceAction(
     externalPlaceId: externalPlaceId || null,
     googleMapsUrl: googleMapsUrl || null,
     businessStatus: businessStatus || null,
+    imageUrl: imageUrl || null,
     latitude: typeof latitude === "number" ? latitude : null,
     longitude: typeof longitude === "number" ? longitude : null
   });
@@ -295,7 +315,7 @@ export async function reviewJoinRequestAction(
       return { error: approveResult.error.message, success: false };
     }
   } else {
-    const updatePayload = {
+    const updatePayload: GroupJoinRequestUpdate = {
       status: decision,
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString()
@@ -320,7 +340,7 @@ export async function updateGroupSettingsAction(
 
   const parsedInput = updateGroupSettingsSchema.safeParse({
     groupId: String(formData.get("groupId") || ""),
-    placeEditPolicy: String(formData.get("placeEditPolicy") || ""),
+    privacy: String(formData.get("privacy") || ""),
     joinPolicy: String(formData.get("joinPolicy") || "")
   });
 
@@ -328,20 +348,63 @@ export async function updateGroupSettingsAction(
     return { error: getValidationErrorMessage(parsedInput.error), success: false };
   }
 
-  const { groupId, placeEditPolicy, joinPolicy } = parsedInput.data;
-  const owner = await isGroupOwner(user.id, groupId);
+  const { groupId, privacy, joinPolicy } = parsedInput.data;
+  const canChangePrivacy = await canChangeGroupPrivacy(user.id, groupId);
 
-  if (!owner) {
-    return { error: "Solo el propietario puede cambiar la configuracion del grupo.", success: false };
+  if (!canChangePrivacy) {
+    return { error: "Solo el administrador puede cambiar la privacidad del grupo.", success: false };
   }
 
   const supabase = await createSupabaseServerClient();
   const payload = {
-    place_edit_policy: placeEditPolicy,
+    privacy,
     join_policy: joinPolicy
   };
 
   const updateResult = await supabase.from("groups").update(payload).eq("id", groupId);
+
+  if (updateResult.error) {
+    return { error: updateResult.error.message, success: false };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/groups");
+  revalidatePath("/dashboard");
+  return { error: null, success: true };
+}
+
+export async function updateGroupDetailsAction(
+  _previousState: UpdateGroupDetailsActionState = UPDATE_GROUP_DETAILS_INITIAL_STATE,
+  formData: FormData
+): Promise<UpdateGroupDetailsActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const parsedInput = updateGroupDetailsSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    name: String(formData.get("name") || ""),
+    description: String(formData.get("description") || ""),
+    coverImageUrl: String(formData.get("coverImageUrl") || "")
+  });
+
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
+  }
+
+  const { groupId, name, description, coverImageUrl } = parsedInput.data;
+  const canEditGroup = await canEditGroupDetails(user.id, groupId);
+  if (!canEditGroup) {
+    return { error: "No tienes permisos para editar este grupo.", success: false };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const updateResult = await supabase
+    .from("groups")
+    .update({
+      name,
+      description,
+      cover_image_url: coverImageUrl
+    })
+    .eq("id", groupId);
 
   if (updateResult.error) {
     return { error: updateResult.error.message, success: false };

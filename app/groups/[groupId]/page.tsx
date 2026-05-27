@@ -1,52 +1,70 @@
+﻿import { notFound, redirect } from "next/navigation";
+import { GroupDetailView } from "@/components/groups/GroupDetailView";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
-import { getGroupDetailForUser, getGroupMembersPreviewForUser, getPendingJoinRequestsForOwner } from "@/lib/groups";
-import { getGroupInvitationsForGroup, getInvitableFriendsForGroup } from "@/lib/groupInvitations";
+import { getGroupActivityFeedForUser } from "@/lib/groupActivity";
 import { getFriends } from "@/lib/friends";
+import { getInvitableFriendsForGroup } from "@/lib/groupInvitations";
+import {
+  getGroupDetailForUser,
+  getGroupMembersPreviewForUser,
+  getPendingJoinRequestsForOwner,
+  getReviewedJoinRequestsForOwner
+} from "@/lib/groups";
+import { getGroupDetailTab } from "@/lib/groups/tabs";
 import { getGroupPlacesForUser } from "@/lib/places";
-import { GroupDetailView } from "@/components/groups/GroupDetailView";
-import { notFound, redirect } from "next/navigation";
+import { ROUTES } from "@/utils/constants";
 
 type GroupDetailPageProps = {
   params: Promise<{
     groupId: string;
   }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function GroupDetailPage({ params }: GroupDetailPageProps) {
+export default async function GroupDetailPage({ params, searchParams }: GroupDetailPageProps) {
   const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login?next=/groups");
   }
 
-  const { groupId } = await params;
+  const [{ groupId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
+  const activeTab = getGroupDetailTab(resolvedSearchParams?.tab);
+
   const group = await getGroupDetailForUser(user.id, groupId);
-  const places = await getGroupPlacesForUser(user.id, groupId);
-  const membersPreviewResult = await getGroupMembersPreviewForUser(user.id, groupId);
 
   if (!group) {
     notFound();
   }
 
-  const pendingRequests = group.role === "owner" ? await getPendingJoinRequestsForOwner(user.id, groupId) : [];
-  const invitableFriends = group.role === "owner" ? await getInvitableFriendsForGroup(user.id, groupId) : [];
-  const groupInvitations = group.role === "owner" ? await getGroupInvitationsForGroup(user.id, groupId) : [];
-  const totalFriendsCount = group.role === "owner" ? (await getFriends(user.id)).length : 0;
+  const [places, membersPreviewResult, invitableFriends, friends, activityFeed, pendingJoinRequests, reviewedJoinRequests] =
+    await Promise.all([
+      getGroupPlacesForUser(user.id, groupId),
+      getGroupMembersPreviewForUser(user.id, groupId),
+      group.canInviteMembers ? getInvitableFriendsForGroup(user.id, groupId) : Promise.resolve([]),
+      group.canInviteMembers ? getFriends(user.id) : Promise.resolve([]),
+      getGroupActivityFeedForUser(user.id, 50),
+      group.role === "owner" ? getPendingJoinRequestsForOwner(user.id, groupId) : Promise.resolve([]),
+      group.role === "owner" ? getReviewedJoinRequestsForOwner(user.id, groupId) : Promise.resolve([])
+    ]);
+
+  const activityEvents = activityFeed.filter((event) => event.groupId === groupId);
 
   return (
-    <AppShell>
+    <AppShell backHref={ROUTES.groups} currentUser={user}>
       <GroupDetailView
+        activeTab={activeTab}
+        activityEvents={activityEvents}
         group={group}
         groupId={groupId}
-        pendingRequests={pendingRequests}
-        places={places}
-        membersPreview={membersPreviewResult.members}
-        allMembers={membersPreviewResult.allMembers}
-        totalMembersCount={membersPreviewResult.total}
         invitableFriends={invitableFriends}
-        groupInvitations={groupInvitations}
-        totalFriendsCount={totalFriendsCount}
+        membersPreview={membersPreviewResult.members}
+        pendingJoinRequests={pendingJoinRequests}
+        places={places}
+        reviewedJoinRequests={reviewedJoinRequests}
+        totalFriendsCount={friends.length}
+        totalMembersCount={membersPreviewResult.total}
       />
     </AppShell>
   );

@@ -31,15 +31,15 @@ export function InvitationsPageClient({ invitations }: InvitationsPageClientProp
       ) : (
         <>
           <Card className="rounded-3xl">
-            <h2 className="text-lg font-semibold text-slate-900">Pendientes</h2>
+            <h2 className="text-lg font-semibold text-zinc-950">Pendientes</h2>
             {pendingInvitations.length === 0 ? (
-              <p className="mt-2 text-sm text-slate-500">No tienes invitaciones pendientes ahora mismo.</p>
+              <p className="mt-2 text-sm text-zinc-500">No tienes invitaciones pendientes ahora mismo.</p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {pendingInvitations.map((invitation) => (
-                  <li key={invitation.id} className="rounded-xl border border-slate-200 p-3">
-                    <p className="text-sm font-medium text-slate-900">{invitation.groupName || invitation.groupId}</p>
-                    <p className="mt-1 text-xs text-slate-500">Invita: @{invitation.invitedByUsername || "sin-username"}</p>
+                  <li key={invitation.id} className="rounded-xl border border-zinc-100 p-3">
+                    <p className="text-sm font-medium text-zinc-950">{invitation.groupName || invitation.groupId}</p>
+                    <p className="mt-1 text-xs text-zinc-500">Invita: @{invitation.invitedByUsername || "sin-username"}</p>
                     <form action={formAction} className="mt-2 flex gap-2">
                       <input name="invitationId" type="hidden" value={invitation.id} />
                       <Button disabled={isPending} name="decision" size="sm" type="submit" value="accepted">
@@ -59,18 +59,18 @@ export function InvitationsPageClient({ invitations }: InvitationsPageClientProp
 
           {reviewedInvitations.length > 0 ? (
             <Card className="rounded-3xl">
-              <h2 className="text-lg font-semibold text-slate-900">Historial reciente</h2>
+              <h2 className="text-lg font-semibold text-zinc-950">Historial reciente</h2>
               <ul className="mt-3 space-y-2">
                 {reviewedInvitations.slice(0, 10).map((invitation) => (
-                  <li key={invitation.id} className="rounded-xl border border-slate-200 p-3">
-                    <p className="text-sm font-medium text-slate-900">{invitation.groupName || invitation.groupId}</p>
-                    <p className="mt-1 text-xs text-slate-500">
+                  <li key={invitation.id} className="rounded-xl border border-zinc-100 p-3">
+                    <p className="text-sm font-medium text-zinc-950">{invitation.groupName || invitation.groupId}</p>
+                    <p className="mt-1 text-xs text-zinc-500">
                       Estado:{" "}
                       <span className={invitation.status === "accepted" ? "text-emerald-700" : "text-rose-700"}>{invitation.status}</span>
                     </p>
                     {invitation.status === "accepted" ? (
                       <Link
-                        className="mt-2 inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                        className="mt-2 inline-flex h-8 items-center justify-center rounded-lg border border-zinc-100 px-3 text-xs font-medium text-zinc-700 transition hover:bg-rose-50 hover:text-[#c6283a]"
                         href={`${ROUTES.groups}/${invitation.groupId}`}
                       >
                         Ir al grupo

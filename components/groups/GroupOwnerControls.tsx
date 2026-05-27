@@ -1,292 +1,366 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { deleteGroupAction, leaveGroupAction, reviewJoinRequestAction, updateGroupSettingsAction } from "@/app/groups/[groupId]/actions";
-import { inviteFriendToGroupAction } from "@/app/groups/[groupId]/invitations/actions";
-import type { InviteFriendActionState } from "@/app/groups/[groupId]/invitations/actions";
+import {
+  deleteGroupAction,
+  leaveGroupAction,
+  updateGroupDetailsAction,
+  updateGroupSettingsAction
+} from "@/app/groups/[groupId]/actions";
 import type {
   DeleteGroupActionState,
   LeaveGroupActionState,
-  ReviewJoinRequestActionState,
+  UpdateGroupDetailsActionState,
   UpdateGroupSettingsActionState
 } from "@/app/groups/[groupId]/actions";
+import { inviteFriendToGroupAction } from "@/app/groups/[groupId]/invitations/actions";
+import type { InviteFriendActionState } from "@/app/groups/[groupId]/invitations/actions";
+import { GroupCoverPicker } from "@/components/groups/GroupCoverPicker";
+import { GroupFriendsSelector } from "@/components/groups/GroupFriendsSelector";
 import { Button } from "@/components/ui/Button";
-import type { GroupJoinRequestItem } from "@/lib/groups/types";
-import type { GroupJoinPolicy, GroupPlaceEditPolicy } from "@/lib/groups/policies";
-import type { GroupInvitationItem } from "@/lib/groupInvitations";
+import type { GroupJoinPolicy, GroupPrivacy } from "@/lib/groups/policies";
 
 type GroupOwnerControlsProps = {
   groupId: string;
   groupName: string;
+  groupDescription: string | null;
+  groupCoverImageUrl: string | null;
   joinCode: string;
   role: "owner" | "member";
-  placeEditPolicy: GroupPlaceEditPolicy;
+  canEditGroup: boolean;
+  canInviteMembers: boolean;
+  privacy: GroupPrivacy;
   joinPolicy: GroupJoinPolicy;
-  pendingRequests: GroupJoinRequestItem[];
   invitableFriends: Array<{ id: string; username: string | null }>;
-  groupInvitations: GroupInvitationItem[];
   totalFriendsCount: number;
 };
 
-const settingsInitialState: UpdateGroupSettingsActionState = {
-  error: null,
-  success: false
-};
-
-const reviewInitialState: ReviewJoinRequestActionState = {
-  error: null,
-  success: false
-};
-
-const leaveInitialState: LeaveGroupActionState = {
-  error: null,
-  success: false
-};
-
-const deleteInitialState: DeleteGroupActionState = {
-  error: null,
-  success: false
-};
-
-const inviteInitialState: InviteFriendActionState = {
-  error: null,
-  success: false
-};
-
-function formatDate(value: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString("es-ES", {
-    dateStyle: "short",
-    timeStyle: "short"
-  });
-}
+const settingsInitialState: UpdateGroupSettingsActionState = { error: null, success: false };
+const detailsInitialState: UpdateGroupDetailsActionState = { error: null, success: false };
+const inviteInitialState: InviteFriendActionState = { error: null, success: false };
+const leaveInitialState: LeaveGroupActionState = { error: null, success: false };
+const deleteInitialState: DeleteGroupActionState = { error: null, success: false };
 
 export function GroupOwnerControls({
   groupId,
   groupName,
+  groupDescription,
+  groupCoverImageUrl,
   joinCode,
   role,
-  placeEditPolicy,
+  canEditGroup,
+  canInviteMembers,
+  privacy,
   joinPolicy,
-  pendingRequests,
   invitableFriends,
-  groupInvitations,
   totalFriendsCount
 }: GroupOwnerControlsProps) {
+  const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
   const router = useRouter();
-  const [expanded, setExpanded] = useState(false);
-  const [confirmMode, setConfirmMode] = useState<"leave" | "delete" | null>(null);
+  const isOwner = role === "owner";
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const settingsRef = useRef<HTMLDivElement | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [invitingFriendId, setInvitingFriendId] = useState<string | null>(null);
+  const [coverValue, setCoverValue] = useState(groupCoverImageUrl || "");
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(groupCoverImageUrl);
+  const [coverError, setCoverError] = useState<string | null>(null);
 
   const [settingsState, settingsAction, isSettingsPending] = useActionState(updateGroupSettingsAction, settingsInitialState);
-  const [reviewState, reviewAction, isReviewPending] = useActionState(reviewJoinRequestAction, reviewInitialState);
+  const [detailsState, detailsAction, isDetailsPending] = useActionState(updateGroupDetailsAction, detailsInitialState);
+  const [inviteState, inviteAction, isInviting] = useActionState(inviteFriendToGroupAction, inviteInitialState);
   const [leaveState, leaveAction, isLeaving] = useActionState(leaveGroupAction, leaveInitialState);
   const [deleteState, deleteAction, isDeleting] = useActionState(deleteGroupAction, deleteInitialState);
-  const [inviteState, inviteAction, isInviting] = useActionState(inviteFriendToGroupAction, inviteInitialState);
 
   useEffect(() => {
-    if (settingsState.success || reviewState.success) {
+    if (settingsState.success || detailsState.success || inviteState.success) {
       router.refresh();
     }
-  }, [reviewState.success, router, settingsState.success]);
+    if (detailsState.success) {
+      setIsEditOpen(false);
+    }
+  }, [detailsState.success, inviteState.success, router, settingsState.success]);
+
+  useEffect(() => {
+    if (!isInviting) {
+      setInvitingFriendId(null);
+    }
+  }, [isInviting]);
+
+  function handleInvite(friendId: string) {
+    setInvitingFriendId(friendId);
+    startTransition(() => {
+      const formData = new FormData();
+      formData.set("groupId", groupId);
+      formData.set("friendUserId", friendId);
+      inviteAction(formData);
+    });
+  }
+
+  useEffect(() => {
+    if (!isEditOpen) {
+      setIsSettingsOpen(false);
+      setCoverValue(groupCoverImageUrl || "");
+      setCoverPreviewUrl(groupCoverImageUrl);
+    }
+  }, [groupCoverImageUrl, isEditOpen]);
+
+  useEffect(() => {
+    const onMouseDown = (event: MouseEvent) => {
+      if (!isEditOpen) return;
+      const targetNode = event.target as Node;
+      if (!dialogRef.current?.contains(targetNode)) {
+        setIsEditOpen(false);
+      }
+      if (isSettingsOpen && !settingsRef.current?.contains(targetNode)) {
+        setIsSettingsOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsEditOpen(false);
+        setIsSettingsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isEditOpen]);
+
+  function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
+    if (!canEditGroup) {
+      return;
+    }
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_IMAGE_BYTES) {
+      setCoverError("La imagen es demasiado pesada. Maximo 2MB.");
+      return;
+    }
+    setCoverError(null);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      setCoverValue(result);
+      setCoverPreviewUrl(result || groupCoverImageUrl || null);
+    };
+    reader.readAsDataURL(file);
+  }
 
   return (
-    <aside className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:max-w-sm">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-slate-900">Gestion del grupo</h2>
-        <Button onClick={() => setExpanded((value) => !value)} size="sm" type="button" variant="secondary">
-          {expanded ? "Ocultar" : "Desplegar"}
-        </Button>
-      </div>
+    <>
+      <button
+        aria-expanded={isEditOpen}
+        aria-label="Editar grupo"
+        className="grid h-10 w-10 place-items-center rounded-full border border-white/45 bg-white/18 text-white shadow-[0_6px_20px_rgba(0,0,0,0.35)] backdrop-blur-md transition hover:bg-white/28"
+        onClick={() => setIsEditOpen(true)}
+        type="button"
+      >
+        <svg aria-hidden="true" className="h-5 w-5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]" fill="none" viewBox="0 0 24 24">
+          <path d="m4 20 3.5-.7L18.6 8.2a1.8 1.8 0 0 0 0-2.6l-.2-.2a1.8 1.8 0 0 0-2.6 0L4.7 16.5 4 20Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
+          <path d="m13.9 7.3 2.8 2.8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+        </svg>
+      </button>
 
-      {expanded ? (
-        <div className="mt-4 space-y-4">
-          {role === "owner" ? (
-            <form action={settingsAction} className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
+      {isEditOpen ? (
+        <div className="fixed inset-0 z-50 bg-zinc-950/45">
+          <div className="flex h-full w-full items-start justify-center overflow-y-auto px-4 pb-44 pt-24 sm:pb-32 sm:pt-24">
+            <div ref={dialogRef} className="w-full max-w-[24rem] sm:max-w-[26rem]">
+            <form
+              action={detailsAction}
+              className="w-full overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-[0_18px_45px_rgba(24,24,27,0.14)]"
+            >
               <input name="groupId" type="hidden" value={groupId} />
-              <label className="block space-y-2">
-                <span className="text-xs font-medium text-slate-700">Edicion de lugares</span>
-                <select
-                  className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
-                  defaultValue={placeEditPolicy}
-                  name="placeEditPolicy"
-                >
-                  <option value="members_can_edit">Todos los miembros pueden anadir</option>
-                  <option value="owner_only">Solo propietario</option>
-                </select>
-              </label>
-              <label className="block space-y-2">
-                <span className="text-xs font-medium text-slate-700">Acceso al grupo</span>
-                <select
-                  className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-100"
-                  defaultValue={joinPolicy}
-                  name="joinPolicy"
-                >
-                  <option value="invite_only">Solo por invitacion</option>
-                  <option value="request_to_join">Solicitud con codigo</option>
-                  <option value="open_by_code">Abierto con codigo</option>
-                </select>
-              </label>
-              {settingsState.error ? <p className="text-xs text-rose-600">{settingsState.error}</p> : null}
-              {settingsState.success ? <p className="text-xs text-emerald-600">Configuracion actualizada.</p> : null}
-              <Button disabled={isSettingsPending} size="sm" type="submit">
-                {isSettingsPending ? "Guardando..." : "Guardar configuracion"}
-              </Button>
-            </form>
-          ) : null}
+              <input name="coverImageUrl" type="hidden" value={coverValue} />
 
-          <div className="rounded-xl border border-slate-200 bg-white p-3">
-            <p className="text-xs font-medium text-slate-700">Codigo de invitacion</p>
-            <p className="mt-1 text-sm font-semibold tracking-wide text-slate-900">{joinCode}</p>
-          </div>
-
-          {role === "owner" ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold text-slate-900">Solicitudes pendientes</h3>
-                <span className="inline-flex min-w-7 justify-center rounded-full bg-teal-100 px-2 py-0.5 text-xs font-semibold text-teal-800">
-                  {pendingRequests.length}
-                </span>
+              <div className="flex h-12 items-center justify-center border-b border-zinc-100 bg-white px-4">
+                <h2 className="text-center text-base font-bold text-[#c6283a]">Editar grupo</h2>
               </div>
-              {pendingRequests.length === 0 ? (
-                <p className="mt-2 text-xs text-slate-500">No hay solicitudes pendientes.</p>
-              ) : (
-                <ul className="mt-3 space-y-3">
-                  {pendingRequests.map((request) => (
-                    <li key={request.id} className="rounded-lg border border-slate-200 p-3">
-                      <p className="text-sm font-medium text-slate-900">{request.username || "Usuario sin nombre"}</p>
-                      <p className="mt-1 text-xs text-slate-500">Ultimo intento: {formatDate(request.updatedAt)}</p>
-                      <form action={reviewAction} className="mt-2 flex flex-wrap gap-2">
-                        <input name="groupId" type="hidden" value={groupId} />
-                        <input name="requestId" type="hidden" value={request.id} />
-                        <Button disabled={isReviewPending} name="decision" size="sm" type="submit" value="approved">
-                          Aceptar
-                        </Button>
-                        <Button disabled={isReviewPending} name="decision" size="sm" type="submit" value="rejected" variant="secondary">
-                          Rechazar
-                        </Button>
-                      </form>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {reviewState.error ? <p className="mt-2 text-xs text-rose-600">{reviewState.error}</p> : null}
-              {reviewState.success ? <p className="mt-2 text-xs text-emerald-600">Solicitud actualizada.</p> : null}
-            </div>
-          ) : null}
 
-          {role === "owner" ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <h3 className="text-sm font-semibold text-slate-900">Invitar amigos</h3>
-              {invitableFriends.length === 0 ? (
-                <p className="mt-2 text-xs text-slate-500">
-                  {totalFriendsCount === 0
-                    ? "Anade amigos primero para poder invitarlos al grupo."
-                    : "Todos tus amigos ya estan invitados o ya son miembros de este grupo."}
-                </p>
-              ) : (
-                <ul className="mt-3 space-y-2">
-                  {invitableFriends.map((friend) => (
-                    <li key={friend.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 p-2">
-                      <p className="text-xs font-medium text-slate-900">@{friend.username || "sin-username"}</p>
-                      <form action={inviteAction}>
-                        <input name="groupId" type="hidden" value={groupId} />
-                        <input name="friendUserId" type="hidden" value={friend.id} />
-                        <Button disabled={isInviting} size="sm" type="submit" variant="secondary">
-                          {isInviting ? "Enviando..." : "Invitar"}
-                        </Button>
-                      </form>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {inviteState.error ? <p className="mt-2 text-xs text-rose-600">{inviteState.error}</p> : null}
-              {inviteState.success ? <p className="mt-2 text-xs text-emerald-600">Invitacion enviada.</p> : null}
-
-              {groupInvitations.filter((invitation) => invitation.status !== "accepted").length > 0 ? (
-                <div className="mt-3 border-t border-slate-200 pt-3">
-                  <h4 className="text-xs font-semibold text-slate-900">Invitaciones del grupo</h4>
-                  <ul className="mt-2 space-y-2">
-                    {groupInvitations
-                      .filter((invitation) => invitation.status !== "accepted")
-                      .slice(0, 8)
-                      .map((invitation) => (
-                      <li key={invitation.id} className="rounded-lg border border-slate-200 p-2">
-                        <p className="text-xs text-slate-900">
-                          @{invitation.invitedUsername || "sin-username"} -{" "}
-                          <span
-                            className={
-                              invitation.status === "pending"
-                                ? "text-amber-700"
-                                : invitation.status === "accepted"
-                                  ? "text-emerald-700"
-                                  : "text-rose-700"
-                            }
-                          >
-                            {invitation.status}
-                          </span>
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
+              <fieldset className="relative space-y-5 px-5 py-5" disabled={isDetailsPending}>
+                <div className="-mx-5 -mt-5 bg-[#fff8f8] px-5 pb-5 pt-5">
+                  <button
+                    aria-expanded={isSettingsOpen}
+                    aria-label="Ajustes del grupo"
+                    className="absolute right-5 top-5 inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-100 bg-white text-[#c6283a] shadow-[0_8px_20px_rgba(198,40,58,0.12)] transition hover:bg-rose-50"
+                    onClick={() => setIsSettingsOpen((value) => !value)}
+                    type="button"
+                  >
+                    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" strokeWidth="1.7" />
+                      <path d="M19 13.3v-2.6l-2-.4a5.7 5.7 0 0 0-.6-1.4l1.1-1.7-1.8-1.8-1.7 1.1c-.5-.3-.9-.5-1.5-.6L12.1 4H9.5l-.4 1.9c-.5.1-1 .4-1.5.6L6 5.4 4.1 7.2l1.1 1.7c-.3.5-.5.9-.6 1.4l-2 .4v2.6l2 .4c.1.5.4 1 .6 1.4l-1.1 1.7L6 18.6l1.7-1.1c.5.3.9.5 1.5.6l.4 1.9h2.6l.4-1.9c.5-.1 1-.4 1.5-.6l1.7 1.1 1.8-1.8-1.1-1.7c.3-.5.5-.9.6-1.4l2-.4Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
+                    </svg>
+                  </button>
+                  <GroupCoverPicker
+                    helperText="Pulsa la foto para cambiar la portada"
+                    onFileChange={handleCoverChange}
+                    placeholder={<span className="text-sm font-bold text-[#c6283a]">{groupName.trim().charAt(0).toUpperCase() || "M"}</span>}
+                    previewUrl={coverPreviewUrl}
+                  />
                 </div>
-              ) : null}
-            </div>
-          ) : null}
 
-          <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
-            {role === "owner" ? (
-              <>
-                {confirmMode !== "delete" ? (
-                  <Button onClick={() => setConfirmMode("delete")} size="sm" type="button" variant="danger">
-                    Eliminar grupo
-                  </Button>
-                ) : (
-                  <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-center">
-                    <p className="text-xs text-rose-800">Estas seguro que quieres eliminar ({groupName})?</p>
-                    <div className="mt-2 flex flex-wrap justify-center gap-2">
-                      <form action={deleteAction}>
-                        <input name="groupId" type="hidden" value={groupId} />
-                        <Button disabled={isDeleting} size="sm" type="submit" variant="danger">
-                          {isDeleting ? "Eliminando..." : "Si, eliminar"}
+                {isSettingsOpen ? (
+                  <div className="mx-auto w-full max-w-[280px] space-y-3 rounded-2xl border border-zinc-100 bg-white p-3 shadow-[0_18px_45px_rgba(24,24,27,0.14)]" ref={settingsRef}>
+                    <input name="settings_groupId" type="hidden" value={groupId} />
+                    <label className="block space-y-2">
+                      <span className="text-xs font-bold text-zinc-700">Privacidad del grupo</span>
+                      <select
+                        className="h-9 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                        defaultValue={privacy}
+                        disabled={!isOwner}
+                        name="settings_privacy"
+                      >
+                        <option value="abierto">Abierto: miembros pueden editar e invitar</option>
+                        <option value="privado">Privado: solo admin puede editar e invitar</option>
+                      </select>
+                    </label>
+                    <label className="block space-y-2">
+                      <span className="text-xs font-bold text-zinc-700">Acceso al grupo</span>
+                      <select
+                        className="h-9 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-medium text-zinc-800 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                        defaultValue={joinPolicy}
+                        disabled={!isOwner}
+                        name="settings_joinPolicy"
+                      >
+                        <option value="invite_only">Solo por invitacion</option>
+                        <option value="request_to_join">Solicitud con codigo</option>
+                        <option value="open_by_code">Abierto con codigo</option>
+                      </select>
+                    </label>
+                    <div className="rounded-xl border border-zinc-100 bg-white p-3">
+                      <p className="text-xs font-medium text-zinc-700">Codigo de invitacion</p>
+                      <p className="mt-1 text-sm font-semibold tracking-wide text-zinc-950">{joinCode}</p>
+                    </div>
+                    {settingsState.error ? <p className="text-xs text-rose-600">{settingsState.error}</p> : null}
+                    {settingsState.success ? <p className="text-xs text-emerald-600">Configuracion actualizada.</p> : null}
+                    <div className="space-y-2">
+                      {isOwner ? (
+                        <Button
+                          className="w-full"
+                          disabled={isSettingsPending}
+                          formAction={async (formData) => {
+                            formData.set("groupId", String(formData.get("settings_groupId") || ""));
+                            formData.set("privacy", String(formData.get("settings_privacy") || ""));
+                            formData.set("joinPolicy", String(formData.get("settings_joinPolicy") || ""));
+                            await settingsAction(formData);
+                          }}
+                          size="sm"
+                          type="submit"
+                        >
+                          {isSettingsPending ? "Guardando..." : "Guardar ajustes"}
                         </Button>
-                      </form>
-                      <Button onClick={() => setConfirmMode(null)} size="sm" type="button" variant="ghost">
-                        Cancelar
+                      ) : null}
+                      {isOwner ? (
+                        <Button
+                          className="w-full"
+                          disabled={isDeleting}
+                          formAction={async (formData) => {
+                            formData.set("groupId", groupId);
+                            await deleteAction(formData);
+                          }}
+                          size="sm"
+                          type="submit"
+                          variant="ghost"
+                        >
+                          {isDeleting ? "Eliminando..." : "Eliminar grupo"}
+                        </Button>
+                      ) : (
+                        <Button
+                          className="w-full"
+                          disabled={isLeaving}
+                          formAction={async (formData) => {
+                            formData.set("groupId", groupId);
+                            await leaveAction(formData);
+                          }}
+                          size="sm"
+                          type="submit"
+                          variant="ghost"
+                        >
+                          {isLeaving ? "Saliendo..." : "Salir del grupo"}
+                        </Button>
+                      )}
+                      <Button className="w-full" onClick={() => setIsSettingsOpen(false)} size="sm" type="button" variant="ghost">
+                        Cerrar
                       </Button>
                     </div>
+                    {deleteState.error ? <p className="text-xs text-rose-600">{deleteState.error}</p> : null}
+                    {leaveState.error ? <p className="text-xs text-rose-600">{leaveState.error}</p> : null}
                   </div>
-                )}
-                {deleteState.error ? <p className="mt-2 text-xs text-rose-600">{deleteState.error}</p> : null}
-              </>
-            ) : (
-              <>
-                {confirmMode !== "leave" ? (
-                  <Button onClick={() => setConfirmMode("leave")} size="sm" type="button" variant="secondary">
-                    Salir del grupo
-                  </Button>
+                ) : null}
+
+                <label className="block space-y-2">
+                  <span className="text-[11px] font-bold text-zinc-800">Nombre del grupo</span>
+                  <input
+                    className="h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                    defaultValue={groupName}
+                    disabled={!canEditGroup}
+                    maxLength={80}
+                    name="name"
+                    required
+                  />
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-[11px] font-bold text-zinc-800">Descripcion (opcional)</span>
+                  <textarea
+                    className="min-h-[86px] w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                    defaultValue={groupDescription || ""}
+                    disabled={!canEditGroup}
+                    maxLength={300}
+                    name="description"
+                    placeholder="Cual es el proposito de este grupo?"
+                  />
+                </label>
+
+                {canInviteMembers ? (
+                  <>
+                    <GroupFriendsSelector
+                      emptyMessage={
+                        totalFriendsCount === 0
+                          ? "Anade amigos primero para poder invitarlos al grupo."
+                          : "Todos tus amigos ya estan invitados o ya son miembros de este grupo."
+                      }
+                      friends={invitableFriends}
+                      invitingFriendId={isInviting ? invitingFriendId : null}
+                      mode="invite"
+                      onInvite={handleInvite}
+                      title="Invitar amigos"
+                    />
+                    {inviteState.error ? <p className="text-xs text-rose-600">{inviteState.error}</p> : null}
+                    {inviteState.success ? <p className="text-xs text-emerald-600">Invitacion enviada.</p> : null}
+                  </>
                 ) : (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center">
-                    <p className="text-xs text-amber-800">Estas seguro que quieres salir de ({groupName})?</p>
-                    <div className="mt-2 flex flex-wrap justify-center gap-2">
-                      <form action={leaveAction}>
-                        <input name="groupId" type="hidden" value={groupId} />
-                        <Button disabled={isLeaving} size="sm" type="submit" variant="secondary">
-                          {isLeaving ? "Saliendo..." : "Si, salir"}
-                        </Button>
-                      </form>
-                      <Button onClick={() => setConfirmMode(null)} size="sm" type="button" variant="ghost">
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
+                  <p className="text-xs text-zinc-500">Solo puedes consultar la configuracion del grupo.</p>
                 )}
-                {leaveState.error ? <p className="mt-2 text-xs text-rose-600">{leaveState.error}</p> : null}
-              </>
-            )}
+
+                {detailsState.error ? <p className="text-sm text-rose-600">{detailsState.error}</p> : null}
+                {coverError ? <p className="text-sm text-rose-600">{coverError}</p> : null}
+                {detailsState.success ? <p className="text-sm text-emerald-600">Grupo actualizado.</p> : null}
+
+                <div className="flex items-center justify-end gap-2">
+                  {canEditGroup ? (
+                    <Button disabled={isDetailsPending} size="sm" type="submit">
+                      {isDetailsPending ? "Guardando..." : "Guardar cambios"}
+                    </Button>
+                  ) : null}
+                  <Button onClick={() => setIsEditOpen(false)} size="sm" type="button" variant="ghost">
+                    Cancelar
+                  </Button>
+                </div>
+              </fieldset>
+            </form>
+            </div>
           </div>
         </div>
       ) : null}
-    </aside>
+    </>
   );
 }

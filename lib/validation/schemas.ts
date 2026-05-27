@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   GROUP_JOIN_POLICY_VALUES,
   GROUP_JOIN_REQUEST_STATUS_VALUES,
-  GROUP_PLACE_EDIT_POLICY_VALUES
+  GROUP_PRIVACY_VALUES
 } from "@/lib/groups/policies";
 
 export const PLACE_STATUS_VALUES = ["pending", "visited", "favorite"] as const;
@@ -23,13 +23,21 @@ export const createGroupSchema = z.object({
     .max(300, "La descripcion no puede superar 300 caracteres.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
-  placeEditPolicy: z
+  coverImageUrl: z
+    .string()
+    .trim()
+    .max(3_000_000, "La imagen es demasiado pesada. Maximo 2MB.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine(
+      (value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(value),
+      "URL de imagen invalida."
+    ),
+  privacy: z
     .string()
     .optional()
-    .transform((value) => value || "members_can_edit")
-    .refine((value): value is (typeof GROUP_PLACE_EDIT_POLICY_VALUES)[number] => {
-      return GROUP_PLACE_EDIT_POLICY_VALUES.includes(value as never);
-    }, "Politica de edicion invalida."),
+    .transform((value) => value || "abierto")
+    .refine((value): value is (typeof GROUP_PRIVACY_VALUES)[number] => GROUP_PRIVACY_VALUES.includes(value as never), "Privacidad invalida."),
   joinPolicy: z
     .string()
     .optional()
@@ -115,6 +123,13 @@ export const createPlaceSchema = z.object({
     .max(80, "El estado del negocio no es valido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
+  imageUrl: z
+    .string()
+    .trim()
+    .max(1500, "La URL de imagen es demasiado larga.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen invalida."),
   latitude: z
     .preprocess(
       (value) => (value === "" || value === null || value === undefined ? undefined : value),
@@ -187,6 +202,13 @@ export const createPersonalPlaceSchema = z.object({
     .max(80, "El estado del negocio no es valido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
+  imageUrl: z
+    .string()
+    .trim()
+    .max(1500, "La URL de imagen es demasiado larga.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen invalida."),
   latitude: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
   longitude: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
 });
@@ -231,16 +253,39 @@ export const reviewJoinRequestSchema = z.object({
 
 export const updateGroupSettingsSchema = z.object({
   groupId: uuidSchema,
-  placeEditPolicy: z
+  privacy: z
     .string()
-    .refine((value): value is (typeof GROUP_PLACE_EDIT_POLICY_VALUES)[number] => {
-      return GROUP_PLACE_EDIT_POLICY_VALUES.includes(value as never);
-    }, "Politica de edicion invalida."),
+    .refine((value): value is (typeof GROUP_PRIVACY_VALUES)[number] => GROUP_PRIVACY_VALUES.includes(value as never), "Privacidad invalida."),
   joinPolicy: z
     .string()
     .refine((value): value is (typeof GROUP_JOIN_POLICY_VALUES)[number] => {
       return GROUP_JOIN_POLICY_VALUES.includes(value as never);
     }, "Politica de acceso invalida.")
+});
+
+export const updateGroupDetailsSchema = z.object({
+  groupId: uuidSchema,
+  name: z
+    .string()
+    .trim()
+    .min(1, "El nombre del grupo es obligatorio.")
+    .max(80, "El nombre del grupo no puede superar 80 caracteres."),
+  description: z
+    .string()
+    .trim()
+    .max(300, "La descripcion no puede superar 300 caracteres.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  coverImageUrl: z
+    .string()
+    .trim()
+    .max(3_000_000, "La imagen es demasiado pesada. Maximo 2MB.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine(
+      (value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(value),
+      "URL de imagen invalida."
+    )
 });
 
 export const sendFriendRequestSchema = z.object({
@@ -274,6 +319,53 @@ export const respondGroupInvitationSchema = z.object({
     }, "Decision invalida.")
 });
 
+export const friendSearchQuerySchema = z.object({
+  q: z.string().trim().min(2, "La busqueda debe tener al menos 2 caracteres.").max(80, "La busqueda es demasiado larga.")
+});
+
+export const googlePlacesSearchSchema = z.object({
+  query: z.string().trim().min(3, "La busqueda debe tener al menos 3 caracteres.").max(120, "La busqueda es demasiado larga."),
+  center: z
+    .object({
+      lat: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
+      lng: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
+    })
+    .nullable()
+    .optional()
+});
+
+export const googlePlaceDetailsSchema = z.object({
+  externalPlaceId: z
+    .string()
+    .trim()
+    .min(1, "Identificador externo obligatorio.")
+    .max(255, "Identificador externo invalido.")
+});
+
+export const updateProfileSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .min(1, "El nombre es obligatorio.")
+    .max(80, "El nombre no puede superar 80 caracteres."),
+  username: z
+    .string()
+    .trim()
+    .min(3, "El @usuario debe tener al menos 3 caracteres.")
+    .max(30, "El @usuario no puede superar 30 caracteres.")
+    .regex(/^[a-z0-9_.-]+$/i, "El @usuario solo puede contener letras, numeros, punto, guion y guion bajo."),
+  avatarUrl: z
+    .string()
+    .trim()
+    .max(3_000_000, "La imagen es demasiado pesada. Maximo 2MB.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine(
+      (value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(value),
+      "URL de imagen invalida."
+    )
+});
+
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;
@@ -282,8 +374,12 @@ export type UpdatePlaceStatusInput = z.infer<typeof updatePlaceStatusSchema>;
 export type UpdatePlaceLocationInput = z.infer<typeof updatePlaceLocationSchema>;
 export type ReviewJoinRequestInput = z.infer<typeof reviewJoinRequestSchema>;
 export type UpdateGroupSettingsInput = z.infer<typeof updateGroupSettingsSchema>;
+export type UpdateGroupDetailsInput = z.infer<typeof updateGroupDetailsSchema>;
 export type SendFriendRequestInput = z.infer<typeof sendFriendRequestSchema>;
 export type RespondFriendRequestInput = z.infer<typeof respondFriendRequestSchema>;
 export type RemoveFriendInput = z.infer<typeof removeFriendSchema>;
 export type InviteFriendToGroupInput = z.infer<typeof inviteFriendToGroupSchema>;
 export type RespondGroupInvitationInput = z.infer<typeof respondGroupInvitationSchema>;
+export type FriendSearchQueryInput = z.infer<typeof friendSearchQuerySchema>;
+export type GooglePlacesSearchInput = z.infer<typeof googlePlacesSearchSchema>;
+export type GooglePlaceDetailsInput = z.infer<typeof googlePlaceDetailsSchema>;

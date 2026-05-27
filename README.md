@@ -1,139 +1,129 @@
-# MaPlan
+﻿# MaPlan
 
-MaPlan es una aplicación social para organizar planes entre amigos. Permite crear grupos, invitar personas, guardar lugares y explorar recomendaciones en mapa.
+MaPlan is a social app to plan with friends: groups, invitations, shared places, personal map, and recent activity.
 
-## Stack técnico
-- Next.js (App Router)
-- TypeScript (modo estricto)
+## Stack
+- Next.js App Router
+- React
+- TypeScript (strict)
 - Tailwind CSS
 - Supabase (Auth + Postgres + RLS)
-- Mapbox (render de mapa)
-- Google Places (búsqueda de puntos de interés)
-- Vitest (unit/integration/security)
-- Playwright (E2E)
+- Mapbox GL
+- Google Places (server-side routes)
+- Zod
+- Vitest
+- Playwright
+- pnpm
 
-## Estructura del proyecto
-- `app/`: rutas y server actions por feature.
-- `components/`: componentes de UI y componentes por dominio.
-- `lib/`: lógica de negocio, utilidades y servicios.
-- `tests/`: pruebas unitarias, integración y seguridad.
-- `e2e/`: pruebas end-to-end.
-- `supabase/`: scripts SQL (tablas, constraints, RLS).
-- `docs/`: documentación técnica.
+## Main features
+- Auth with Supabase.
+- Groups with privacy model: `privado` / `abierto`.
+- Role-based permissions: owner/member.
+- Group invitations and join requests.
+- Group map with place search and save flow.
+- Personal map with tabs (`Lugares`, `Mapa`).
+- Friends and friend requests.
+- Activity feed with avatar fallback.
+- Profile and group cover images.
+- Place image support (`image_url`) from Google Places/manual.
 
-Documentación de arquitectura:
-- Convenciones de carpetas: [folder-conventions.md](/c:/Users/Worten/Desktop/Maplan/docs/architecture/folder-conventions.md)
-- Plan incremental de refactor: [incremental-refactor-plan.md](/c:/Users/Worten/Desktop/Maplan/docs/architecture/incremental-refactor-plan.md)
-- Checklist de refactor seguro: [safe-refactor-checklist.md](/c:/Users/Worten/Desktop/Maplan/docs/architecture/safe-refactor-checklist.md)
+## Project structure
+- `app/`: routes, route handlers, server actions.
+- `components/`: UI and feature components.
+- `lib/`: domain logic, permissions, validation, data access.
+- `supabase/`: SQL schema/RLS scripts.
+- `tests/`: Vitest tests.
+- `e2e/`: Playwright specs.
 
-## Funcionalidades principales
-- Autenticación con Supabase.
-- Gestión de grupos y miembros.
-- Invitaciones a grupos y solicitudes de amistad.
-- Mapa colaborativo por grupo.
-- `Mi mapa`: mapa personal con lugares individuales por usuario.
-
-## Mapa (grupo y personal)
-### Mapa de grupo
-- Se usa dentro del detalle de cada grupo.
-- Permite buscar lugares (Google Places), crear borradores y guardar.
-- Respeta permisos del grupo para edición.
-
-### Mi mapa (personal)
-- Sección individual en `/map`.
-- Datos totalmente separados de los grupos.
-- Tabla dedicada: `personal_places`.
-- Políticas RLS para que cada usuario solo vea/modifique sus propios registros.
-
-## Variables de entorno
-Crea un archivo `.env` con:
+## Environment variables
+Create `.env` with:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (solo backend seguro)
 - `NEXT_PUBLIC_MAPBOX_TOKEN`
 - `GOOGLE_PLACES_API_KEY`
 
-## SQL en Supabase
-Ejecuta en Supabase SQL Editor:
+Optional:
 
-1. `supabase/rls_groups.sql`
-2. `supabase/rls_places.sql`
-3. `supabase/places_links.sql`
-4. `supabase/rls_friends.sql`
-5. `supabase/rls_group_invitations.sql`
-6. `supabase/places_external_provider.sql`
-7. `supabase/rls_personal_places.sql`
-8. `supabase/rls_group_activity.sql`
+- `E2E_EMAIL`
+- `E2E_PASSWORD`
+- `E2E_RUN_SIGNUP=1`
+- `PLAYWRIGHT_BASE_URL`
 
-Notas:
-- `rls_personal_places.sql` crea `personal_places`, índices, trigger de `updated_at` y políticas RLS por `auth.uid()`.
+Security:
+- Keep `GOOGLE_PLACES_API_KEY` server-side only.
+- Never create `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY`.
+- Never commit secrets.
 
-## Desarrollo local
+## Local development
 ```bash
 pnpm install
 pnpm dev
 ```
 
-## Scripts
-- `pnpm dev`: servidor de desarrollo.
-- `pnpm build`: build de producción.
-- `pnpm start`: arranque en producción.
-- `pnpm lint`: linting.
-- `pnpm test`: suite Vitest.
-- `pnpm test:e2e`: suite Playwright.
-- `pnpm test:e2e:ui`: runner UI de Playwright.
-- `pnpm test:e2e:headed`: ejecución con navegador visible.
-- `pnpm test:e2e:report`: abrir informe HTML de Playwright.
-
-## Testing
-### Vitest
-Cobertura por carpetas:
-- `tests/lib/*`: dominio.
-- `tests/actions/*`: server actions.
-- `tests/validation/*`: schemas.
-- `tests/security/*`: SQL/RLS.
-
-### Playwright
-Specs base:
-- `e2e/navigation.spec.ts`
-- `e2e/auth.spec.ts`
-- `e2e/groups.spec.ts`
-- `e2e/map.spec.ts`
-- `e2e/notifications.spec.ts`
-
-Instalación de browser en local/CI:
+## Commands
 ```bash
-pnpm exec playwright install --with-deps chromium
+pnpm build
+pnpm test
+pnpm test:e2e
+pnpm test:e2e:ui
+pnpm test:e2e:headed
+pnpm test:e2e:report
 ```
 
-Variables opcionales para E2E autenticado:
-- `E2E_EMAIL`
-- `E2E_PASSWORD`
-- `E2E_RUN_SIGNUP=1`
-- `PLAYWRIGHT_BASE_URL` (para usar una URL ya desplegada)
+## Supabase SQL order (recommended)
+Run in Supabase SQL Editor:
 
-## CI (GitHub Actions)
-Workflow: `.github/workflows/ci.yml`
+1. `supabase/profiles_full_name.sql`
+2. `supabase/rls_friends.sql`
+3. `supabase/groups_cover_image_url.sql`
+4. `supabase/groups_privacy.sql`
+5. `supabase/rls_groups.sql`
+6. `supabase/rls_group_invitations.sql`
+7. `supabase/rls_group_activity.sql`
+8. `supabase/places_links.sql`
+9. `supabase/places_external_provider.sql`
+10. `supabase/places_city.sql`
+11. `supabase/rls_places.sql`
+12. `supabase/rls_personal_places.sql`
+13. `supabase/places_images.sql`
 
-- Job `unit`: corre `pnpm test`.
-- Job `e2e`: instala Chromium y corre `pnpm test:e2e` solo si existen secrets mínimos de Supabase.
+`groups_privacy.sql` migra los flags legacy si existen y es seguro volver a ejecutarlo. `groups_cover_image_url.sql` y `profiles_full_name.sql` no son opcionales para la version actual de la aplicacion.
 
-Secrets recomendados:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_MAPBOX_TOKEN` (recomendado)
-- `GOOGLE_PLACES_API_KEY` (recomendado)
-- `E2E_EMAIL` y `E2E_PASSWORD` (para tests autenticados)
-- `E2E_RUN_SIGNUP` (opcional)
+### Important SQL note
+If you change the return shape of `get_profiles_by_ids(uuid[])`, Postgres can fail with:
+`cannot change return type of existing function`.
 
-## Seguridad
-- No expongas claves privadas en cliente.
-- `GOOGLE_PLACES_API_KEY` debe mantenerse server-side.
-- El acceso a datos personales se controla por RLS en `personal_places`.
-- Revisa también notas en [security-notes.md](/c:/Users/Worten/Desktop/Maplan/docs/security-notes.md).
+Fix:
+```sql
+drop function if exists public.get_profiles_by_ids(uuid[]);
+```
+Then re-run `supabase/rls_friends.sql`.
 
-## Estado actual
-- Navegación desktop simplificada (sin sidebar redundante).
-- Título de sección visible en navbar (`MaPlan - Sección`).
-- Cierre de sesión movido a la sección `Perfil`.
+## Testing overview
+- Unit/domain/security:
+  - `tests/lib/*`
+  - `tests/actions/*`
+  - `tests/validation/*`
+  - `tests/security/*`
+- E2E:
+  - `e2e/auth.spec.ts`
+  - `e2e/navigation.spec.ts`
+  - `e2e/groups.spec.ts`
+  - `e2e/map.spec.ts`
+  - `e2e/notifications.spec.ts`
+
+## Troubleshooting
+- `pnpm` not found:
+  - install pnpm/corepack locally and re-run.
+- Turbopack UTF-8 parse error:
+  - rewrite file as UTF-8 (no invalid bytes).
+- Group/friends avatars not shown:
+  - verify `profiles.avatar_url` has values and `rls_friends.sql` is up to date.
+
+## Current product status
+- Group detail redesigned with tabs: `Lugares`, `Actividad`, `Mapa`.
+- Personal map aligned to group detail style with tabs.
+- Friends page redesigned and integrated with group invitations.
+- Permission model enforced in UI + server actions + RLS.
+- Group membership RLS avoids policy recursion and protects owner/creator fields from direct client mutations.

@@ -74,7 +74,7 @@ with check (
       join public.groups g on g.id = gm.group_id
       where gm.group_id = group_activity_events.group_id
         and gm.user_id = auth.uid()
-        and g.place_edit_policy = 'members_can_edit'
+        and g.privacy = 'abierto'
     )
   )
 );

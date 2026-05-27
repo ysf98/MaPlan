@@ -2,28 +2,108 @@
 
 :root {
   color-scheme: light;
-  --bg: 248 250 252;
+  --vc-coral: 255 90 95;
+  --vc-coral-strong: 181 35 48;
+  --vc-blue: 74 144 226;
+  --vc-emerald: 39 174 96;
+  --vc-amber: 242 153 74;
+  --vc-radius-sm: 8px;
+  --vc-radius-md: 12px;
+  --vc-radius-lg: 16px;
+  --vc-radius-xl: 24px;
+  --bg: 255 248 247;
   --surface: 255 255 255;
-  --surface-soft: 241 245 249;
-  --text: 15 23 42;
-  --muted: 100 116 139;
-  --border: 226 232 240;
-  --primary: 20 184 166;
-  --primary-strong: 13 148 136;
-  --ring: 45 212 191;
+  --surface-soft: 255 240 239;
+  --text: 38 24 23;
+  --muted: 90 64 63;
+  --border: 226 190 188;
+  --primary: var(--vc-coral);
+  --primary-strong: var(--vc-coral-strong);
+  --ring: 255 218 216;
 }
 
 body {
   @apply antialiased;
-  background-color: rgb(var(--bg));
+  font-family: var(--font-vc), ui-sans-serif, system-ui, sans-serif;
+  background: transparent;
   color: rgb(var(--text));
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+html {
+  background-color: rgb(var(--bg));
+  background-image:
+    radial-gradient(62% 52% at 88% 12%, rgba(255, 90, 95, 0.2), transparent 72%),
+    radial-gradient(66% 56% at 12% 86%, rgba(56, 189, 248, 0.18), transparent 70%);
+  background-attachment: fixed;
 }
 
 * {
   border-color: rgb(var(--border));
 }
 
-.app-bg {
-  background-image: radial-gradient(circle at top right, rgba(45, 212, 191, 0.12), transparent 40%),
-    radial-gradient(circle at left 30%, rgba(148, 163, 184, 0.15), transparent 35%);
+.vc-radius-sm {
+  border-radius: var(--vc-radius-sm);
+}
+
+.vc-radius-md {
+  border-radius: var(--vc-radius-md);
+}
+
+.vc-surface-card {
+  background: rgb(var(--surface));
+  border: 1px solid rgb(var(--border) / 0.5);
+  border-radius: var(--vc-radius-xl);
+  box-shadow: 0 10px 30px rgba(var(--primary-strong) / 0.1);
+}
+
+.vc-glass {
+  background: rgb(var(--surface) / 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.route-transition-enter {
+  animation-duration: 90ms;
+  animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1);
+  will-change: opacity;
+}
+
+.route-transition-forward {
+  animation-name: maplan-route-enter-forward;
+}
+
+.route-transition-backward {
+  animation-name: maplan-route-enter-backward;
+}
+
+@keyframes maplan-route-enter-forward {
+  from {
+    opacity: 0.96;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes maplan-route-enter-backward {
+  from {
+    opacity: 0.96;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-transition-enter {
+    animation: none;
+  }
 }

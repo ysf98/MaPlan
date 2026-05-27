@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
@@ -55,10 +55,12 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
   const [draftSelection, setDraftSelection] = useState<MapDraftPlace | null>(null);
   const [searchCloseSignal, setSearchCloseSignal] = useState(0);
+  const [localSelectedPlaceId, setLocalSelectedPlaceId] = useState<string | null>(null);
   const [addPlaceState, addPlaceFormAction, isAddPlacePending] = useActionState(addPersonalPlaceAction, addPersonalPlaceInitialState);
   const wasAddPlacePendingRef = useRef(false);
 
-  const selectedPlace = useMemo(() => places.find((place) => place.id === selectedPlaceId) ?? null, [places, selectedPlaceId]);
+  const effectiveSelectedPlaceId = selectedPlaceId ?? localSelectedPlaceId;
+  const selectedPlace = useMemo(() => places.find((place) => place.id === effectiveSelectedPlaceId) ?? null, [places, effectiveSelectedPlaceId]);
 
   useEffect(() => {
     if (wasAddPlacePendingRef.current && !isAddPlacePending && addPlaceState.success) {
@@ -86,7 +88,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
 
     mapRef.current = map;
     setMapError(null);
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
     map.on("click", async (event) => {
       const renderedFeatures = map.queryRenderedFeatures(event.point) as Array<{ properties?: Record<string, unknown> }>;
       const renderedName = extractFallbackNameFromRenderedFeatures(renderedFeatures);
@@ -127,6 +129,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
         .addTo(map);
 
       marker.getElement().addEventListener("click", () => {
+        setLocalSelectedPlaceId(place.id);
         onSelectPlace?.(place.id);
       });
       bounds.extend([place.longitude, place.latitude]);
@@ -172,7 +175,8 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
       provider: resolved.provider,
       externalPlaceId: resolved.externalPlaceId,
       googleMapsUrl: resolved.googleMapsUrl,
-      businessStatus: resolved.businessStatus
+      businessStatus: resolved.businessStatus,
+      imageUrl: resolved.imageUrl
     };
 
     const map = mapRef.current;
@@ -211,7 +215,8 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
       provider: "manual",
       externalPlaceId: null,
       googleMapsUrl: null,
-      businessStatus: null
+      businessStatus: null,
+      imageUrl: null
     });
   }, []);
 
@@ -221,6 +226,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
       center: center ? { lng: center.lng, lat: center.lat } : null
     };
   }, []);
+  const filterChips = ["Todos", "Pendientes", "Visitados", "Favoritos"];
 
   if (!token) {
     return <EmptyState description="Define NEXT_PUBLIC_MAPBOX_TOKEN para habilitar el mapa." title="Falta configurar Mapbox" />;
@@ -232,23 +238,98 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
 
   return (
     <div className="space-y-3">
-      <MapSearchBox
-        closeSignal={searchCloseSignal}
-        getMapContext={getMapContext}
-        onManualCreate={handleManualCreateFromSearch}
-        onSelectResult={handleSelectSearchResult}
-      />
-      <div className="relative h-[420px] w-full overflow-hidden rounded-2xl border border-slate-200">
-        <div className="h-full w-full" ref={mapContainerRef} />
+      <div className="relative h-[500px] w-full overflow-hidden rounded-2xl border border-zinc-100">
+        <div className="h-full w-full" data-lock-swipe ref={mapContainerRef} />
+
+        <div className="pointer-events-none absolute inset-x-3 top-3 z-20">
+          <div
+            className="pointer-events-auto"
+            onPointerDownCapture={(event) => event.stopPropagation()}
+            onTouchStartCapture={(event) => event.stopPropagation()}
+          >
+            <MapSearchBox
+              closeSignal={searchCloseSignal}
+              getMapContext={getMapContext}
+              onManualCreate={handleManualCreateFromSearch}
+              onSelectResult={handleSelectSearchResult}
+            />
+          </div>
+          <div
+            className="pointer-events-auto mt-2 flex gap-2 overflow-x-auto pb-1"
+            onPointerDownCapture={(event) => event.stopPropagation()}
+            onTouchStartCapture={(event) => event.stopPropagation()}
+          >
+            {filterChips.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${
+                  chip === "Todos" ? "bg-[#c6283a] text-white" : "bg-white/95 text-zinc-600 shadow"
+                }`}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {isResolvingLocation ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-3 z-10">
-            <Card className="rounded-2xl border-slate-300 bg-white/95 shadow-lg backdrop-blur">
-              <p className="text-sm text-slate-700">Cargando datos del lugar...</p>
+          <div className="pointer-events-none absolute left-3 right-3 top-28 z-10">
+            <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
+              <p className="text-sm text-zinc-700">Cargando datos del lugar...</p>
             </Card>
           </div>
         ) : null}
+
+        {selectedPlace ? (
+          <div className="pointer-events-none absolute inset-x-3 bottom-3 z-30">
+            <Card className="pointer-events-auto rounded-3xl border-zinc-100 bg-white p-3 shadow-xl">
+              <div className="flex items-start gap-3">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+                  {selectedPlace.imageUrl ? (
+                    <img alt={selectedPlace.name} className="h-full w-full object-cover" src={selectedPlace.imageUrl} />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-lg text-zinc-400">+</div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-lg font-semibold leading-5 text-zinc-900">{selectedPlace.name}</p>
+                  <p className="mt-1 truncate text-xs text-zinc-500">
+                    {selectedPlace.address}
+                    {selectedPlace.city ? ` · ${selectedPlace.city}` : ""}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2 text-xs font-medium text-zinc-500">
+                    <button className="rounded-full bg-zinc-100 px-2 py-1" type="button">
+                      Ir
+                    </button>
+                    <button className="rounded-full bg-zinc-100 px-2 py-1" type="button">
+                      Llamar
+                    </button>
+                    {selectedPlace.googleMapsUrl ? (
+                      <a
+                        className="rounded-full bg-zinc-100 px-2 py-1"
+                        href={selectedPlace.googleMapsUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        Ver
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+                <button
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#c6283a] text-xl font-semibold text-white shadow"
+                  type="button"
+                >
+                  +
+                </button>
+              </div>
+            </Card>
+          </div>
+        ) : null}
+
         {draftSelection ? (
-          <div className="pointer-events-none absolute right-3 top-3 z-10 hidden w-[360px] max-w-[calc(100%-1.5rem)] md:block">
+          <div className="pointer-events-none absolute inset-x-3 bottom-3 z-40 md:hidden">
             <MapSaveDraftCard
               draft={draftSelection}
               formAction={addPlaceFormAction}
@@ -265,8 +346,9 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
           </div>
         ) : null}
       </div>
+
       {draftSelection ? (
-        <div className="md:hidden">
+        <div className="hidden md:block">
           <MapSaveDraftCard
             draft={draftSelection}
             formAction={addPlaceFormAction}

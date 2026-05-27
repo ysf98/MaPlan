@@ -1,17 +1,16 @@
-"use client";
+﻿"use client";
 
-import { useActionState, useState } from "react";
-import { deletePlaceAction, type DeletePlaceActionState } from "@/app/groups/[groupId]/actions";
-import { CategoryBadge } from "@/components/ui/CategoryBadge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { useEffect, useMemo, useState } from "react";
+import type { TouchEvent } from "react";
+import { GroupActivityTab } from "@/components/groups/GroupActivityTab";
+import { GroupDetailTabs } from "@/components/groups/GroupDetailTabs";
+import { GroupMapTab } from "@/components/groups/GroupMapTab";
+import { GroupOverviewHeader } from "@/components/groups/GroupOverviewHeader";
 import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
-import { GroupMap } from "@/components/map/GroupMap";
-import { SimplePlacesList } from "@/components/map/SimplePlacesList";
-import type { GroupDetail, GroupJoinRequestItem } from "@/lib/groups/types";
-import type { GroupMemberPreview } from "@/lib/groups/types";
-import type { GroupInvitationItem } from "@/lib/groupInvitations";
+import { GroupPlacesTab } from "@/components/groups/GroupPlacesTab";
+import type { GroupActivityFeedItem } from "@/lib/groupActivity";
+import type { GroupDetailTab } from "@/lib/groups/tabs";
+import type { GroupDetail, GroupJoinRequestItem, GroupMemberPreview } from "@/lib/groups/types";
 import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupDetailViewProps = {
@@ -19,201 +18,180 @@ type GroupDetailViewProps = {
   groupId: string;
   places: GroupPlace[];
   membersPreview: GroupMemberPreview[];
-  allMembers: GroupMemberPreview[];
   totalMembersCount: number;
-  pendingRequests: GroupJoinRequestItem[];
   invitableFriends: Array<{ id: string; username: string | null }>;
-  groupInvitations: GroupInvitationItem[];
   totalFriendsCount: number;
+  activeTab: GroupDetailTab;
+  activityEvents: GroupActivityFeedItem[];
+  pendingJoinRequests: GroupJoinRequestItem[];
+  reviewedJoinRequests: GroupJoinRequestItem[];
 };
-
-const deleteInitialState: DeletePlaceActionState = {
-  error: null,
-  success: false
-};
-
-function getInitial(name: string | null): string {
-  const value = (name || "").trim();
-  if (!value) return "?";
-  return value.charAt(0).toUpperCase();
-}
-
-function getRoleLabel(role: "owner" | "member"): string {
-  return role === "owner" ? "Admin" : "Miembro";
-}
 
 export function GroupDetailView({
   group,
   groupId,
   places,
   membersPreview,
-  allMembers,
   totalMembersCount,
-  pendingRequests,
   invitableFriends,
-  groupInvitations,
-  totalFriendsCount
+  totalFriendsCount,
+  activeTab,
+  activityEvents,
+  pendingJoinRequests,
+  reviewedJoinRequests
 }: GroupDetailViewProps) {
-  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
-  const [deleteState, deleteFormAction, isDeleting] = useActionState(deletePlaceAction, deleteInitialState);
-  const useStackedMembers = membersPreview.length >= 4;
-  const hiddenMembersCount = Math.max(0, totalMembersCount - membersPreview.length);
+  const tabs = useMemo(() => ["lugares", "actividad", "mapa"] as const, []);
+  const [currentTab, setCurrentTab] = useState<GroupDetailTab>(activeTab);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [dragOffsetPct, setDragOffsetPct] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragAxis, setDragAxis] = useState<"x" | "y" | null>(null);
+  const [lockSwipeGesture, setLockSwipeGesture] = useState(false);
+
+  useEffect(() => {
+    setCurrentTab(activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", currentTab);
+    window.history.replaceState(null, "", url.toString());
+  }, [currentTab]);
+
+  function handleTouchStart(clientX: number, clientY: number, target: EventTarget | null) {
+    const element = target as HTMLElement | null;
+    if (element?.closest("[data-lock-swipe]")) {
+      setLockSwipeGesture(true);
+      return;
+    }
+
+    setLockSwipeGesture(false);
+    setTouchStartX(clientX);
+    setTouchStartY(clientY);
+    setIsDragging(true);
+    setDragAxis(null);
+  }
+
+  function handleTouchMove(event: TouchEvent<HTMLDivElement>, containerWidth: number) {
+    if (lockSwipeGesture) return;
+
+    const clientX = event.touches[0]?.clientX ?? 0;
+    const clientY = event.touches[0]?.clientY ?? 0;
+    if (touchStartX === null || touchStartY === null || containerWidth <= 0) return;
+
+    const deltaX = touchStartX - clientX;
+    const deltaY = touchStartY - clientY;
+
+    let axis = dragAxis;
+    if (!axis) {
+      if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
+        axis = Math.abs(deltaX) > Math.abs(deltaY) ? "x" : "y";
+        setDragAxis(axis);
+      } else {
+        return;
+      }
+    }
+
+    if (axis === "y") {
+      return;
+    }
+
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+
+    const rawPct = (deltaX / containerWidth) * 100;
+    const currentIndex = tabs.indexOf(currentTab);
+    const draggingLeft = rawPct < 0;
+    const draggingRight = rawPct > 0;
+    const atFirst = currentIndex === 0;
+    const atLast = currentIndex === tabs.length - 1;
+    const isOverscrolling = (atFirst && draggingLeft) || (atLast && draggingRight);
+    const withResistance = isOverscrolling ? rawPct * 0.35 : rawPct;
+    const clampedPct = Math.max(-100, Math.min(100, withResistance));
+    setDragOffsetPct(clampedPct);
+  }
+
+  function handleTouchEnd() {
+    if (lockSwipeGesture) {
+      setLockSwipeGesture(false);
+      return;
+    }
+
+    if (touchStartX === null) return;
+    const currentIndex = tabs.indexOf(currentTab);
+    const step = dragOffsetPct > 22 ? 1 : dragOffsetPct < -22 ? -1 : 0;
+    const nextIndex = Math.max(0, Math.min(tabs.length - 1, currentIndex + step));
+    setCurrentTab(tabs[nextIndex]);
+
+    setTouchStartX(null);
+    setTouchStartY(null);
+    setDragOffsetPct(0);
+    setIsDragging(false);
+    setDragAxis(null);
+    setLockSwipeGesture(false);
+  }
+
+  const tabIndex = tabs.indexOf(currentTab);
+  const joinRequests =
+    group.role === "owner" &&
+    (group.joinPolicy === "request_to_join" || pendingJoinRequests.length > 0 || reviewedJoinRequests.length > 0)
+      ? {
+          groupId,
+          requests: pendingJoinRequests,
+          reviewedRequests: reviewedJoinRequests
+        }
+      : null;
 
   return (
-    <section
-      className="space-y-4"
-      onClick={(event) => {
-        const target = event.target as HTMLElement;
-        if (!target.closest("[data-group-place-card]")) {
-          setSelectedPlaceId(null);
-        }
-      }}
-    >
-      <Card className="rounded-3xl">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <CategoryBadge label={group.role === "owner" ? "Admin" : "Member"} tone="visit" />
-              <div className={`flex items-center ${useStackedMembers ? "-space-x-2" : "gap-2"}`}>
-                {membersPreview.map((member) => (
-                  <div
-                    key={member.userId}
-                    className="h-8 w-8 overflow-hidden rounded-full border border-slate-200 bg-slate-100"
-                    title={`@${member.username || "sin-username"} · ${getRoleLabel(member.role)}`}
-                  >
-                    {member.avatarUrl ? (
-                      <img alt={member.username || "Avatar"} className="h-full w-full object-cover" src={member.avatarUrl} />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-700">
-                        {getInitial(member.username)}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {hiddenMembersCount > 0 ? (
-                  <button
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-slate-900 text-[10px] font-semibold text-white"
-                    onClick={() => setIsMembersModalOpen(true)}
-                    title={`${hiddenMembersCount} miembro(s) mas`}
-                    type="button"
-                  >
-                    +{hiddenMembersCount}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{group.name}</h1>
-            <p className="mt-2 text-sm text-slate-500">{group.description || "Grupo sin descripcion"}</p>
-          </div>
+    <section className="space-y-5">
+      <div className="relative">
+        <div className="absolute right-4 top-4 z-10">
           <GroupOwnerControls
+            canEditGroup={group.canEditGroup}
+            canInviteMembers={group.canInviteMembers}
+            groupCoverImageUrl={group.coverImageUrl}
+            groupDescription={group.description}
             groupId={groupId}
             groupName={group.name}
+            invitableFriends={invitableFriends}
             joinCode={group.joinCode}
             joinPolicy={group.joinPolicy}
-            pendingRequests={pendingRequests}
-            placeEditPolicy={group.placeEditPolicy}
+            privacy={group.privacy}
             role={group.role}
-            invitableFriends={invitableFriends}
-            groupInvitations={groupInvitations}
             totalFriendsCount={totalFriendsCount}
           />
         </div>
-      </Card>
+        <GroupOverviewHeader group={group} membersPreview={membersPreview} totalMembersCount={totalMembersCount} />
+      </div>
 
-      <Card className="rounded-3xl">
-        <div>
-          <GroupMap
-            canEdit={group.canEditPlaces}
-            groupId={groupId}
-            onSelectPlace={setSelectedPlaceId}
-            places={places}
-            selectedPlaceId={selectedPlaceId}
-          />
-        </div>
-      </Card>
-
-      {places.length > 0 ? (
-        <Card className="rounded-3xl">
-          <SimplePlacesList
-            cardDataAttribute="data-group-place-card"
-            onTogglePlace={(placeId) => setSelectedPlaceId((current) => (current === placeId ? null : placeId))}
-            places={places}
-            renderActions={(place) => (
-              <>
-                {place.googleMapsUrl ? (
-                  <a
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                    href={place.googleMapsUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    Ver en Google Maps
-                  </a>
-                ) : null}
-                {group.role === "owner" ? (
-                  <form action={deleteFormAction}>
-                    <input name="groupId" type="hidden" value={groupId} />
-                    <input name="placeId" type="hidden" value={place.id} />
-                    <button
-                      className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
-                      disabled={isDeleting}
-                      type="submit"
-                    >
-                      {isDeleting ? "Eliminando..." : "Eliminar"}
-                    </button>
-                  </form>
-                ) : null}
-              </>
-            )}
-            selectedPlaceId={selectedPlaceId}
-            title="Lugares guardados"
-          />
-          {deleteState.error ? <p className="mt-3 text-sm text-rose-600">{deleteState.error}</p> : null}
-        </Card>
-      ) : (
-        <EmptyState
-          title="Todavia no hay lugares"
-          description={
-            group.canEditPlaces
-              ? "Empieza agregando el primer sitio recomendado para que tu grupo pueda verlo en el mapa."
-              : "Aun no hay lugares. Solo el propietario puede agregar el primer sitio en este grupo."
+      <div>
+        <GroupDetailTabs activeTab={currentTab} onTabChange={setCurrentTab} />
+        <div
+          className="overflow-hidden pt-4"
+          onTouchEnd={() => handleTouchEnd()}
+          onTouchMove={(event) => handleTouchMove(event, event.currentTarget.clientWidth)}
+          onTouchStart={(event) =>
+            handleTouchStart(event.touches[0]?.clientX ?? 0, event.touches[0]?.clientY ?? 0, event.target)
           }
-        />
-      )}
-
-      {isMembersModalOpen ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4">
-          <Card className="w-full max-w-md rounded-2xl">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-slate-900">Miembros del grupo</h3>
-              <Button onClick={() => setIsMembersModalOpen(false)} size="sm" type="button" variant="ghost">
-                Cerrar
-              </Button>
+        >
+          <div
+            className={`flex ${isDragging ? "" : "transition-transform duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]"}`}
+            style={{ transform: `translateX(calc(${-tabIndex * 100}% - ${dragOffsetPct}%))` }}
+          >
+            <div className="w-full shrink-0 px-1.5">
+              <GroupPlacesTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} />
             </div>
-            <ul className="mt-3 max-h-80 space-y-2 overflow-y-auto">
-              {allMembers.map((member) => (
-                <li key={member.userId} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2">
-                  <div className="h-8 w-8 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
-                    {member.avatarUrl ? (
-                      <img alt={member.username || "Avatar"} className="h-full w-full object-cover" src={member.avatarUrl} />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-700">
-                        {getInitial(member.username)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-900">@{member.username || "sin-username"}</p>
-                    <p className="text-xs text-slate-500">{getRoleLabel(member.role)}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Card>
+            <div className="w-full shrink-0 px-1.5">
+              <GroupActivityTab events={activityEvents} joinRequests={joinRequests} />
+            </div>
+            <div className="w-full shrink-0 px-1.5">
+              <GroupMapTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} />
+            </div>
+          </div>
         </div>
-      ) : null}
+      </div>
     </section>
   );
 }
-

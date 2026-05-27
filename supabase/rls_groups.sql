@@ -8,9 +8,9 @@ do $$
 begin
   if not exists (
     select 1 from information_schema.columns
-    where table_schema = 'public' and table_name = 'groups' and column_name = 'place_edit_policy'
+    where table_schema = 'public' and table_name = 'groups' and column_name = 'privacy'
   ) then
-    alter table public.groups add column place_edit_policy text not null default 'members_can_edit';
+    alter table public.groups add column privacy text not null default 'abierto';
   end if;
 
   if not exists (
@@ -28,16 +28,16 @@ do $$
 begin
   alter table public.groups drop constraint if exists groups_join_policy_check;
 
-  if not exists (select 1 from pg_constraint where conname = 'groups_place_edit_policy_check') then
-    alter table public.groups
-      add constraint groups_place_edit_policy_check
-      check (place_edit_policy in ('owner_only', 'members_can_edit'));
-  end if;
-
   if not exists (select 1 from pg_constraint where conname = 'groups_join_policy_check') then
     alter table public.groups
       add constraint groups_join_policy_check
       check (join_policy in ('invite_only', 'open_by_code', 'request_to_join'));
+  end if;
+
+  if not exists (select 1 from pg_constraint where conname = 'groups_privacy_check') then
+    alter table public.groups
+      add constraint groups_privacy_check
+      check (privacy in ('privado', 'abierto'));
   end if;
 end $$;
 
@@ -135,8 +135,11 @@ begin
   end loop;
 end $$;
 
--- Helper to avoid RLS recursion between groups <-> group_members policies.
-create or replace function public.is_group_creator(p_group_id uuid)
+-- RLS-safe predicates for membership mutations. Keeping their internal reads
+-- behind security definer prevents the groups <-> group_members policy cycle.
+drop function if exists public.is_group_creator(uuid);
+
+create or replace function public.is_group_creator(p_group_id uuid, p_user_id uuid)
 returns boolean
 language sql
 security definer
@@ -146,11 +149,99 @@ as $$
     select 1
     from public.groups g
     where g.id = p_group_id
-      and g.created_by = auth.uid()
+      and g.created_by = p_user_id
   );
 $$;
 
-grant execute on function public.is_group_creator(uuid) to authenticated;
+create or replace function public.can_join_group_as_member(p_group_id uuid, p_user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.groups g
+    where g.id = p_group_id
+      and g.join_policy = 'open_by_code'
+  )
+  or exists (
+    select 1
+    from public.group_join_requests r
+    where r.group_id = p_group_id
+      and r.user_id = p_user_id
+      and r.status = 'approved'
+  );
+$$;
+
+create or replace function public.can_manage_group_members(p_group_id uuid, p_user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.groups g
+    where g.id = p_group_id
+      and (
+        g.created_by = p_user_id
+        or (
+          g.privacy = 'abierto'
+          and exists (
+            select 1
+            from public.group_members gm
+            where gm.group_id = p_group_id
+              and gm.user_id = p_user_id
+          )
+        )
+      )
+  );
+$$;
+
+revoke execute on function public.is_group_creator(uuid, uuid) from public;
+revoke execute on function public.can_join_group_as_member(uuid, uuid) from public;
+revoke execute on function public.can_manage_group_members(uuid, uuid) from public;
+grant execute on function public.is_group_creator(uuid, uuid) to authenticated;
+grant execute on function public.can_join_group_as_member(uuid, uuid) to authenticated;
+grant execute on function public.can_manage_group_members(uuid, uuid) to authenticated;
+
+-- Enforce protected columns for editors that can update an open group.
+-- RLS controls who may edit; this trigger controls which sensitive values
+-- may be changed even through a direct Supabase client request.
+create or replace function public.enforce_group_protected_updates()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.created_by is distinct from old.created_by
+    or new.join_code is distinct from old.join_code then
+    raise exception 'No se pueden cambiar campos protegidos del grupo.';
+  end if;
+
+  if new.privacy is distinct from old.privacy
+    and not exists (
+      select 1
+      from public.group_members gm
+      where gm.group_id = old.id
+        and gm.user_id = auth.uid()
+        and gm.role = 'owner'
+    ) then
+    raise exception 'Solo el administrador puede cambiar la privacidad del grupo.';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_groups_protected_updates on public.groups;
+create trigger trg_groups_protected_updates
+before update on public.groups
+for each row execute function public.enforce_group_protected_updates();
+
+revoke execute on function public.enforce_group_protected_updates() from public;
 
 -- 7) GROUPS policies
 -- Important: the creator must be able to read the newly created group row
@@ -197,6 +288,14 @@ using (
       and gm.user_id = auth.uid()
       and gm.role = 'owner'
   )
+  or (
+    groups.privacy = 'abierto'
+    and exists (
+      select 1 from public.group_members gm
+      where gm.group_id = groups.id
+        and gm.user_id = auth.uid()
+    )
+  )
 )
 with check (
   exists (
@@ -204,6 +303,14 @@ with check (
     where gm.group_id = groups.id
       and gm.user_id = auth.uid()
       and gm.role = 'owner'
+  )
+  or (
+    groups.privacy = 'abierto'
+    and exists (
+      select 1 from public.group_members gm
+      where gm.group_id = groups.id
+        and gm.user_id = auth.uid()
+    )
   )
 );
 
@@ -227,12 +334,10 @@ on public.group_members
 for select to authenticated
 using (user_id = auth.uid());
 
-create policy group_members_select_owner_group
-on public.group_members
-for select to authenticated
-using (
-  public.is_group_creator(group_members.group_id)
-);
+-- NOTE:
+-- Avoid recursive checks between groups -> group_members -> groups policies.
+-- Members can always read their own membership row; richer roster access is exposed
+-- through get_group_members_with_profiles() (security definer RPC).
 
 create policy group_members_insert_self_join_allowed
 on public.group_members
@@ -241,43 +346,26 @@ with check (
   auth.uid() is not null
   and user_id = auth.uid()
   and role = 'member'
-  and (
-    exists (
-      select 1
-      from public.groups g
-      where g.id = group_members.group_id
-        and g.join_policy = 'open_by_code'
-    )
-    or exists (
-      select 1
-      from public.group_join_requests r
-      where r.group_id = group_members.group_id
-        and r.user_id = auth.uid()
-        and r.status = 'approved'
-    )
-  )
+  and public.can_join_group_as_member(group_members.group_id, auth.uid())
 );
 
-create policy group_members_insert_owner_manage
+create policy group_members_insert_creator_owner
 on public.group_members
 for insert to authenticated
 with check (
-  exists (
-    select 1 from public.groups g
-    where g.id = group_members.group_id
-      and g.created_by = auth.uid()
-  )
+  group_members.user_id = auth.uid()
+  and group_members.role = 'owner'
+  and public.is_group_creator(group_members.group_id, auth.uid())
 );
 
 create policy group_members_delete_owner_or_self
 on public.group_members
 for delete to authenticated
 using (
-  user_id = auth.uid()
-  or exists (
-    select 1 from public.groups g
-    where g.id = group_members.group_id
-      and g.created_by = auth.uid()
+  role = 'member'
+  and (
+    user_id = auth.uid()
+    or public.can_manage_group_members(group_members.group_id, auth.uid())
   )
 );
 
@@ -389,6 +477,7 @@ begin
 end;
 $$;
 
+revoke execute on function public.approve_group_join_request(uuid, uuid) from public;
 grant execute on function public.approve_group_join_request(uuid, uuid) to authenticated;
 
 -- Safe member listing for UI previews:
@@ -428,6 +517,7 @@ as $$
   limit case when p_limit is null or p_limit <= 0 then null else p_limit end;
 $$;
 
+revoke execute on function public.get_group_members_with_profiles(uuid, integer) from public;
 grant execute on function public.get_group_members_with_profiles(uuid, integer) to authenticated;
 
 -- If invitations table exists, keep visibility for invited users on groups

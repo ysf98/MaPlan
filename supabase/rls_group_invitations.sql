@@ -59,39 +59,54 @@ alter table public.group_invitations enable row level security;
 
 drop policy if exists group_invitations_select_invited_or_owner on public.group_invitations;
 drop policy if exists group_invitations_insert_owner_only on public.group_invitations;
+drop policy if exists group_invitations_insert_manager on public.group_invitations;
 drop policy if exists group_invitations_update_invited_decision on public.group_invitations;
 drop policy if exists group_invitations_update_owner_reinvite on public.group_invitations;
 drop policy if exists group_members_insert_self_invitation_accepted on public.group_members;
 drop policy if exists groups_select_invited_user on public.groups;
+
+create or replace function public.can_manage_group_invitations(p_group_id uuid, p_user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.group_members gm
+    where gm.group_id = p_group_id
+      and gm.user_id = p_user_id
+      and (
+        gm.role = 'owner'
+        or exists (
+          select 1
+          from public.groups g
+          where g.id = p_group_id
+            and g.privacy = 'abierto'
+        )
+      )
+  );
+$$;
+
+revoke execute on function public.can_manage_group_invitations(uuid, uuid) from public;
+grant execute on function public.can_manage_group_invitations(uuid, uuid) to authenticated;
 
 create policy group_invitations_select_invited_or_owner
 on public.group_invitations
 for select to authenticated
 using (
   invited_user_id = auth.uid()
-  or exists (
-    select 1
-    from public.group_members gm
-    where gm.group_id = group_invitations.group_id
-      and gm.user_id = auth.uid()
-      and gm.role = 'owner'
-  )
+  or public.can_manage_group_invitations(group_invitations.group_id, auth.uid())
 );
 
-create policy group_invitations_insert_owner_only
+create policy group_invitations_insert_manager
 on public.group_invitations
 for insert to authenticated
 with check (
   invited_by = auth.uid()
   and status = 'pending'
   and invited_by <> invited_user_id
-  and exists (
-    select 1
-    from public.group_members gm
-    where gm.group_id = group_invitations.group_id
-      and gm.user_id = auth.uid()
-      and gm.role = 'owner'
-  )
+  and public.can_manage_group_invitations(group_invitations.group_id, auth.uid())
   and exists (
     select 1
     from public.friendships f
@@ -117,22 +132,10 @@ create policy group_invitations_update_owner_reinvite
 on public.group_invitations
 for update to authenticated
 using (
-  exists (
-    select 1
-    from public.group_members gm
-    where gm.group_id = group_invitations.group_id
-      and gm.user_id = auth.uid()
-      and gm.role = 'owner'
-  )
+  public.can_manage_group_invitations(group_invitations.group_id, auth.uid())
 )
 with check (
-  exists (
-    select 1
-    from public.group_members gm
-    where gm.group_id = group_invitations.group_id
-      and gm.user_id = auth.uid()
-      and gm.role = 'owner'
-  )
+  public.can_manage_group_invitations(group_invitations.group_id, auth.uid())
   and invited_by = auth.uid()
   and invited_by <> invited_user_id
   and status = 'pending'
@@ -212,4 +215,5 @@ begin
 end;
 $$;
 
+revoke execute on function public.accept_group_invitation(uuid) from public;
 grant execute on function public.accept_group_invitation(uuid) to authenticated;

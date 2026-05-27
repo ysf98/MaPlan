@@ -1,12 +1,13 @@
-import type { GroupJoinPolicy, GroupPlaceEditPolicy } from "@/lib/groups/policies";
+import type { GroupJoinPolicy, GroupPrivacy } from "@/lib/groups/policies";
 
 export type GroupListItem = {
   id: string;
   name: string;
   description: string | null;
+  coverImageUrl: string | null;
   createdAt: string;
   role: "owner" | "member";
-  placeEditPolicy: GroupPlaceEditPolicy;
+  privacy: GroupPrivacy;
   joinPolicy: GroupJoinPolicy;
 };
 
@@ -14,12 +15,15 @@ export type GroupDetail = {
   id: string;
   name: string;
   description: string | null;
+  coverImageUrl: string | null;
   joinCode: string;
   createdAt: string;
   role: "owner" | "member";
-  placeEditPolicy: GroupPlaceEditPolicy;
+  privacy: GroupPrivacy;
   joinPolicy: GroupJoinPolicy;
   canEditPlaces: boolean;
+  canEditGroup: boolean;
+  canInviteMembers: boolean;
 };
 
 export type GroupJoinRequestItem = {
@@ -46,6 +50,5 @@ export type GroupMemberPreview = {
 
 export type GroupMembersPreviewResult = {
   members: GroupMemberPreview[];
-  allMembers: GroupMemberPreview[];
   total: number;
 };

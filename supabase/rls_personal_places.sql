@@ -23,6 +23,8 @@ create unique index if not exists personal_places_provider_external_place_unique
   on public.personal_places(user_id, provider, external_place_id)
   where external_place_id is not null;
 
+grant select, insert, update, delete on table public.personal_places to authenticated;
+
 create or replace function public.set_personal_places_updated_at()
 returns trigger
 language plpgsql

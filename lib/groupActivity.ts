@@ -8,6 +8,7 @@ export type GroupActivityFeedItem = {
   groupName: string;
   actorUserId: string;
   actorUsername: string | null;
+  actorAvatarUrl: string | null;
   eventType: GroupActivityEventType;
   entityId: string | null;
   entityName: string | null;
@@ -82,18 +83,24 @@ export async function getGroupActivityFeedForUser(userId: string, limit = 20): P
 
   const [groupsResult, profilesResult] = await Promise.all([
     supabase.from("groups").select("id, name").in("id", uniqueGroupIds),
-    supabase.from("profiles").select("id, username").in("id", uniqueActorIds)
+    supabase.rpc("get_profiles_by_ids", { p_ids: uniqueActorIds })
   ]);
 
   const groupNameById = new Map<string, string>();
   (groupsResult.data || []).forEach((group) => groupNameById.set(group.id, group.name));
 
-  const usernameById = new Map<string, string | null>();
-  (profilesResult.data || []).forEach((profile) => usernameById.set(profile.id, profile.username));
+  const profileById = new Map<string, { username: string | null; avatarUrl: string | null }>();
+  (profilesResult.data || []).forEach((profile) =>
+    profileById.set(profile.id, {
+      username: profile.username ?? null,
+      avatarUrl: profile.avatar_url ?? null
+    })
+  );
 
   return events.map((event) => {
     const groupName = groupNameById.get(event.group_id) || "Grupo";
-    const actorUsername = usernameById.get(event.actor_user_id) ?? null;
+    const actorProfile = profileById.get(event.actor_user_id);
+    const actorUsername = actorProfile?.username ?? null;
     const eventType = event.event_type as GroupActivityEventType;
 
     return {
@@ -102,6 +109,7 @@ export async function getGroupActivityFeedForUser(userId: string, limit = 20): P
       groupName,
       actorUserId: event.actor_user_id,
       actorUsername,
+      actorAvatarUrl: actorProfile?.avatarUrl ?? null,
       eventType,
       entityId: event.entity_id,
       entityName: event.entity_name,
@@ -116,9 +124,7 @@ export async function getGroupActivityFeedForUser(userId: string, limit = 20): P
   });
 }
 
-export async function getGroupsWithRecentActivityForUser(userId: string, maxGroups = 5): Promise<GroupWithActivityItem[]> {
-  const events = await getGroupActivityFeedForUser(userId, 100);
-
+export function summarizeGroupsWithRecentActivity(events: GroupActivityFeedItem[], maxGroups = 5): GroupWithActivityItem[] {
   if (events.length === 0) {
     return [];
   }

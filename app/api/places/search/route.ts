@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { normalizeSearchQuery, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
 import {
   extractCityFromFormattedAddress,
@@ -6,6 +7,7 @@ import {
   splitAddressParts,
   stripPostalCodes
 } from "@/lib/map/addressParsing";
+import { googlePlacesSearchSchema } from "@/lib/validation/schemas";
 
 type GoogleTextSearchPlace = {
   place_id?: string;
@@ -26,19 +28,23 @@ function buildGoogleMapsUrl(placeId: string): string {
 }
 
 export async function POST(request: Request) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "GOOGLE_PLACES_API_KEY no configurada." }, { status: 500 });
   }
 
-  const payload = (await request.json().catch(() => null)) as
-    | { query?: string; center?: { lat?: number; lng?: number } | null }
-    | null;
-  const query = String(payload?.query || "").trim();
-  if (query.length < 3) {
-    return NextResponse.json({ results: [] satisfies GooglePlaceSuggestion[] });
+  const payload = await request.json().catch(() => null);
+  const parsedPayload = googlePlacesSearchSchema.safeParse(payload);
+  if (!parsedPayload.success) {
+    return NextResponse.json({ error: "Payload invalido." }, { status: 400 });
   }
 
+  const { query, center } = parsedPayload.data;
   const normalizedQuery = normalizeSearchQuery(query);
   const params = new URLSearchParams({
     query: normalizedQuery,
@@ -47,8 +53,8 @@ export async function POST(request: Request) {
     key: apiKey
   });
 
-  const centerLat = payload?.center?.lat;
-  const centerLng = payload?.center?.lng;
+  const centerLat = center?.lat;
+  const centerLng = center?.lng;
   if (typeof centerLat === "number" && typeof centerLng === "number") {
     params.set("location", `${centerLat},${centerLng}`);
     params.set("radius", "25000");
@@ -67,19 +73,20 @@ export async function POST(request: Request) {
   const places = json.results || [];
 
   const results: GooglePlaceSuggestion[] = places
-    .map((place) => {
+    .flatMap((place) => {
       const externalPlaceId = (place.place_id || "").trim();
       const lat = place.geometry?.location?.lat;
       const lng = place.geometry?.location?.lng;
       if (!externalPlaceId || typeof lat !== "number" || typeof lng !== "number") {
-        return null;
+        return [];
       }
       const fullAddress = (place.formatted_address || "").trim();
       const parts = splitAddressParts(fullAddress);
       const parsedCity = extractCityFromFormattedAddress(fullAddress);
       const parsedProvince = extractProvinceFromFormattedAddress(fullAddress);
       const cleanAddress = stripPostalCodes(parts.street || fullAddress || "Sin direccion");
-      return {
+      return [
+        {
         externalPlaceId,
         provider: "google_places",
         name: (place.name || "").trim() || "Resultado",
@@ -90,10 +97,11 @@ export async function POST(request: Request) {
         longitude: lng,
         googleMapsUrl: buildGoogleMapsUrl(externalPlaceId),
         businessStatus: (place.business_status || "").trim() || null,
+        imageUrl: null,
         primaryType: place.types?.[0] || null
-      } satisfies GooglePlaceSuggestion;
+        } satisfies GooglePlaceSuggestion
+      ];
     })
-    .filter((value): value is GooglePlaceSuggestion => Boolean(value))
     .slice(0, 8);
 
   return NextResponse.json({ results });

@@ -10,18 +10,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: "#f2fbf8",
-          100: "#d5f4ea",
-          200: "#abe8d7",
-          300: "#75d8be",
-          400: "#42c4a2",
-          500: "#21a688",
-          600: "#14866f",
-          700: "#136b5a",
-          800: "#145549",
-          900: "#13463d"
-        }
+        coral: "rgb(var(--vc-coral) / <alpha-value>)",
+        "coral-strong": "rgb(var(--vc-coral-strong) / <alpha-value>)"
+      },
+      borderRadius: {
+        sm: "var(--vc-radius-sm)",
+        md: "var(--vc-radius-md)"
+      },
+      fontFamily: {
+        sans: ["var(--font-vc)", "ui-sans-serif", "system-ui", "sans-serif"]
       }
     }
   },
