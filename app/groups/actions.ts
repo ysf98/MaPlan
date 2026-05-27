@@ -120,24 +120,22 @@ export async function createGroupAction(
     return { error: memberError.message, success: false, groupId: null };
   }
 
+  let invitationWarning: string | null = null;
+
   if (selectedFriendIds.length > 0) {
     const inviteResults = await Promise.all(
       selectedFriendIds.map((friendUserId) => inviteFriendToGroup(user.id, createdGroupId, friendUserId))
     );
     const firstInviteError = inviteResults.find((result) => result.error)?.error;
     if (firstInviteError) {
-      return {
-        error: `Grupo creado, pero falló al invitar amigos: ${firstInviteError}`,
-        success: false,
-        groupId: createdGroupId
-      };
+      invitationWarning = `Grupo creado, pero no se pudo invitar a todos los amigos: ${firstInviteError}`;
     }
   }
 
   revalidatePath("/groups");
   revalidatePath("/dashboard");
   revalidatePath("/invitations");
-  return { error: null, success: true, groupId: createdGroupId };
+  return { error: invitationWarning, success: true, groupId: createdGroupId };
 }
 
 export async function joinGroupAction(

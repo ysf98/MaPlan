@@ -9,6 +9,7 @@ type BasePlaceItem = {
   city?: string | null;
   imageUrl?: string | null;
   googleMapsUrl?: string | null;
+  status?: "pending" | "visited" | "favorite";
 };
 
 type SimplePlacesListProps<TPlace extends BasePlaceItem> = {
@@ -28,6 +29,13 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
   title,
   renderActions
 }: SimplePlacesListProps<TPlace>) {
+  function statusLabel(status: BasePlaceItem["status"]): string | null {
+    if (status === "visited") return "Visitado";
+    if (status === "favorite") return "Favorito";
+    if (status === "pending") return "Pendiente";
+    return null;
+  }
+
   return (
     <>
       {title ? <h3 className="text-sm font-semibold text-zinc-950">{title}</h3> : null}
@@ -51,7 +59,14 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
                   )}
                 </div>
                 <div className="bg-white px-4 py-3">
-                  <p className="text-2xl font-semibold leading-tight text-zinc-950">{place.name}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-2xl font-semibold leading-tight text-zinc-950">{place.name}</p>
+                    {statusLabel(place.status) ? (
+                      <span className="shrink-0 rounded-full bg-rose-50 px-2 py-1 text-[10px] font-semibold text-[#c6283a]">
+                        {statusLabel(place.status)}
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="mt-1 text-xs text-zinc-500">
                     {place.address}
                     {place.city ? ` - ${place.city}` : ""}

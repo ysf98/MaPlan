@@ -5,7 +5,12 @@ import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { getGroupActivityFeedForUser } from "@/lib/groupActivity";
 import { getFriends } from "@/lib/friends";
 import { getInvitableFriendsForGroup } from "@/lib/groupInvitations";
-import { getGroupDetailForUser, getGroupMembersPreviewForUser } from "@/lib/groups";
+import {
+  getGroupDetailForUser,
+  getGroupMembersPreviewForUser,
+  getPendingJoinRequestsForOwner,
+  getReviewedJoinRequestsForOwner
+} from "@/lib/groups";
 import { getGroupDetailTab } from "@/lib/groups/tabs";
 import { getGroupPlacesForUser } from "@/lib/places";
 import { ROUTES } from "@/utils/constants";
@@ -28,17 +33,23 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
   const activeTab = getGroupDetailTab(resolvedSearchParams?.tab);
 
   const group = await getGroupDetailForUser(user.id, groupId);
-  const places = await getGroupPlacesForUser(user.id, groupId);
-  const membersPreviewResult = await getGroupMembersPreviewForUser(user.id, groupId);
 
   if (!group) {
     notFound();
   }
 
-  const invitableFriends = group.canInviteMembers ? await getInvitableFriendsForGroup(user.id, groupId) : [];
-  const totalFriendsCount = group.canInviteMembers ? (await getFriends(user.id)).length : 0;
+  const [places, membersPreviewResult, invitableFriends, friends, activityFeed, pendingJoinRequests, reviewedJoinRequests] =
+    await Promise.all([
+      getGroupPlacesForUser(user.id, groupId),
+      getGroupMembersPreviewForUser(user.id, groupId),
+      group.canInviteMembers ? getInvitableFriendsForGroup(user.id, groupId) : Promise.resolve([]),
+      group.canInviteMembers ? getFriends(user.id) : Promise.resolve([]),
+      getGroupActivityFeedForUser(user.id, 50),
+      group.role === "owner" ? getPendingJoinRequestsForOwner(user.id, groupId) : Promise.resolve([]),
+      group.role === "owner" ? getReviewedJoinRequestsForOwner(user.id, groupId) : Promise.resolve([])
+    ]);
 
-  const activityEvents = (await getGroupActivityFeedForUser(user.id, 50)).filter((event) => event.groupId === groupId);
+  const activityEvents = activityFeed.filter((event) => event.groupId === groupId);
 
   return (
     <AppShell backHref={ROUTES.groups} currentUser={user}>
@@ -49,11 +60,12 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
         groupId={groupId}
         invitableFriends={invitableFriends}
         membersPreview={membersPreviewResult.members}
+        pendingJoinRequests={pendingJoinRequests}
         places={places}
-        totalFriendsCount={totalFriendsCount}
+        reviewedJoinRequests={reviewedJoinRequests}
+        totalFriendsCount={friends.length}
         totalMembersCount={membersPreviewResult.total}
       />
     </AppShell>
   );
 }
-

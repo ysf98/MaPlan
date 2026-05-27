@@ -10,7 +10,7 @@ import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
 import { GroupPlacesTab } from "@/components/groups/GroupPlacesTab";
 import type { GroupActivityFeedItem } from "@/lib/groupActivity";
 import type { GroupDetailTab } from "@/lib/groups/tabs";
-import type { GroupDetail, GroupMemberPreview } from "@/lib/groups/types";
+import type { GroupDetail, GroupJoinRequestItem, GroupMemberPreview } from "@/lib/groups/types";
 import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupDetailViewProps = {
@@ -23,6 +23,8 @@ type GroupDetailViewProps = {
   totalFriendsCount: number;
   activeTab: GroupDetailTab;
   activityEvents: GroupActivityFeedItem[];
+  pendingJoinRequests: GroupJoinRequestItem[];
+  reviewedJoinRequests: GroupJoinRequestItem[];
 };
 
 export function GroupDetailView({
@@ -34,7 +36,9 @@ export function GroupDetailView({
   invitableFriends,
   totalFriendsCount,
   activeTab,
-  activityEvents
+  activityEvents,
+  pendingJoinRequests,
+  reviewedJoinRequests
 }: GroupDetailViewProps) {
   const tabs = useMemo(() => ["lugares", "actividad", "mapa"] as const, []);
   const [currentTab, setCurrentTab] = useState<GroupDetailTab>(activeTab);
@@ -130,6 +134,15 @@ export function GroupDetailView({
   }
 
   const tabIndex = tabs.indexOf(currentTab);
+  const joinRequests =
+    group.role === "owner" &&
+    (group.joinPolicy === "request_to_join" || pendingJoinRequests.length > 0 || reviewedJoinRequests.length > 0)
+      ? {
+          groupId,
+          requests: pendingJoinRequests,
+          reviewedRequests: reviewedJoinRequests
+        }
+      : null;
 
   return (
     <section className="space-y-5">
@@ -171,7 +184,7 @@ export function GroupDetailView({
               <GroupPlacesTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} />
             </div>
             <div className="w-full shrink-0 px-1.5">
-              <GroupActivityTab events={activityEvents} />
+              <GroupActivityTab events={activityEvents} joinRequests={joinRequests} />
             </div>
             <div className="w-full shrink-0 px-1.5">
               <GroupMapTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} />
