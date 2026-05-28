@@ -39,4 +39,3 @@ description: MaPlan UI and design-system workflow. Use when changing MaPlan scre
 - Map: keep search and selected-place card inside the visual map area without blocking map gestures unintentionally.
 - Friends: preserve invitations, requests, friend avatars, and fallback initials.
 - Profile: keep image upload limits and unique `@usuario` behavior aligned with validation.
-

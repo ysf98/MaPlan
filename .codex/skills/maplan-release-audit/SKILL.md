@@ -43,4 +43,3 @@ Report in Spanish with:
 - SQL order and rollout notes.
 - Tests/build commands executed and results.
 - Manual regression checklist for groups, owner/member permissions, invitations, map, places, friends, profile, avatars, and auth.
-

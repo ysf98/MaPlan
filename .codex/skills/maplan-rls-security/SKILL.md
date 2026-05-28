@@ -44,4 +44,3 @@ Use the order in `README.md` when preparing Supabase rollout. If a SQL function 
 - Permissions/domain: `lib/groupPermissions.ts`, `lib/groups.ts`, `lib/friends.ts`, `lib/groupInvitations.ts`, `lib/places.ts`, `lib/personalPlaces.ts`.
 - Actions: `app/groups/actions.ts`, `app/groups/[groupId]/actions.ts`, `app/map/actions.ts`, `app/profile/actions.ts`.
 - Tests: `tests/security/rls-policies.test.ts`, `tests/lib/groupPermissions.test.ts`, `tests/actions/*`.
-
