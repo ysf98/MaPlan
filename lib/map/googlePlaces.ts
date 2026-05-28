@@ -28,6 +28,13 @@ export type GooglePlaceFeature = {
   imageUrl: string | null;
 };
 
+export type GoogleNearbyFallbackReason = "no_candidate" | "too_far" | "google_error";
+
+export type GoogleNearbyPlaceResponse = {
+  place: GooglePlaceFeature | null;
+  fallbackReason?: GoogleNearbyFallbackReason;
+};
+
 export function normalizeSearchQuery(query: string): string {
   const trimmed = query.trim();
   const normalized = trimmed
@@ -96,4 +103,35 @@ export async function getGooglePlaceDetails(params: {
 
   const payload = (await response.json()) as { place?: GooglePlaceFeature | null };
   return payload.place ?? null;
+}
+
+export async function getGooglePlaceNearby(params: {
+  lat: number;
+  lng: number;
+  selectedName?: string | null;
+  signal?: AbortSignal;
+}): Promise<GoogleNearbyPlaceResponse> {
+  const response = await fetch("/api/places/nearby", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      lat: params.lat,
+      lng: params.lng,
+      selectedName: params.selectedName ?? null
+    }),
+    signal: params.signal
+  });
+
+  if (!response.ok) {
+    return {
+      place: null,
+      fallbackReason: "google_error"
+    };
+  }
+
+  const payload = (await response.json()) as GoogleNearbyPlaceResponse;
+  return {
+    place: payload.place ?? null,
+    fallbackReason: payload.fallbackReason
+  };
 }

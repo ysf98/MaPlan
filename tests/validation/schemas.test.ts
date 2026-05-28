@@ -3,6 +3,7 @@ import {
   createGroupSchema,
   friendSearchQuerySchema,
   googlePlaceDetailsSchema,
+  googlePlacesNearbySchema,
   googlePlacesSearchSchema,
   inviteFriendToGroupSchema,
   joinGroupSchema,
@@ -283,5 +284,22 @@ describe("api schemas", () => {
     expect(googlePlaceDetailsSchema.parse({ externalPlaceId: "  ChIJ123 " }).externalPlaceId).toBe("ChIJ123");
     expect(googlePlaceDetailsSchema.safeParse({ externalPlaceId: "" }).success).toBe(false);
     expect(googlePlaceDetailsSchema.safeParse({ externalPlaceId: "a".repeat(256) }).success).toBe(false);
+  });
+
+  it("googlePlacesNearbySchema validates latitude and longitude", () => {
+    expect(
+      googlePlacesNearbySchema.safeParse({
+        lat: 40.4168,
+        lng: -3.7038,
+        selectedName: "Bar Sol"
+      }).success
+    ).toBe(true);
+
+    expect(
+      googlePlacesNearbySchema.safeParse({
+        lat: 140.4168,
+        lng: -3.7038
+      }).success
+    ).toBe(false);
   });
 });

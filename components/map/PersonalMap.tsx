@@ -14,7 +14,7 @@ import {
   resolvePlaceFromMapClick,
   type MapDraftPlace
 } from "@/lib/map/geocoding";
-import { getGooglePlaceDetails, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
+import { getGooglePlaceDetails, getGooglePlaceNearby, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
 import type { PersonalPlace } from "@/lib/personalPlaces";
 
 const addPersonalPlaceInitialState: AddPersonalPlaceActionState = {
@@ -48,11 +48,13 @@ function createPopupNode(place: PersonalPlace): HTMLElement {
 
 export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: PersonalMapProps) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  const mapStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE || "mapbox://styles/mapbox/standard";
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const selectedSearchMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
+  const [resolveHint, setResolveHint] = useState<string | null>(null);
   const [draftSelection, setDraftSelection] = useState<MapDraftPlace | null>(null);
   const [searchCloseSignal, setSearchCloseSignal] = useState(0);
   const [localSelectedPlaceId, setLocalSelectedPlaceId] = useState<string | null>(null);
@@ -81,7 +83,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
     const firstPlace = places[0];
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: mapStyle,
       center: firstPlace ? [firstPlace.longitude, firstPlace.latitude] : [-3.7038, 40.4168],
       zoom: firstPlace ? 11 : 5
     });
@@ -95,8 +97,31 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
       const latitude = Number(event.lngLat.lat.toFixed(6));
       const longitude = Number(event.lngLat.lng.toFixed(6));
       setIsResolvingLocation(true);
+      setResolveHint(null);
 
       try {
+        const nearby = await getGooglePlaceNearby({ lat: latitude, lng: longitude, selectedName: renderedName || null });
+        if (nearby.place) {
+          setDraftSelection({
+            latitude,
+            longitude,
+            name: nearby.place.name,
+            address: nearby.place.address,
+            city: nearby.place.city,
+            category: "Otros",
+            provider: "google_places",
+            externalPlaceId: nearby.place.externalPlaceId,
+            googleMapsUrl: nearby.place.googleMapsUrl,
+            businessStatus: nearby.place.businessStatus,
+            imageUrl: nearby.place.imageUrl
+          });
+          return;
+        }
+
+        if (nearby.fallbackReason) {
+          setResolveHint("No hemos encontrado detalles del lugar, pero puedes guardarlo manualmente.");
+        }
+
         const resolved = await resolvePlaceFromMapClick(token, latitude, longitude, renderedName);
         setDraftSelection({
           latitude,
@@ -104,9 +129,11 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
           name: resolved.name,
           address: resolved.address,
           city: resolved.city,
-          category: "Otros"
+          category: "Otros",
+          provider: "mapbox"
         });
       } catch {
+        setResolveHint("No hemos encontrado detalles del lugar, pero puedes guardarlo manualmente.");
         const featureWithName = renderedFeatures.find((feature) => {
           const name = ((feature.properties?.name as string | undefined) || "").trim();
           return Boolean(name);
@@ -145,7 +172,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
       map.remove();
       mapRef.current = null;
     };
-  }, [onSelectPlace, places, token]);
+  }, [mapStyle, onSelectPlace, places, token]);
 
   useEffect(() => {
     if (!selectedPlace || !mapRef.current) {
@@ -160,6 +187,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
   }, [selectedPlace]);
 
   const handleSelectSearchResult = useCallback(async (result: GooglePlaceSuggestion) => {
+    setResolveHint(null);
     const resolved = await getGooglePlaceDetails({ externalPlaceId: result.externalPlaceId });
     if (!resolved) {
       return;
@@ -202,6 +230,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
   }, []);
 
   const handleManualCreateFromSearch = useCallback((payload: { name: string; address: string; city: string }) => {
+    setResolveHint(null);
     const center = mapRef.current?.getCenter();
     const latitude = Number((center?.lat ?? 40.4168).toFixed(6));
     const longitude = Number((center?.lng ?? -3.7038).toFixed(6));
@@ -276,7 +305,15 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
         {isResolvingLocation ? (
           <div className="pointer-events-none absolute left-3 right-3 top-28 z-10">
             <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
-              <p className="text-sm text-zinc-700">Cargando datos del lugar...</p>
+              <p className="text-sm text-zinc-700">Buscando informacion del sitio...</p>
+            </Card>
+          </div>
+        ) : null}
+
+        {resolveHint && !isResolvingLocation ? (
+          <div className="pointer-events-none absolute left-3 right-3 top-28 z-10">
+            <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
+              <p className="text-sm text-zinc-700">{resolveHint}</p>
             </Card>
           </div>
         ) : null}
@@ -336,6 +373,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
               isPending={isAddPlacePending}
               onCancel={() => {
                 setDraftSelection(null);
+                setResolveHint(null);
                 selectedSearchMarkerRef.current?.remove();
                 selectedSearchMarkerRef.current = null;
               }}
@@ -355,6 +393,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
             isPending={isAddPlacePending}
             onCancel={() => {
               setDraftSelection(null);
+              setResolveHint(null);
               selectedSearchMarkerRef.current?.remove();
               selectedSearchMarkerRef.current = null;
             }}

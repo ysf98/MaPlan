@@ -342,6 +342,17 @@ export const googlePlaceDetailsSchema = z.object({
     .max(255, "Identificador externo invalido.")
 });
 
+export const googlePlacesNearbySchema = z.object({
+  lat: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
+  lng: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida."),
+  selectedName: z
+    .string()
+    .trim()
+    .max(120, "El nombre seleccionado es demasiado largo.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+});
+
 export const updateProfileSchema = z.object({
   fullName: z
     .string()
@@ -383,3 +394,4 @@ export type RespondGroupInvitationInput = z.infer<typeof respondGroupInvitationS
 export type FriendSearchQueryInput = z.infer<typeof friendSearchQuerySchema>;
 export type GooglePlacesSearchInput = z.infer<typeof googlePlacesSearchSchema>;
 export type GooglePlaceDetailsInput = z.infer<typeof googlePlaceDetailsSchema>;
+export type GooglePlacesNearbyInput = z.infer<typeof googlePlacesNearbySchema>;
