@@ -482,3 +482,13 @@ MaPlan should evolve toward a polished social planning app:
 - safe Supabase/RLS-backed data model
 
 Every change should support that direction without making the codebase harder to maintain.
+
+## Project-local Codex skills
+
+Project-specific skill drafts live under `.codex/skills/`:
+
+- `maplan-rls-security` — use for Supabase SQL, RLS, privacy and permission work.
+- `maplan-vibrant-cartography-ui` — use for UI changes that must follow `DESIGN.md`.
+- `maplan-release-audit` — use before merges, deploys, SQL rollout or large branch reviews.
+
+These files are versioned with the project. If a Codex environment does not auto-discover project-local skills, copy or install the relevant skill folder into the agent's configured skills directory before relying on automatic triggering.
