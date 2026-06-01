@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { TouchEvent } from "react";
 import { GroupActivityTab } from "@/components/groups/GroupActivityTab";
 import { GroupDetailTabs } from "@/components/groups/GroupDetailTabs";
@@ -49,6 +49,8 @@ export function GroupDetailView({
   const [dragAxis, setDragAxis] = useState<"x" | "y" | null>(null);
   const [lockSwipeGesture, setLockSwipeGesture] = useState(false);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const tabPanelRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [activePanelHeight, setActivePanelHeight] = useState<number | null>(null);
 
   useEffect(() => {
     setCurrentTab(activeTab);
@@ -135,6 +137,26 @@ export function GroupDetailView({
   }
 
   const tabIndex = tabs.indexOf(currentTab);
+  useEffect(() => {
+    const activePanel = tabPanelRefs.current[tabIndex];
+    if (!activePanel) {
+      setActivePanelHeight(null);
+      return;
+    }
+
+    const updateHeight = () => {
+      setActivePanelHeight(activePanel.getBoundingClientRect().height);
+    };
+
+    updateHeight();
+    const resizeObserver = new ResizeObserver(updateHeight);
+    resizeObserver.observe(activePanel);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [tabIndex]);
+
   const joinRequests =
     group.role === "owner" &&
     (group.joinPolicy === "request_to_join" || pendingJoinRequests.length > 0 || reviewedJoinRequests.length > 0)
@@ -170,18 +192,19 @@ export function GroupDetailView({
       <div>
         <GroupDetailTabs activeTab={currentTab} onTabChange={setCurrentTab} />
         <div
-          className="overflow-hidden pt-4"
+          className="overflow-hidden pt-4 transition-[height] duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]"
           onTouchEnd={() => handleTouchEnd()}
           onTouchMove={(event) => handleTouchMove(event, event.currentTarget.clientWidth)}
           onTouchStart={(event) =>
             handleTouchStart(event.touches[0]?.clientX ?? 0, event.touches[0]?.clientY ?? 0, event.target)
           }
+          style={{ height: activePanelHeight === null ? undefined : activePanelHeight + 16 }}
         >
           <div
             className={`flex ${isDragging ? "" : "transition-transform duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]"}`}
             style={{ transform: `translateX(calc(${-tabIndex * 100}% - ${dragOffsetPct}%))` }}
           >
-            <div className="w-full shrink-0 px-1.5">
+            <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[0] = node; }}>
               <GroupPlacesTab
                 canEditPlaces={group.canEditPlaces}
                 groupId={groupId}
@@ -194,10 +217,10 @@ export function GroupDetailView({
                 selectedPlaceId={selectedPlaceId}
               />
             </div>
-            <div className="w-full shrink-0 px-1.5">
+            <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[1] = node; }}>
               <GroupActivityTab events={activityEvents} joinRequests={joinRequests} />
             </div>
-            <div className="w-full shrink-0 px-1.5">
+            <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[2] = node; }}>
               <GroupMapTab
                 canEditPlaces={group.canEditPlaces}
                 groupId={groupId}

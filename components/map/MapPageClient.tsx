@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import type { TouchEvent } from "react";
 import { deletePersonalPlaceAction, type DeletePersonalPlaceActionState } from "@/app/map/actions";
 import { PersonalMap } from "@/components/map/PersonalMap";
@@ -30,6 +30,8 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
   const [dragAxis, setDragAxis] = useState<"x" | "y" | null>(null);
   const [lockSwipeGesture, setLockSwipeGesture] = useState(false);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const tabPanelRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [activePanelHeight, setActivePanelHeight] = useState<number | null>(null);
   const [deleteState, deleteFormAction, isDeleting] = useActionState(deletePersonalPlaceAction, deleteInitialState);
 
   useEffect(() => {
@@ -117,6 +119,25 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
   }
 
   const tabIndex = tabs.indexOf(currentTab);
+  useEffect(() => {
+    const activePanel = tabPanelRefs.current[tabIndex];
+    if (!activePanel) {
+      setActivePanelHeight(null);
+      return;
+    }
+
+    const updateHeight = () => {
+      setActivePanelHeight(activePanel.getBoundingClientRect().height);
+    };
+
+    updateHeight();
+    const resizeObserver = new ResizeObserver(updateHeight);
+    resizeObserver.observe(activePanel);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [tabIndex]);
 
   return (
     <section
@@ -141,18 +162,19 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
       </div>
 
       <div
-        className="overflow-hidden"
+        className="overflow-hidden transition-[height] duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]"
         onTouchEnd={() => handleTouchEnd()}
         onTouchMove={(event) => handleTouchMove(event, event.currentTarget.clientWidth)}
         onTouchStart={(event) =>
           handleTouchStart(event.touches[0]?.clientX ?? 0, event.touches[0]?.clientY ?? 0, event.target)
         }
+        style={{ height: activePanelHeight === null ? undefined : activePanelHeight }}
       >
         <div
           className={`flex ${isDragging ? "" : "transition-transform duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]"}`}
           style={{ transform: `translateX(calc(${-tabIndex * 100}% - ${dragOffsetPct}%))` }}
         >
-          <div className="w-full shrink-0 px-1.5">
+          <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[0] = node; }}>
             {personalPlaces.length > 0 ? (
               <div>
                 <SimplePlacesList
@@ -195,7 +217,7 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
             )}
           </div>
 
-          <div className="w-full shrink-0 px-1.5">
+          <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[1] = node; }}>
             <div className="rounded-3xl border border-zinc-100 bg-white p-3">
               <PersonalMap onSelectPlace={setSelectedPlaceId} places={personalPlaces} selectedPlaceId={selectedPlaceId} />
             </div>
