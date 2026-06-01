@@ -45,6 +45,12 @@ type DeletePersonalPlaceInput = {
   placeId: string;
 };
 
+type UpdatePersonalPlaceNameInput = {
+  userId: string;
+  placeId: string;
+  name: string;
+};
+
 function isPlaceSource(value: string): value is PlaceSource {
   return value === "manual" || value === "google_maps" || value === "tiktok" || value === "instagram" || value === "website";
 }
@@ -169,5 +175,28 @@ export async function deletePersonalPlace(input: DeletePersonalPlaceInput): Prom
   if (error) {
     return { error: error.message };
   }
+  return { error: null };
+}
+
+export async function updatePersonalPlaceName(input: UpdatePersonalPlaceNameInput): Promise<{ error: string | null }> {
+  const name = input.name.trim();
+  if (!name) {
+    return { error: "El nombre del lugar es obligatorio." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("personal_places")
+    .update({
+      name,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", input.placeId)
+    .eq("user_id", input.userId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
   return { error: null };
 }

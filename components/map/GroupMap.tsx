@@ -2,8 +2,13 @@
 
 import { startTransition, useActionState, useEffect, useMemo, useRef, useCallback, useState } from "react";
 import mapboxgl from "mapbox-gl";
-import { addPlaceAction, deletePlaceAction, updatePlaceFavoriteAction } from "@/app/groups/[groupId]/actions";
-import type { AddPlaceActionState, DeletePlaceActionState, UpdatePlaceFavoriteActionState } from "@/app/groups/[groupId]/actions";
+import { addPlaceAction, deletePlaceAction, updatePlaceFavoriteAction, updatePlaceNameAction } from "@/app/groups/[groupId]/actions";
+import type {
+  AddPlaceActionState,
+  DeletePlaceActionState,
+  UpdatePlaceFavoriteActionState,
+  UpdatePlaceNameActionState
+} from "@/app/groups/[groupId]/actions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
 import { hasValidCoordinates, type GroupPlace } from "@/lib/places/shared";
@@ -14,6 +19,7 @@ import {
   type MapDraftPlace
 } from "@/lib/map/geocoding";
 import { MapSearchBox } from "@/components/map/MapSearchBox";
+import { MapPlaceCard } from "@/components/map/MapPlaceCard";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { getGooglePlaceDetails, getGooglePlaceNearby, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
 import { inferCategoryFromGoogleSignals } from "@/lib/map/placeClassification";
@@ -40,13 +46,16 @@ const addPlaceInitialState: AddPlaceActionState = {
   error: null,
   success: false
 };
-
 const deletePlaceInitialState: DeletePlaceActionState = {
   error: null,
   success: false
 };
 
 const favoritePlaceInitialState: UpdatePlaceFavoriteActionState = {
+  error: null,
+  success: false
+};
+const placeNameInitialState: UpdatePlaceNameActionState = {
   error: null,
   success: false
 };
@@ -101,12 +110,15 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   const [activePlaceFilter, setActivePlaceFilter] = useState<PlaceMapFilter>("all");
   const [localSelectedPlaceId, setLocalSelectedPlaceId] = useState<string | null>(null);
   const [isSelectedFavorite, setIsSelectedFavorite] = useState(false);
+  const [isEditingSelectedPlace, setIsEditingSelectedPlace] = useState(false);
+  const [selectedPlaceEditedName, setSelectedPlaceEditedName] = useState("");
   const [addPlaceState, addPlaceFormAction, isAddPlacePending] = useActionState(addPlaceAction, addPlaceInitialState);
   const [deletePlaceState, deletePlaceFormAction, isDeletePlacePending] = useActionState(deletePlaceAction, deletePlaceInitialState);
   const [favoritePlaceState, favoritePlaceFormAction, isFavoritePlacePending] = useActionState(
     updatePlaceFavoriteAction,
     favoritePlaceInitialState
   );
+  const [placeNameState, placeNameFormAction, isPlaceNamePending] = useActionState(updatePlaceNameAction, placeNameInitialState);
   const wasAddPlacePendingRef = useRef(false);
 
   const placesWithCoordinates = useMemo(() => places.filter((place) => hasValidCoordinates(place)), [places]);
@@ -192,10 +204,6 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
     const handleMapClick = async (event: mapboxgl.MapMouseEvent) => {
       if (skipNextMapClickRef.current) {
         skipNextMapClickRef.current = false;
-        return;
-      }
-
-      if (!canEdit) {
         return;
       }
 
@@ -359,6 +367,16 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   useEffect(() => {
     setIsSelectedFavorite(Boolean(internalSelectedPlace?.isFavorite));
   }, [internalSelectedPlace?.id, internalSelectedPlace?.isFavorite]);
+
+  useEffect(() => {
+    setIsEditingSelectedPlace(false);
+    setSelectedPlaceEditedName(internalSelectedPlace?.name ?? "");
+  }, [internalSelectedPlace?.id, internalSelectedPlace?.name]);
+
+  useEffect(() => {
+    if (!placeNameState.success) return;
+    setIsEditingSelectedPlace(false);
+  }, [placeNameState.success]);
 
   useEffect(() => {
     if (!deletePlaceState.success) return;
@@ -561,7 +579,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
           </div>
         </div>
 
-        {canEdit && isResolvingLocation ? (
+        {isResolvingLocation ? (
           <div className="pointer-events-none absolute bottom-5 left-1/2 z-20 -translate-x-1/2">
             <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/92 shadow-sm backdrop-blur">
               <svg className="h-3.5 w-3.5 animate-spin text-[#c6283a]" fill="none" viewBox="0 0 24 24">
@@ -572,7 +590,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
           </div>
         ) : null}
 
-        {canEdit && resolveHint && !isResolvingLocation ? (
+        {resolveHint && !isResolvingLocation ? (
           <div className="pointer-events-none absolute left-3 top-24 z-10">
             <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
               <p className="text-sm text-zinc-700">{resolveHint}</p>
@@ -583,150 +601,80 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
         {internalSelectedPlace ? (
           <div className="pointer-events-none absolute inset-x-3 bottom-3 z-30">
             <div className="pointer-events-auto" ref={selectedPlaceCardRef}>
-              <Card className="mx-auto w-full max-w-[380px] rounded-2xl border-zinc-100 bg-white/95 p-1 shadow-xl backdrop-blur">
-              <div className="-mt-1 flex items-center justify-between">
-                <button
-                  aria-label="Cerrar"
-                  className="flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:bg-zinc-50 active:scale-95"
-                  onClick={() => {
-                    setLocalSelectedPlaceId(null);
-                    onSelectPlace?.(null);
-                  }}
-                  type="button"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
-                  </svg>
-                </button>
-                <button
-                  aria-label={isSelectedFavorite ? "Quitar favorito" : "Marcar favorito"}
-                  className={`flex h-7 w-7 items-center justify-center rounded-full border transition-transform duration-150 hover:scale-110 active:scale-95 ${
-                    isSelectedFavorite ? "border-rose-200 bg-rose-50 text-[#c6283a]" : "border-zinc-200 bg-white text-zinc-500"
-                  }`}
-                  disabled={!canEdit || isFavoritePlacePending}
-                  onClick={() => {
-                    const nextFavorite = !isSelectedFavorite;
-                    setIsSelectedFavorite(nextFavorite);
-                    const payload = new FormData();
-                    payload.set("groupId", groupId);
-                    payload.set("placeId", internalSelectedPlace.id);
-                    payload.set("isFavorite", String(nextFavorite));
-                    startTransition(() => {
-                      favoritePlaceFormAction(payload);
-                    });
-                  }}
-                  type="button"
-                >
-                  <svg className="h-4 w-4" fill={isSelectedFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="m12 21-1.5-1.35C5.4 15.08 2 12 2 8.24A4.24 4.24 0 0 1 6.24 4C8 4 9.7 4.81 10.8 6.09L12 7.5l1.2-1.41A5 5 0 0 1 17.76 4 4.24 4.24 0 0 1 22 8.24c0 3.76-3.4 6.84-8.5 11.41Z" />
-                  </svg>
-                </button>
-                <button
-                  aria-label="Eliminar lugar"
-                  title="Eliminar lugar"
-                  className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:border-rose-200 hover:bg-rose-50 hover:text-[#c6283a] active:scale-95"
-                  disabled={isDeletePlacePending}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    const confirmed = window.confirm("Estas seguro de que quieres eliminar este lugar?");
-                    if (!confirmed) return;
-                    const payload = new FormData();
-                    payload.set("groupId", groupId);
-                    payload.set("placeId", internalSelectedPlace.id);
-                    startTransition(() => {
-                      deletePlaceFormAction(payload);
-                    });
-                  }}
-                  type="button"
-                >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M3 6h18" />
-                      <path d="M8 6V4h8v2" />
-                      <path d="M19 6l-1 14H6L5 6" />
-                      <path d="M10 11v6" />
-                      <path d="M14 11v6" />
-                    </svg>
-                </button>
-              </div>
-              {deletePlaceState.error ? <p className="mt-2 text-xs text-rose-600">{deletePlaceState.error}</p> : null}
-              {favoritePlaceState.error ? <p className="mt-2 text-xs text-rose-600">{favoritePlaceState.error}</p> : null}
-
-              <div className="mt-1.5 flex items-start gap-2.5">
-                <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-xl bg-zinc-100">
-                  {internalSelectedPlace.imageUrl ? (
-                    <img alt={internalSelectedPlace.name} className="h-full w-full object-cover" src={internalSelectedPlace.imageUrl} />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-lg text-zinc-400">+</div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="line-clamp-2 text-sm font-semibold leading-4 text-zinc-900">{internalSelectedPlace.name}</p>
-                  <p className="mt-0.5 truncate text-[11px] text-zinc-500">
-                    {internalSelectedPlace.address}
-                    {internalSelectedPlace.city ? ` Ã‚Â· ${internalSelectedPlace.city}` : ""}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-1.5 flex items-center justify-center gap-11 pt-0">
-                {internalSelectedPlace.googleMapsUrl ? (
-                  <a
-                    className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
-                    href={internalSelectedPlace.googleMapsUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="9" />
-                      <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
-                    </svg>
-                    Ir
-                  </a>
-                ) : (
-                  <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-400" disabled type="button">
-                    <svg className="h-[18px] w-[18px] text-zinc-300" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="9" />
-                      <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
-                    </svg>
-                    Ir
-                  </button>
-                )}
-                {internalSelectedPlace.phoneNumber ? (
-                  <a
-                    className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
-                    href={`tel:${internalSelectedPlace.phoneNumber}`}
-                  >
-                    <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                    Llamar
-                  </a>
-                ) : (
-                  <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-400" disabled type="button">
-                    <svg className="h-[18px] w-[18px] text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                    Llamar
-                  </button>
-                )}
-                <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95" type="button">
-                  <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M12 20h9" />
-                    <path d="m16.5 3.5 4 4L7 21H3v-4z" />
-                  </svg>
-                  Editar
-                </button>
-              </div>
-              </Card>
+              <MapPlaceCard
+                capabilities={{
+                  canCall: Boolean(internalSelectedPlace.phoneNumber),
+                  canDelete: canEdit,
+                  canEditName: canEdit,
+                  canFavorite: canEdit,
+                  canOpenMaps: Boolean(internalSelectedPlace.googleMapsUrl),
+                  canSave: false
+                }}
+                editNameValue={selectedPlaceEditedName}
+                error={isEditingSelectedPlace ? placeNameState.error : deletePlaceState.error || favoritePlaceState.error}
+                isDeleting={isDeletePlacePending}
+                isEditingPending={isPlaceNamePending}
+                isFavoritePending={isFavoritePlacePending}
+                mode={isEditingSelectedPlace ? "edit" : "view"}
+                onClose={() => {
+                  setLocalSelectedPlaceId(null);
+                  onSelectPlace?.(null);
+                }}
+                onDelete={() => {
+                  const confirmed = window.confirm("Estas seguro de que quieres eliminar este lugar?");
+                  if (!confirmed) return;
+                  const payload = new FormData();
+                  payload.set("groupId", groupId);
+                  payload.set("placeId", internalSelectedPlace.id);
+                  startTransition(() => {
+                    deletePlaceFormAction(payload);
+                  });
+                }}
+                onEditCancel={() => {
+                  setIsEditingSelectedPlace(false);
+                  setSelectedPlaceEditedName(internalSelectedPlace.name);
+                }}
+                onEditNameChange={setSelectedPlaceEditedName}
+                onEditSave={() => {
+                  const payload = new FormData();
+                  payload.set("groupId", groupId);
+                  payload.set("placeId", internalSelectedPlace.id);
+                  payload.set("name", selectedPlaceEditedName);
+                  startTransition(() => {
+                    placeNameFormAction(payload);
+                  });
+                }}
+                onEditStart={() => setIsEditingSelectedPlace(true)}
+                onToggleFavorite={() => {
+                  const nextFavorite = !isSelectedFavorite;
+                  setIsSelectedFavorite(nextFavorite);
+                  const payload = new FormData();
+                  payload.set("groupId", groupId);
+                  payload.set("placeId", internalSelectedPlace.id);
+                  payload.set("isFavorite", String(nextFavorite));
+                  startTransition(() => {
+                    favoritePlaceFormAction(payload);
+                  });
+                }}
+                place={{
+                  address: internalSelectedPlace.address,
+                  city: internalSelectedPlace.city,
+                  googleMapsUrl: internalSelectedPlace.googleMapsUrl,
+                  imageUrl: internalSelectedPlace.imageUrl,
+                  isFavorite: isSelectedFavorite,
+                  name: internalSelectedPlace.name,
+                  phoneNumber: internalSelectedPlace.phoneNumber
+                }}
+                variant="saved"
+              />
             </div>
           </div>
         ) : null}
-
-        {canEdit && draftSelection ? (
-          <div className="pointer-events-none absolute inset-x-3 bottom-3 z-40 md:hidden">
+        {draftSelection ? (
+          <div className="pointer-events-none absolute inset-x-3 bottom-3 z-40">
             <div className="pointer-events-auto" ref={draftCardMobileRef}>
               <MapSaveDraftCard
+                canSave={canEdit}
                 draft={draftSelection}
                 formAction={addPlaceFormAction}
                 scopeIdName="groupId"
@@ -745,24 +693,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
         ) : null}
       </div>
 
-      {canEdit && draftSelection ? (
-        <div className="hidden md:block" ref={draftCardDesktopRef}>
-          <MapSaveDraftCard
-            draft={draftSelection}
-            formAction={addPlaceFormAction}
-            scopeIdName="groupId"
-            scopeIdValue={groupId}
-            isPending={isAddPlacePending}
-            onCancel={() => {
-              setDraftSelection(null);
-              setResolveHint(null);
-              selectedSearchMarkerRef.current?.remove();
-              selectedSearchMarkerRef.current = null;
-            }}
-            state={addPlaceState}
-          />
-        </div>
-      ) : null}
+      {draftSelection ? <div className="hidden" ref={draftCardDesktopRef} /> : null}
     </div>
   );
 }

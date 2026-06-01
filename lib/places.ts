@@ -48,6 +48,13 @@ type UpdatePlaceLocationInput = {
   longitude: number;
 };
 
+type UpdatePlaceNameInput = {
+  userId: string;
+  groupId: string;
+  placeId: string;
+  name: string;
+};
+
 type DeletePlaceInput = {
   userId: string;
   groupId: string;
@@ -372,6 +379,44 @@ export async function updatePlaceLocation(input: UpdatePlaceLocationInput): Prom
       city,
       latitude: input.latitude,
       longitude: input.longitude,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", input.placeId);
+
+  if (updateError) {
+    return { error: updateError.message };
+  }
+
+  return { error: null };
+}
+
+export async function updatePlaceName(input: UpdatePlaceNameInput): Promise<{ error: string | null }> {
+  const canEdit = await canEditPlaces(input.userId, input.groupId);
+  if (!canEdit) {
+    return { error: "No tienes permisos para editar lugares en este grupo." };
+  }
+
+  const name = input.name.trim();
+  if (!name) {
+    return { error: "El nombre del lugar es obligatorio." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: place, error: placeError } = await supabase
+    .from("places")
+    .select("id")
+    .eq("id", input.placeId)
+    .eq("group_id", input.groupId)
+    .maybeSingle();
+
+  if (placeError || !place) {
+    return { error: "No se encontro el lugar." };
+  }
+
+  const { error: updateError } = await supabase
+    .from("places")
+    .update({
+      name,
       updated_at: new Date().toISOString()
     })
     .eq("id", input.placeId);

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
-import { createPlace, deletePlace, updatePlaceFavorite, updatePlaceLocation, updatePlaceStatus } from "@/lib/places";
+import { createPlace, deletePlace, updatePlaceFavorite, updatePlaceLocation, updatePlaceName, updatePlaceStatus } from "@/lib/places";
 import {
   createPlaceSchema,
   reviewJoinRequestSchema,
@@ -33,6 +33,10 @@ export type UpdatePlaceFavoriteActionState = {
 };
 
 export type UpdatePlaceLocationActionState = {
+  error: string | null;
+  success: boolean;
+};
+export type UpdatePlaceNameActionState = {
   error: string | null;
   success: boolean;
 };
@@ -83,6 +87,10 @@ const UPDATE_PLACE_FAVORITE_INITIAL_STATE: UpdatePlaceFavoriteActionState = {
 };
 
 const UPDATE_PLACE_LOCATION_INITIAL_STATE: UpdatePlaceLocationActionState = {
+  error: null,
+  success: false
+};
+const UPDATE_PLACE_NAME_INITIAL_STATE: UpdatePlaceNameActionState = {
   error: null,
   success: false
 };
@@ -327,7 +335,37 @@ export async function deletePlaceAction(
     return { error: result.error, success: false };
   }
 
+  revalidatePath(`/groups/${groupId}`);
   revalidatePath("/dashboard");
+  return { error: null, success: true };
+}
+
+export async function updatePlaceNameAction(
+  _previousState: UpdatePlaceNameActionState = UPDATE_PLACE_NAME_INITIAL_STATE,
+  formData: FormData
+): Promise<UpdatePlaceNameActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const groupId = String(formData.get("groupId") || "").trim();
+  const placeId = String(formData.get("placeId") || "").trim();
+  const name = String(formData.get("name") || "").trim();
+
+  if (!groupId || !placeId) {
+    return { error: "Lugar invalido.", success: false };
+  }
+
+  const result = await updatePlaceName({
+    userId: user.id,
+    groupId,
+    placeId,
+    name
+  });
+
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
   return { error: null, success: true };
 }
 
