@@ -1,8 +1,13 @@
-﻿"use client";
+"use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
-import { addPersonalPlaceAction, type AddPersonalPlaceActionState } from "@/app/map/actions";
+import {
+  addPersonalPlaceAction,
+  deletePersonalPlaceAction,
+  type AddPersonalPlaceActionState,
+  type DeletePersonalPlaceActionState
+} from "@/app/map/actions";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
@@ -22,43 +27,40 @@ const addPersonalPlaceInitialState: AddPersonalPlaceActionState = {
   success: false
 };
 
+const deletePersonalPlaceInitialState: DeletePersonalPlaceActionState = {
+  error: null,
+  success: false
+};
+
 type PersonalMapProps = {
   places: PersonalPlace[];
   selectedPlaceId?: string | null;
-  onSelectPlace?: (placeId: string) => void;
+  onSelectPlace?: (placeId: string | null) => void;
 };
-
-function createPopupNode(place: PersonalPlace): HTMLElement {
-  const root = document.createElement("div");
-  const name = document.createElement("p");
-  name.style.margin = "0 0 4px";
-  name.style.fontWeight = "600";
-  name.style.color = "#0f172a";
-  name.textContent = place.name;
-  root.appendChild(name);
-
-  const address = document.createElement("p");
-  address.style.margin = "0";
-  address.style.fontSize = "12px";
-  address.style.color = "#64748b";
-  address.textContent = place.address;
-  root.appendChild(address);
-  return root;
-}
 
 export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: PersonalMapProps) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const mapStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE || "mapbox://styles/mapbox/standard";
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const selectedPlaceCardRef = useRef<HTMLDivElement | null>(null);
+  const draftCardMobileRef = useRef<HTMLDivElement | null>(null);
+  const draftCardDesktopRef = useRef<HTMLDivElement | null>(null);
   const selectedSearchMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const skipNextMapClickRef = useRef(false);
+  const pendingMapClickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
   const [resolveHint, setResolveHint] = useState<string | null>(null);
   const [draftSelection, setDraftSelection] = useState<MapDraftPlace | null>(null);
   const [searchCloseSignal, setSearchCloseSignal] = useState(0);
   const [localSelectedPlaceId, setLocalSelectedPlaceId] = useState<string | null>(null);
+  const [isSelectedFavorite, setIsSelectedFavorite] = useState(false);
   const [addPlaceState, addPlaceFormAction, isAddPlacePending] = useActionState(addPersonalPlaceAction, addPersonalPlaceInitialState);
+  const [deletePlaceState, deletePlaceFormAction, isDeletePlacePending] = useActionState(
+    deletePersonalPlaceAction,
+    deletePersonalPlaceInitialState
+  );
   const wasAddPlacePendingRef = useRef(false);
 
   const effectiveSelectedPlaceId = selectedPlaceId ?? localSelectedPlaceId;
@@ -91,7 +93,12 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
     mapRef.current = map;
     setMapError(null);
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
-    map.on("click", async (event) => {
+    const handleMapClick = async (event: mapboxgl.MapMouseEvent) => {
+      if (skipNextMapClickRef.current) {
+        skipNextMapClickRef.current = false;
+        return;
+      }
+
       const renderedFeatures = map.queryRenderedFeatures(event.point) as Array<{ properties?: Record<string, unknown> }>;
       const renderedName = extractFallbackNameFromRenderedFeatures(renderedFeatures);
       const latitude = Number(event.lngLat.lat.toFixed(6));
@@ -142,6 +149,24 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
       } finally {
         setIsResolvingLocation(false);
       }
+    };
+
+    map.on("click", (event) => {
+      if (pendingMapClickTimeoutRef.current) {
+        clearTimeout(pendingMapClickTimeoutRef.current);
+      }
+
+      pendingMapClickTimeoutRef.current = setTimeout(() => {
+        void handleMapClick(event);
+      }, 220);
+    });
+
+    map.on("dblclick", () => {
+      if (!pendingMapClickTimeoutRef.current) {
+        return;
+      }
+      clearTimeout(pendingMapClickTimeoutRef.current);
+      pendingMapClickTimeoutRef.current = null;
     });
     map.on("error", (event) => {
       const message = event.error?.message || "No se pudo cargar Mapbox.";
@@ -150,12 +175,13 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
 
     const bounds = new mapboxgl.LngLatBounds();
     places.forEach((place) => {
-      const marker = new mapboxgl.Marker({ color: "#0f766e" })
-        .setLngLat([place.longitude, place.latitude])
-        .setPopup(new mapboxgl.Popup({ offset: 20 }).setDOMContent(createPopupNode(place)))
-        .addTo(map);
+      const marker = new mapboxgl.Marker({ color: "#0f766e" }).setLngLat([place.longitude, place.latitude]).addTo(map);
 
-      marker.getElement().addEventListener("click", () => {
+      marker.getElement().addEventListener("click", (event) => {
+        event.stopPropagation();
+        skipNextMapClickRef.current = true;
+        setDraftSelection(null);
+        setResolveHint(null);
         setLocalSelectedPlaceId(place.id);
         onSelectPlace?.(place.id);
       });
@@ -167,6 +193,10 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
     }
 
     return () => {
+      if (pendingMapClickTimeoutRef.current) {
+        clearTimeout(pendingMapClickTimeoutRef.current);
+        pendingMapClickTimeoutRef.current = null;
+      }
       selectedSearchMarkerRef.current?.remove();
       selectedSearchMarkerRef.current = null;
       map.remove();
@@ -185,6 +215,65 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
       essential: true
     });
   }, [selectedPlace]);
+
+  useEffect(() => {
+    setIsSelectedFavorite(false);
+  }, [selectedPlace?.id]);
+
+  useEffect(() => {
+    if (!deletePlaceState.success) return;
+    setLocalSelectedPlaceId(null);
+    onSelectPlace?.(null);
+  }, [deletePlaceState.success, onSelectPlace]);
+
+  useEffect(() => {
+    if (!draftSelection) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      const isInsideMobile = Boolean(draftCardMobileRef.current && target && draftCardMobileRef.current.contains(target));
+      const isInsideDesktop = Boolean(draftCardDesktopRef.current && target && draftCardDesktopRef.current.contains(target));
+
+        if (isInsideMobile || isInsideDesktop) {
+          return;
+        }
+
+        skipNextMapClickRef.current = true;
+        setDraftSelection(null);
+        setResolveHint(null);
+        selectedSearchMarkerRef.current?.remove();
+        selectedSearchMarkerRef.current = null;
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [draftSelection]);
+
+  useEffect(() => {
+    if (!selectedPlace) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+        if (selectedPlaceCardRef.current && target && selectedPlaceCardRef.current.contains(target)) {
+          return;
+        }
+
+        skipNextMapClickRef.current = true;
+        setLocalSelectedPlaceId(null);
+        onSelectPlace?.(null);
+      };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [selectedPlace, onSelectPlace]);
 
   const handleSelectSearchResult = useCallback(async (result: GooglePlaceSuggestion) => {
     setResolveHint(null);
@@ -303,15 +392,18 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
         </div>
 
         {isResolvingLocation ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-28 z-10">
-            <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
-              <p className="text-sm text-zinc-700">Buscando informacion del sitio...</p>
-            </Card>
+          <div className="pointer-events-none absolute bottom-5 left-1/2 z-20 -translate-x-1/2">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/92 shadow-sm backdrop-blur">
+              <svg className="h-3.5 w-3.5 animate-spin text-[#c6283a]" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <path className="opacity-90" d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeLinecap="round" strokeWidth="3" />
+              </svg>
+            </div>
           </div>
         ) : null}
 
         {resolveHint && !isResolvingLocation ? (
-          <div className="pointer-events-none absolute left-3 right-3 top-28 z-10">
+          <div className="pointer-events-none absolute left-3 top-24 z-10">
             <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
               <p className="text-sm text-zinc-700">{resolveHint}</p>
             </Card>
@@ -320,9 +412,57 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
 
         {selectedPlace ? (
           <div className="pointer-events-none absolute inset-x-3 bottom-3 z-30">
-            <Card className="pointer-events-auto rounded-3xl border-zinc-100 bg-white p-3 shadow-xl">
-              <div className="flex items-start gap-3">
-                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+            <div className="pointer-events-auto" ref={selectedPlaceCardRef}>
+              <Card className="rounded-3xl border-zinc-100 bg-white/95 p-2 shadow-xl backdrop-blur">
+              <div className="-mt-2 flex items-center justify-between">
+                <button
+                  aria-label="Cerrar"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:bg-zinc-50 active:scale-95"
+                  onClick={() => {
+                    setLocalSelectedPlaceId(null);
+                    onSelectPlace?.(null);
+                  }}
+                  type="button"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
+                </button>
+                <button
+                  aria-label={isSelectedFavorite ? "Quitar favorito" : "Marcar favorito"}
+                  className={`flex h-9 w-9 items-center justify-center rounded-full border transition-transform duration-150 hover:scale-110 active:scale-95 ${
+                    isSelectedFavorite ? "border-rose-200 bg-rose-50 text-[#c6283a]" : "border-zinc-200 bg-white text-zinc-500"
+                  }`}
+                  onClick={() => setIsSelectedFavorite((value) => !value)}
+                  type="button"
+                >
+                  <svg className="h-5 w-5" fill={isSelectedFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="m12 21-1.5-1.35C5.4 15.08 2 12 2 8.24A4.24 4.24 0 0 1 6.24 4C8 4 9.7 4.81 10.8 6.09L12 7.5l1.2-1.41A5 5 0 0 1 17.76 4 4.24 4.24 0 0 1 22 8.24c0 3.76-3.4 6.84-8.5 11.41Z" />
+                  </svg>
+                </button>
+                <form action={deletePlaceFormAction}>
+                  <input name="placeId" type="hidden" value={selectedPlace.id} />
+                  <button
+                  aria-label="Eliminar lugar"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:border-rose-200 hover:bg-rose-50 hover:text-[#c6283a] active:scale-95"
+                  disabled={isDeletePlacePending}
+                  type="submit"
+                >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4h8v2" />
+                      <path d="M19 6l-1 14H6L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                    </svg>
+                  </button>
+                </form>
+              </div>
+              {deletePlaceState.error ? <p className="mt-2 text-xs text-rose-600">{deletePlaceState.error}</p> : null}
+
+              <div className="mt-2 flex items-start gap-3">
+                <div className="h-[74px] w-[74px] shrink-0 overflow-hidden rounded-xl bg-zinc-100">
                   {selectedPlace.imageUrl ? (
                     <img alt={selectedPlace.name} className="h-full w-full object-cover" src={selectedPlace.imageUrl} />
                   ) : (
@@ -335,58 +475,75 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
                     {selectedPlace.address}
                     {selectedPlace.city ? ` · ${selectedPlace.city}` : ""}
                   </p>
-                  <div className="mt-2 flex items-center gap-2 text-xs font-medium text-zinc-500">
-                    <button className="rounded-full bg-zinc-100 px-2 py-1" type="button">
-                      Ir
-                    </button>
-                    <button className="rounded-full bg-zinc-100 px-2 py-1" type="button">
-                      Llamar
-                    </button>
-                    {selectedPlace.googleMapsUrl ? (
-                      <a
-                        className="rounded-full bg-zinc-100 px-2 py-1"
-                        href={selectedPlace.googleMapsUrl}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        Ver
-                      </a>
-                    ) : null}
-                  </div>
                 </div>
-                <button
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#c6283a] text-xl font-semibold text-white shadow"
-                  type="button"
-                >
-                  +
+              </div>
+
+              <div className="mt-3 flex items-center justify-center gap-20 pt-1">
+                {selectedPlace.googleMapsUrl ? (
+                  <a
+                    className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
+                    href={selectedPlace.googleMapsUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
+                    </svg>
+                    Ir
+                  </a>
+                ) : (
+                  <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
+                    <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
+                    </svg>
+                    Ir
+                  </button>
+                )}
+                <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
+                  <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
+                  </svg>
+                  Llamar
+                </button>
+                <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95" type="button">
+                  <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M12 20h9" />
+                    <path d="m16.5 3.5 4 4L7 21H3v-4z" />
+                  </svg>
+                  Editar
                 </button>
               </div>
-            </Card>
+              </Card>
+            </div>
           </div>
         ) : null}
 
         {draftSelection ? (
           <div className="pointer-events-none absolute inset-x-3 bottom-3 z-40 md:hidden">
-            <MapSaveDraftCard
-              draft={draftSelection}
-              formAction={addPlaceFormAction}
-              isPending={isAddPlacePending}
-              onCancel={() => {
-                setDraftSelection(null);
-                setResolveHint(null);
-                selectedSearchMarkerRef.current?.remove();
-                selectedSearchMarkerRef.current = null;
-              }}
-              scopeIdName="scope"
-              scopeIdValue="personal"
-              state={addPlaceState}
-            />
+            <div className="pointer-events-auto" ref={draftCardMobileRef}>
+              <MapSaveDraftCard
+                draft={draftSelection}
+                formAction={addPlaceFormAction}
+                isPending={isAddPlacePending}
+                onCancel={() => {
+                  setDraftSelection(null);
+                  setResolveHint(null);
+                  selectedSearchMarkerRef.current?.remove();
+                  selectedSearchMarkerRef.current = null;
+                }}
+                scopeIdName="scope"
+                scopeIdValue="personal"
+                state={addPlaceState}
+              />
+            </div>
           </div>
         ) : null}
       </div>
 
       {draftSelection ? (
-        <div className="hidden md:block">
+        <div className="hidden md:block" ref={draftCardDesktopRef}>
           <MapSaveDraftCard
             draft={draftSelection}
             formAction={addPlaceFormAction}

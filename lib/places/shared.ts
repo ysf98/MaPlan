@@ -31,6 +31,7 @@ export type GroupPlace = {
   latitude: number | null;
   longitude: number | null;
   status: PlaceStatus;
+  isFavorite: boolean;
   category: PlaceCategory;
   createdAt: string;
 };

@@ -17,7 +17,7 @@ export default async function ProfilePage() {
   const [profileResult, personalPlacesResult, createdPlacesResult, groupsResult] = await Promise.all([
     supabase.from("profiles").select("full_name, username, avatar_url").eq("id", user.id).maybeSingle(),
     supabase.from("personal_places").select("id, created_at", { count: "exact" }).eq("user_id", user.id),
-    supabase.from("places").select("id, status", { count: "exact" }).eq("created_by", user.id),
+    supabase.from("places").select("id, status, is_favorite", { count: "exact" }).eq("created_by", user.id),
     supabase.from("group_members").select("group_id", { count: "exact" }).eq("user_id", user.id)
   ]);
 
@@ -28,7 +28,7 @@ export default async function ProfilePage() {
     profileFullName: profile?.full_name,
     profileUsername: profile?.username
   });
-  const favoriteCount = (createdPlacesResult.data || []).filter((place) => place.status === "favorite").length;
+  const favoriteCount = (createdPlacesResult.data || []).filter((place) => place.is_favorite).length;
   const visitedCount = (createdPlacesResult.data || []).filter((place) => place.status === "visited").length;
   const pendingCount = (createdPlacesResult.data || []).filter((place) => place.status === "pending").length;
   const totalPlaces = (personalPlacesResult.count || 0) + (createdPlacesResult.count || 0);

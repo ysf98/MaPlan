@@ -14,6 +14,7 @@ import {
   reviewJoinRequestSchema,
   sendFriendRequestSchema,
   updatePlaceLocationSchema,
+  updatePlaceFavoriteSchema,
   updatePlaceStatusSchema
 } from "@/lib/validation/schemas";
 
@@ -167,6 +168,41 @@ describe("updatePlaceStatusSchema", () => {
       groupId: "11111111-1111-4111-8111-111111111111",
       placeId: "22222222-2222-4222-8222-222222222222",
       status: "archived"
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects favorite as status because favorite is independent", () => {
+    const result = updatePlaceStatusSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      placeId: "22222222-2222-4222-8222-222222222222",
+      status: "favorite"
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("updatePlaceFavoriteSchema", () => {
+  it("accepts boolean-like favorite values", () => {
+    const result = updatePlaceFavoriteSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      placeId: "22222222-2222-4222-8222-222222222222",
+      isFavorite: "true"
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isFavorite).toBe(true);
+    }
+  });
+
+  it("rejects invalid favorite values", () => {
+    const result = updatePlaceFavoriteSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      placeId: "22222222-2222-4222-8222-222222222222",
+      isFavorite: "yes"
     });
 
     expect(result.success).toBe(false);

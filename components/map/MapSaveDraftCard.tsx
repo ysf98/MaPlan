@@ -47,6 +47,7 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
         <input name="googleMapsUrl" type="hidden" value={draft.googleMapsUrl || ""} />
         <input name="businessStatus" type="hidden" value={draft.businessStatus || ""} />
         <input name="imageUrl" type="hidden" value={draft.imageUrl || ""} />
+        <input name="isFavorite" type="hidden" value={String(isFavorite)} />
         <input name="category" type="hidden" value={draft.category || "Otros"} />
         <input name="address" type="hidden" value={address} />
         <input name="city" type="hidden" value={city} />

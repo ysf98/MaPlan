@@ -373,6 +373,7 @@ export type Database = {
           group_id: string
           id: string
           image_url: string | null
+          is_favorite: boolean
           latitude: number | null
           longitude: number | null
           name: string
@@ -395,6 +396,7 @@ export type Database = {
           group_id: string
           id?: string
           image_url?: string | null
+          is_favorite?: boolean
           latitude?: number | null
           longitude?: number | null
           name: string
@@ -417,6 +419,7 @@ export type Database = {
           group_id?: string
           id?: string
           image_url?: string | null
+          is_favorite?: boolean
           latitude?: number | null
           longitude?: number | null
           name?: string
@@ -532,7 +535,7 @@ export type Database = {
   }
 }
 
-export type PlaceStatus = "pending" | "visited" | "favorite"
+export type PlaceStatus = "pending" | "visited"
 export type PlaceSource = "manual" | "google_maps" | "tiktok" | "instagram" | "website"
 export type PlaceProvider = "manual" | "mapbox" | "google_places"
 export type GroupJoinPolicy = "invite_only" | "open_by_code" | "request_to_join"

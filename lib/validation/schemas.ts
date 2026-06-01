@@ -5,7 +5,7 @@ import {
   GROUP_PRIVACY_VALUES
 } from "@/lib/groups/policies";
 
-export const PLACE_STATUS_VALUES = ["pending", "visited", "favorite"] as const;
+export const PLACE_STATUS_VALUES = ["pending", "visited"] as const;
 export const PLACE_SOURCE_VALUES = ["manual", "google_maps", "tiktok", "instagram", "website"] as const;
 export const PLACE_PROVIDER_VALUES = ["manual", "mapbox", "google_places"] as const;
 export const FRIEND_REQUEST_DECISION_VALUES = ["accepted", "rejected"] as const;
@@ -130,6 +130,10 @@ export const createPlaceSchema = z.object({
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen invalida."),
+  isFavorite: z
+    .string()
+    .optional()
+    .transform((value) => value === "true"),
   latitude: z
     .preprocess(
       (value) => (value === "" || value === null || value === undefined ? undefined : value),
@@ -342,6 +346,17 @@ export const googlePlaceDetailsSchema = z.object({
     .max(255, "Identificador externo invalido.")
 });
 
+export const updatePlaceFavoriteSchema = z.object({
+  groupId: uuidSchema,
+  placeId: uuidSchema,
+  isFavorite: z
+    .string()
+    .refine((value): value is "true" | "false" => value === "true" || value === "false", {
+      message: "Favorito invalido."
+    })
+    .transform((value) => value === "true")
+});
+
 export const googlePlacesNearbySchema = z.object({
   lat: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
   lng: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida."),
@@ -382,6 +397,7 @@ export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;
 export type CreatePersonalPlaceInput = z.infer<typeof createPersonalPlaceSchema>;
 export type UpdatePlaceStatusInput = z.infer<typeof updatePlaceStatusSchema>;
+export type UpdatePlaceFavoriteInput = z.infer<typeof updatePlaceFavoriteSchema>;
 export type UpdatePlaceLocationInput = z.infer<typeof updatePlaceLocationSchema>;
 export type ReviewJoinRequestInput = z.infer<typeof reviewJoinRequestSchema>;
 export type UpdateGroupSettingsInput = z.infer<typeof updateGroupSettingsSchema>;

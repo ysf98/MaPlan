@@ -5,6 +5,7 @@ const {
   revalidatePathMock,
   requireAuthenticatedUserMock,
   createPlaceMock,
+  updatePlaceFavoriteMock,
   updatePlaceStatusMock,
   updatePlaceLocationMock,
   deletePlaceMock
@@ -13,6 +14,7 @@ const {
   revalidatePathMock: vi.fn(),
   requireAuthenticatedUserMock: vi.fn(),
   createPlaceMock: vi.fn(),
+  updatePlaceFavoriteMock: vi.fn(),
   updatePlaceStatusMock: vi.fn(),
   updatePlaceLocationMock: vi.fn(),
   deletePlaceMock: vi.fn()
@@ -37,6 +39,7 @@ vi.mock("@/lib/actions/serverAction", () => ({
 
 vi.mock("@/lib/places", () => ({
   createPlace: createPlaceMock,
+  updatePlaceFavorite: updatePlaceFavoriteMock,
   updatePlaceStatus: updatePlaceStatusMock,
   updatePlaceLocation: updatePlaceLocationMock,
   deletePlace: deletePlaceMock
@@ -68,7 +71,7 @@ describe("places server actions", () => {
     expect(result.error).toBe("Identificador invalido.");
   });
 
-  it("updatePlaceStatusAction updates and revalidates", async () => {
+  it("updatePlaceStatusAction updates without revalidating pages", async () => {
     updatePlaceStatusMock.mockResolvedValue({ error: null });
 
     const formData = new FormData();
@@ -85,8 +88,29 @@ describe("places server actions", () => {
       placeId: "22222222-2222-4222-8222-222222222222",
       status: "visited"
     });
-    expect(revalidatePathMock).toHaveBeenCalledWith("/groups/11111111-1111-4111-8111-111111111111");
-    expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard");
+    expect(revalidatePathMock).not.toHaveBeenCalledWith("/groups/11111111-1111-4111-8111-111111111111");
+    expect(revalidatePathMock).not.toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("updatePlaceFavoriteAction updates without revalidating pages", async () => {
+    updatePlaceFavoriteMock.mockResolvedValue({ error: null });
+
+    const formData = new FormData();
+    formData.set("groupId", "11111111-1111-4111-8111-111111111111");
+    formData.set("placeId", "22222222-2222-4222-8222-222222222222");
+    formData.set("isFavorite", "true");
+
+    const result = await placesActions.updatePlaceFavoriteAction({ error: null, success: false }, formData);
+
+    expect(result).toEqual({ error: null, success: true });
+    expect(updatePlaceFavoriteMock).toHaveBeenCalledWith({
+      userId: "user-1",
+      groupId: "11111111-1111-4111-8111-111111111111",
+      placeId: "22222222-2222-4222-8222-222222222222",
+      isFavorite: true
+    });
+    expect(revalidatePathMock).not.toHaveBeenCalledWith("/groups/11111111-1111-4111-8111-111111111111");
+    expect(revalidatePathMock).not.toHaveBeenCalledWith("/dashboard");
   });
 
   it("updatePlaceLocationAction updates and revalidates", async () => {

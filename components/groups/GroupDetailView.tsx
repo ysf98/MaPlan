@@ -48,6 +48,7 @@ export function GroupDetailView({
   const [isDragging, setIsDragging] = useState(false);
   const [dragAxis, setDragAxis] = useState<"x" | "y" | null>(null);
   const [lockSwipeGesture, setLockSwipeGesture] = useState(false);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
 
   useEffect(() => {
     setCurrentTab(activeTab);
@@ -181,13 +182,29 @@ export function GroupDetailView({
             style={{ transform: `translateX(calc(${-tabIndex * 100}% - ${dragOffsetPct}%))` }}
           >
             <div className="w-full shrink-0 px-1.5">
-              <GroupPlacesTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} />
+              <GroupPlacesTab
+                canEditPlaces={group.canEditPlaces}
+                groupId={groupId}
+                onSelectPlace={setSelectedPlaceId}
+                onViewInMap={(placeId) => {
+                  setSelectedPlaceId(placeId);
+                  setCurrentTab("mapa");
+                }}
+                places={places}
+                selectedPlaceId={selectedPlaceId}
+              />
             </div>
             <div className="w-full shrink-0 px-1.5">
               <GroupActivityTab events={activityEvents} joinRequests={joinRequests} />
             </div>
             <div className="w-full shrink-0 px-1.5">
-              <GroupMapTab canEditPlaces={group.canEditPlaces} groupId={groupId} places={places} />
+              <GroupMapTab
+                canEditPlaces={group.canEditPlaces}
+                groupId={groupId}
+                onSelectPlace={setSelectedPlaceId}
+                places={places}
+                selectedPlaceId={selectedPlaceId}
+              />
             </div>
           </div>
         </div>

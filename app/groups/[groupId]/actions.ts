@@ -3,12 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
-import { createPlace, deletePlace, updatePlaceLocation, updatePlaceStatus } from "@/lib/places";
+import { createPlace, deletePlace, updatePlaceFavorite, updatePlaceLocation, updatePlaceStatus } from "@/lib/places";
 import {
   createPlaceSchema,
   reviewJoinRequestSchema,
   updateGroupDetailsSchema,
   updateGroupSettingsSchema,
+  updatePlaceFavoriteSchema,
   updatePlaceLocationSchema,
   updatePlaceStatusSchema
 } from "@/lib/validation/schemas";
@@ -22,6 +23,11 @@ export type AddPlaceActionState = {
 };
 
 export type UpdatePlaceStatusActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type UpdatePlaceFavoriteActionState = {
   error: string | null;
   success: boolean;
 };
@@ -67,6 +73,11 @@ const ADD_PLACE_INITIAL_STATE: AddPlaceActionState = {
 };
 
 const UPDATE_PLACE_STATUS_INITIAL_STATE: UpdatePlaceStatusActionState = {
+  error: null,
+  success: false
+};
+
+const UPDATE_PLACE_FAVORITE_INITIAL_STATE: UpdatePlaceFavoriteActionState = {
   error: null,
   success: false
 };
@@ -125,6 +136,7 @@ export async function addPlaceAction(
     googleMapsUrl: String(formData.get("googleMapsUrl") || ""),
     businessStatus: String(formData.get("businessStatus") || ""),
     imageUrl: String(formData.get("imageUrl") || ""),
+    isFavorite: String(formData.get("isFavorite") || ""),
     latitude: formData.get("latitude"),
     longitude: formData.get("longitude")
   });
@@ -138,7 +150,24 @@ export async function addPlaceAction(
 
   const user = await requireAuthenticatedUser("/groups");
 
-  const { groupId, name, address, city, notes, category, originalUrl, source, provider, externalPlaceId, googleMapsUrl, businessStatus, imageUrl, latitude, longitude } = parsedInput.data;
+  const {
+    groupId,
+    name,
+    address,
+    city,
+    notes,
+    category,
+    originalUrl,
+    source,
+    provider,
+    externalPlaceId,
+    googleMapsUrl,
+    businessStatus,
+    imageUrl,
+    isFavorite,
+    latitude,
+    longitude
+  } = parsedInput.data;
 
   const result = await createPlace({
     userId: user.id,
@@ -155,6 +184,7 @@ export async function addPlaceAction(
     googleMapsUrl: googleMapsUrl || null,
     businessStatus: businessStatus || null,
     imageUrl: imageUrl || null,
+    isFavorite,
     latitude: typeof latitude === "number" ? latitude : null,
     longitude: typeof longitude === "number" ? longitude : null
   });
@@ -200,8 +230,40 @@ export async function updatePlaceStatusAction(
     return { error: result.error, success: false };
   }
 
-  revalidatePath(`/groups/${groupId}`);
-  revalidatePath("/dashboard");
+  return { error: null, success: true };
+}
+
+export async function updatePlaceFavoriteAction(
+  _previousState: UpdatePlaceFavoriteActionState = UPDATE_PLACE_FAVORITE_INITIAL_STATE,
+  formData: FormData
+): Promise<UpdatePlaceFavoriteActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const parsedInput = updatePlaceFavoriteSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    placeId: String(formData.get("placeId") || ""),
+    isFavorite: String(formData.get("isFavorite") || "")
+  });
+
+  if (!parsedInput.success) {
+    return {
+      error: getValidationErrorMessage(parsedInput.error),
+      success: false
+    };
+  }
+
+  const { groupId, placeId, isFavorite } = parsedInput.data;
+  const result = await updatePlaceFavorite({
+    userId: user.id,
+    groupId,
+    placeId,
+    isFavorite
+  });
+
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+
   return { error: null, success: true };
 }
 
@@ -265,7 +327,6 @@ export async function deletePlaceAction(
     return { error: result.error, success: false };
   }
 
-  revalidatePath(`/groups/${groupId}`);
   revalidatePath("/dashboard");
   return { error: null, success: true };
 }

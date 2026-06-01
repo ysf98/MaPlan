@@ -19,6 +19,7 @@ type CreatePlaceInput = {
   googleMapsUrl?: string | null;
   businessStatus?: string | null;
   imageUrl?: string | null;
+  isFavorite?: boolean;
   latitude?: number | null;
   longitude?: number | null;
 };
@@ -28,6 +29,13 @@ type UpdatePlaceStatusInput = {
   groupId: string;
   placeId: string;
   status: PlaceStatus;
+};
+
+type UpdatePlaceFavoriteInput = {
+  userId: string;
+  groupId: string;
+  placeId: string;
+  isFavorite: boolean;
 };
 
 type UpdatePlaceLocationInput = {
@@ -47,7 +55,7 @@ type DeletePlaceInput = {
 };
 
 function isPlaceStatus(value: string): value is PlaceStatus {
-  return value === "pending" || value === "visited" || value === "favorite";
+  return value === "pending" || value === "visited";
 }
 
 function isPlaceSource(value: string): value is PlaceSource {
@@ -110,7 +118,7 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
   const supabase = await createSupabaseServerClient();
   const { data: places, error } = await supabase
     .from("places")
-    .select("id, name, address, city, notes, status, created_at, category_id, original_url, source, provider, external_place_id, google_maps_url, business_status, image_url, latitude, longitude")
+    .select("id, name, address, city, notes, status, is_favorite, created_at, category_id, original_url, source, provider, external_place_id, google_maps_url, business_status, image_url, latitude, longitude")
     .eq("group_id", groupId)
     .order("created_at", { ascending: false });
 
@@ -153,6 +161,7 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
       latitude: place.latitude,
       longitude: place.longitude,
       status,
+      isFavorite: Boolean(place.is_favorite),
       category: normalizeCategory(categoryName),
       createdAt: place.created_at
     };
@@ -232,6 +241,7 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
       google_maps_url: input.googleMapsUrl?.trim() || null,
       business_status: input.businessStatus?.trim() || null,
       image_url: input.imageUrl?.trim() || null,
+      is_favorite: Boolean(input.isFavorite),
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
       notes: input.notes?.trim() || null,
@@ -285,6 +295,39 @@ export async function updatePlaceStatus(input: UpdatePlaceStatusInput): Promise<
     .from("places")
     .update({
       status: input.status,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", input.placeId);
+
+  if (updateError) {
+    return { error: updateError.message };
+  }
+
+  return { error: null };
+}
+
+export async function updatePlaceFavorite(input: UpdatePlaceFavoriteInput): Promise<{ error: string | null }> {
+  const canEdit = await canEditPlaces(input.userId, input.groupId);
+  if (!canEdit) {
+    return { error: "No tienes permisos para editar lugares en este grupo." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: place, error: placeError } = await supabase
+    .from("places")
+    .select("id")
+    .eq("id", input.placeId)
+    .eq("group_id", input.groupId)
+    .maybeSingle();
+
+  if (placeError || !place) {
+    return { error: "No se encontro el lugar." };
+  }
+
+  const { error: updateError } = await supabase
+    .from("places")
+    .update({
+      is_favorite: input.isFavorite,
       updated_at: new Date().toISOString()
     })
     .eq("id", input.placeId);
