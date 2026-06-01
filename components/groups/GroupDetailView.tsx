@@ -201,7 +201,7 @@ export function GroupDetailView({
           style={{ height: activePanelHeight === null ? undefined : activePanelHeight + 16 }}
         >
           <div
-            className={`flex ${isDragging ? "" : "transition-transform duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]"}`}
+            className={`flex items-start ${isDragging ? "" : "transition-transform duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]"}`}
             style={{ transform: `translateX(calc(${-tabIndex * 100}% - ${dragOffsetPct}%))` }}
           >
             <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[0] = node; }}>
