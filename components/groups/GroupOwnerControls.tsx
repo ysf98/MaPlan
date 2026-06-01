@@ -20,6 +20,7 @@ import type { InviteFriendActionState } from "@/app/groups/[groupId]/invitations
 import { GroupCoverPicker } from "@/components/groups/GroupCoverPicker";
 import { GroupFriendsSelector } from "@/components/groups/GroupFriendsSelector";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { GroupJoinPolicy, GroupPrivacy } from "@/lib/groups/policies";
 
 type GroupOwnerControlsProps = {
@@ -64,6 +65,7 @@ export function GroupOwnerControls({
   const settingsRef = useRef<HTMLDivElement | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [confirmingDangerAction, setConfirmingDangerAction] = useState<"delete_group" | "leave_group" | null>(null);
   const [invitingFriendId, setInvitingFriendId] = useState<string | null>(null);
   const [coverValue, setCoverValue] = useState(groupCoverImageUrl || "");
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(groupCoverImageUrl);
@@ -262,12 +264,9 @@ export function GroupOwnerControls({
                         <Button
                           className="w-full"
                           disabled={isDeleting}
-                          formAction={async (formData) => {
-                            formData.set("groupId", groupId);
-                            await deleteAction(formData);
-                          }}
+                          onClick={() => setConfirmingDangerAction("delete_group")}
                           size="sm"
-                          type="submit"
+                          type="button"
                           variant="ghost"
                         >
                           {isDeleting ? "Eliminando..." : "Eliminar grupo"}
@@ -276,12 +275,9 @@ export function GroupOwnerControls({
                         <Button
                           className="w-full"
                           disabled={isLeaving}
-                          formAction={async (formData) => {
-                            formData.set("groupId", groupId);
-                            await leaveAction(formData);
-                          }}
+                          onClick={() => setConfirmingDangerAction("leave_group")}
                           size="sm"
-                          type="submit"
+                          type="button"
                           variant="ghost"
                         >
                           {isLeaving ? "Saliendo..." : "Salir del grupo"}
@@ -361,6 +357,35 @@ export function GroupOwnerControls({
           </div>
         </div>
       ) : null}
+      <ConfirmDialog
+        cancelLabel="Cancelar"
+        confirmLabel="Si"
+        description={
+          confirmingDangerAction === "delete_group"
+            ? "Se eliminara el grupo y no se podra recuperar."
+            : "Dejaras de pertenecer a este grupo."
+        }
+        isPending={isDeleting || isLeaving}
+        onCancel={() => setConfirmingDangerAction(null)}
+        onConfirm={() => {
+          if (confirmingDangerAction === "delete_group") {
+            const formData = new FormData();
+            formData.set("groupId", groupId);
+            startTransition(() => {
+              deleteAction(formData);
+            });
+          } else if (confirmingDangerAction === "leave_group") {
+            const formData = new FormData();
+            formData.set("groupId", groupId);
+            startTransition(() => {
+              leaveAction(formData);
+            });
+          }
+          setConfirmingDangerAction(null);
+        }}
+        open={Boolean(confirmingDangerAction)}
+        title={confirmingDangerAction === "delete_group" ? "Confirmar eliminacion" : "Confirmar salida"}
+      />
     </>
   );
 }

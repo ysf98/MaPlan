@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useActionState, useEffect, useMemo, useRef, useState } from "react";
 import type { TouchEvent } from "react";
 import { deletePersonalPlaceAction, type DeletePersonalPlaceActionState } from "@/app/map/actions";
 import { PersonalMap } from "@/components/map/PersonalMap";
@@ -193,16 +193,23 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
                           Ver en Google Maps
                         </a>
                       ) : null}
-                      <form action={deleteFormAction}>
-                        <input name="placeId" type="hidden" value={place.id} />
                         <button
                           className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
                           disabled={isDeleting}
-                          type="submit"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            const confirmed = window.confirm("Estas seguro de que quieres eliminar este lugar?");
+                            if (!confirmed) return;
+                            const payload = new FormData();
+                            payload.set("placeId", place.id);
+                            startTransition(() => {
+                              deleteFormAction(payload);
+                            });
+                          }}
+                          type="button"
                         >
                           {isDeleting ? "Eliminando..." : "Eliminar"}
                         </button>
-                      </form>
                     </>
                   )}
                   selectedPlaceId={selectedPlaceId}

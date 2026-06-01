@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import {
   addPersonalPlaceAction,
@@ -444,13 +444,22 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
                     <path d="m12 21-1.5-1.35C5.4 15.08 2 12 2 8.24A4.24 4.24 0 0 1 6.24 4C8 4 9.7 4.81 10.8 6.09L12 7.5l1.2-1.41A5 5 0 0 1 17.76 4 4.24 4.24 0 0 1 22 8.24c0 3.76-3.4 6.84-8.5 11.41Z" />
                   </svg>
                 </button>
-                <form action={deletePlaceFormAction}>
-                  <input name="placeId" type="hidden" value={selectedPlace.id} />
-                  <button
+                <button
                   aria-label="Eliminar lugar"
+                  title="Eliminar lugar"
                   className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:border-rose-200 hover:bg-rose-50 hover:text-[#c6283a] active:scale-95"
                   disabled={isDeletePlacePending}
-                  type="submit"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    const confirmed = window.confirm("Estas seguro de que quieres eliminar este lugar?");
+                    if (!confirmed) return;
+                    const payload = new FormData();
+                    payload.set("placeId", selectedPlace.id);
+                    startTransition(() => {
+                      deletePlaceFormAction(payload);
+                    });
+                  }}
+                  type="button"
                 >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path d="M3 6h18" />
@@ -459,8 +468,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
                       <path d="M10 11v6" />
                       <path d="M14 11v6" />
                     </svg>
-                  </button>
-                </form>
+                </button>
               </div>
               {deletePlaceState.error ? <p className="mt-2 text-xs text-rose-600">{deletePlaceState.error}</p> : null}
 
