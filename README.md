@@ -87,6 +87,8 @@ Run in Supabase SQL Editor:
 11. `supabase/rls_places.sql`
 12. `supabase/rls_personal_places.sql`
 13. `supabase/places_images.sql`
+14. `supabase/places_favorites.sql`
+15. `supabase/places_phone_number.sql`
 
 `groups_privacy.sql` migra los flags legacy si existen y es seguro volver a ejecutarlo. `groups_cover_image_url.sql` y `profiles_full_name.sql` no son opcionales para la version actual de la aplicacion.
 

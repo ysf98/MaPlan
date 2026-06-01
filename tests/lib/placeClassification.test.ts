@@ -38,6 +38,7 @@ describe("place classification", () => {
       longitude: 0,
       googleMapsUrl: null,
       imageUrl: null,
+      phoneNumber: null,
       businessStatus: "OPERATIONAL",
       primaryType: "bar"
     });

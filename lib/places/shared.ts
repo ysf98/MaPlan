@@ -27,6 +27,7 @@ export type GroupPlace = {
   externalPlaceId: string | null;
   googleMapsUrl: string | null;
   businessStatus: string | null;
+  phoneNumber: string | null;
   imageUrl?: string | null;
   latitude: number | null;
   longitude: number | null;

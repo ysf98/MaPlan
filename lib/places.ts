@@ -18,8 +18,8 @@ type CreatePlaceInput = {
   externalPlaceId?: string | null;
   googleMapsUrl?: string | null;
   businessStatus?: string | null;
+  phoneNumber?: string | null;
   imageUrl?: string | null;
-  isFavorite?: boolean;
   latitude?: number | null;
   longitude?: number | null;
 };
@@ -118,7 +118,7 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
   const supabase = await createSupabaseServerClient();
   const { data: places, error } = await supabase
     .from("places")
-    .select("id, name, address, city, notes, status, is_favorite, created_at, category_id, original_url, source, provider, external_place_id, google_maps_url, business_status, image_url, latitude, longitude")
+    .select("id, name, address, city, notes, status, is_favorite, created_at, category_id, original_url, source, provider, external_place_id, google_maps_url, business_status, phone_number, image_url, latitude, longitude")
     .eq("group_id", groupId)
     .order("created_at", { ascending: false });
 
@@ -157,6 +157,7 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
       externalPlaceId: place.external_place_id,
       googleMapsUrl: place.google_maps_url,
       businessStatus: place.business_status,
+      phoneNumber: place.phone_number,
       imageUrl: place.image_url,
       latitude: place.latitude,
       longitude: place.longitude,
@@ -240,8 +241,9 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
       external_place_id: externalPlaceId,
       google_maps_url: input.googleMapsUrl?.trim() || null,
       business_status: input.businessStatus?.trim() || null,
+      phone_number: input.phoneNumber?.trim() || null,
       image_url: input.imageUrl?.trim() || null,
-      is_favorite: Boolean(input.isFavorite),
+      is_favorite: false,
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
       notes: input.notes?.trim() || null,

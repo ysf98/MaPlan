@@ -26,6 +26,7 @@ export async function addPersonalPlaceAction(
     externalPlaceId: String(formData.get("externalPlaceId") || ""),
     googleMapsUrl: String(formData.get("googleMapsUrl") || ""),
     businessStatus: String(formData.get("businessStatus") || ""),
+    phoneNumber: String(formData.get("phoneNumber") || ""),
     imageUrl: String(formData.get("imageUrl") || ""),
     latitude: String(formData.get("latitude") || ""),
     longitude: String(formData.get("longitude") || "")

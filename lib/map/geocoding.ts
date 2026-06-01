@@ -34,6 +34,7 @@ export type MapDraftPlace = {
   googleMapsUrl?: string | null;
   businessStatus?: string | null;
   imageUrl?: string | null;
+  phoneNumber?: string | null;
 };
 
 export function pickFirstNonEmpty(...values: Array<string | undefined>): string {

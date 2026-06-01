@@ -15,10 +15,11 @@ type BasePlaceItem = {
 type SimplePlacesListProps<TPlace extends BasePlaceItem> = {
   places: TPlace[];
   selectedPlaceId: string | null;
-  onTogglePlace: (placeId: string) => void;
+  onTogglePlace?: (placeId: string) => void;
   cardDataAttribute: string;
   title?: string;
-  renderActions: (place: TPlace) => ReactNode;
+  renderActions?: (place: TPlace) => ReactNode;
+  renderFooter?: (place: TPlace) => ReactNode;
   renderHeaderAccessory?: (place: TPlace) => ReactNode;
   renderImageOverlay?: (place: TPlace) => ReactNode;
 };
@@ -30,6 +31,7 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
   cardDataAttribute,
   title,
   renderActions,
+  renderFooter,
   renderHeaderAccessory,
   renderImageOverlay
 }: SimplePlacesListProps<TPlace>) {
@@ -45,6 +47,7 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
       <ul className={`${title ? "mt-3" : "mt-0"} grid gap-3 sm:grid-cols-2`}>
         {places.map((place) => {
           const isSelected = selectedPlaceId === place.id;
+          const canOpenDetails = Boolean(onTogglePlace && renderActions);
 
           return (
             <li key={place.id}>
@@ -58,30 +61,30 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
               >
                 <div
                   aria-expanded={isSelected}
-                  className={isSelected ? "w-full" : "w-full cursor-pointer"}
+                  className={canOpenDetails && !isSelected ? "w-full cursor-pointer" : "w-full"}
                   onClick={
-                    isSelected
+                    !canOpenDetails || isSelected
                       ? undefined
                       : (event) => {
                           const target = event.target as HTMLElement;
                           if (target.closest("a, button, input, select, textarea, form, [data-card-control]")) {
                             return;
                           }
-                          onTogglePlace(place.id);
+                          onTogglePlace?.(place.id);
                         }
                   }
                   onKeyDown={
-                    isSelected
+                    !canOpenDetails || isSelected
                       ? undefined
                       : (event) => {
                           if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault();
-                            onTogglePlace(place.id);
+                            onTogglePlace?.(place.id);
                           }
                         }
                   }
-                  role={isSelected ? undefined : "button"}
-                  tabIndex={isSelected ? undefined : 0}
+                  role={canOpenDetails && !isSelected ? "button" : undefined}
+                  tabIndex={canOpenDetails && !isSelected ? 0 : undefined}
                 >
                   <div className="relative h-40 w-full overflow-hidden bg-zinc-100">
                     {place.imageUrl ? (
@@ -125,7 +128,10 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
                     </p>
                   </div>
                 </div>
-                {isSelected ? (
+                {renderFooter ? (
+                  <div className="border-t border-zinc-100 bg-white px-4 py-3">{renderFooter(place)}</div>
+                ) : null}
+                {isSelected && renderActions ? (
                   <div className="border-t border-zinc-100 bg-white px-4 py-3">
                     <div
                       className="space-y-2"

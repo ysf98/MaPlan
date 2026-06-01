@@ -12,6 +12,7 @@ export type GooglePlaceSuggestion = {
   googleMapsUrl: string | null;
   businessStatus: string | null;
   imageUrl: string | null;
+  phoneNumber: string | null;
   primaryType: string | null;
 };
 
@@ -26,6 +27,7 @@ export type GooglePlaceFeature = {
   googleMapsUrl: string | null;
   businessStatus: string | null;
   imageUrl: string | null;
+  phoneNumber: string | null;
 };
 
 export type GoogleNearbyFallbackReason = "no_candidate" | "too_far" | "google_error";

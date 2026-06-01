@@ -98,6 +98,7 @@ export async function POST(request: Request) {
         googleMapsUrl: buildGoogleMapsUrl(externalPlaceId),
         businessStatus: (place.business_status || "").trim() || null,
         imageUrl: null,
+        phoneNumber: null,
         primaryType: place.types?.[0] || null
         } satisfies GooglePlaceSuggestion
       ];

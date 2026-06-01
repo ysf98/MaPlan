@@ -41,6 +41,29 @@ const favoritePlaceInitialState: UpdatePlaceFavoriteActionState = {
   success: false
 };
 
+function normalizePlaceMatchValue(value: string | null | undefined): string {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function getDistanceInMeters(first: { latitude: number; longitude: number }, second: { latitude: number; longitude: number }): number {
+  const earthRadiusInMeters = 6371000;
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const deltaLat = toRadians(second.latitude - first.latitude);
+  const deltaLng = toRadians(second.longitude - first.longitude);
+  const firstLat = toRadians(first.latitude);
+  const secondLat = toRadians(second.latitude);
+  const haversine =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(firstLat) * Math.cos(secondLat) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+
+  return earthRadiusInMeters * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
 export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onSelectPlace }: GroupMapProps) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const mapStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE || "mapbox://styles/mapbox/standard";
@@ -72,6 +95,47 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   const internalSelectedPlace = useMemo(
     () => placesWithCoordinates.find((place) => place.id === effectiveSelectedPlaceId) ?? null,
     [placesWithCoordinates, effectiveSelectedPlaceId]
+  );
+  const findSavedPlaceFromGoogleResult = useCallback(
+    (result: Pick<GooglePlaceSuggestion, "externalPlaceId" | "name" | "address" | "latitude" | "longitude">) => {
+      const byExternalId = placesWithCoordinates.find(
+        (place) => place.provider === "google_places" && place.externalPlaceId === result.externalPlaceId
+      );
+
+      if (byExternalId) {
+        return byExternalId;
+      }
+
+      const normalizedResultName = normalizePlaceMatchValue(result.name);
+      const normalizedResultAddress = normalizePlaceMatchValue(result.address);
+
+      return (
+        placesWithCoordinates.find((place) => {
+          const latitude = place.latitude as number;
+          const longitude = place.longitude as number;
+          const distance = getDistanceInMeters(
+            { latitude, longitude },
+            { latitude: result.latitude, longitude: result.longitude }
+          );
+          if (distance > 80) {
+            return false;
+          }
+
+          const normalizedPlaceName = normalizePlaceMatchValue(place.name);
+          const normalizedPlaceAddress = normalizePlaceMatchValue(place.address);
+          const hasSameName = normalizedPlaceName === normalizedResultName;
+          const hasSameAddress = Boolean(
+            normalizedPlaceAddress &&
+              normalizedResultAddress &&
+              (normalizedPlaceAddress.includes(normalizedResultAddress) ||
+                normalizedResultAddress.includes(normalizedPlaceAddress))
+          );
+
+          return hasSameName || hasSameAddress;
+        }) ?? null
+      );
+    },
+    [placesWithCoordinates]
   );
 
   useEffect(() => {
@@ -132,6 +196,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
             externalPlaceId: nearby.place.externalPlaceId,
             googleMapsUrl: nearby.place.googleMapsUrl,
             businessStatus: nearby.place.businessStatus,
+            phoneNumber: nearby.place.phoneNumber,
             imageUrl: nearby.place.imageUrl
           });
           return;
@@ -291,8 +356,34 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
 
   const handleSelectSearchResult = useCallback(async (result: GooglePlaceSuggestion) => {
     setResolveHint(null);
+    const savedPlaceFromResult = findSavedPlaceFromGoogleResult(result);
+    if (savedPlaceFromResult) {
+      setDraftSelection(null);
+      selectedSearchMarkerRef.current?.remove();
+      selectedSearchMarkerRef.current = null;
+      setLocalSelectedPlaceId(savedPlaceFromResult.id);
+      onSelectPlace?.(savedPlaceFromResult.id);
+      return;
+    }
+
     const resolved = await getGooglePlaceDetails({ externalPlaceId: result.externalPlaceId });
     if (!resolved) {
+      return;
+    }
+
+    const savedPlaceFromDetails = findSavedPlaceFromGoogleResult({
+      externalPlaceId: resolved.externalPlaceId,
+      name: resolved.name,
+      address: resolved.address,
+      latitude: resolved.latitude,
+      longitude: resolved.longitude
+    });
+    if (savedPlaceFromDetails) {
+      setDraftSelection(null);
+      selectedSearchMarkerRef.current?.remove();
+      selectedSearchMarkerRef.current = null;
+      setLocalSelectedPlaceId(savedPlaceFromDetails.id);
+      onSelectPlace?.(savedPlaceFromDetails.id);
       return;
     }
 
@@ -307,6 +398,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
       externalPlaceId: resolved.externalPlaceId,
       googleMapsUrl: resolved.googleMapsUrl,
       businessStatus: resolved.businessStatus,
+      phoneNumber: resolved.phoneNumber,
       imageUrl: resolved.imageUrl
     };
 
@@ -330,7 +422,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
     map.once("moveend", () => {
       setDraftSelection(nextDraft);
     });
-  }, []);
+  }, [findSavedPlaceFromGoogleResult, onSelectPlace]);
 
   const handleManualCreateFromSearch = useCallback((payload: { name: string; address: string; city: string }) => {
     setResolveHint(null);
@@ -528,12 +620,24 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
                     Ir
                   </button>
                 )}
-                <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
-                  <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
-                  </svg>
-                  Llamar
-                </button>
+                {internalSelectedPlace.phoneNumber ? (
+                  <a
+                    className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
+                    href={`tel:${internalSelectedPlace.phoneNumber}`}
+                  >
+                    <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    Llamar
+                  </a>
+                ) : (
+                  <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
+                    <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    Llamar
+                  </button>
+                )}
                 <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95" type="button">
                   <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="M12 20h9" />

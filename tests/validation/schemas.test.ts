@@ -105,6 +105,17 @@ describe("createPlaceSchema", () => {
     expect(result.category).toBeNull();
   });
 
+  it("does not accept favorite during creation", () => {
+    const result = createPlaceSchema.parse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      name: "La Bicicleta",
+      address: "Madrid",
+      isFavorite: "true"
+    });
+
+    expect("isFavorite" in result).toBe(false);
+  });
+
   it("rejects missing required fields", () => {
     const result = createPlaceSchema.safeParse({
       groupId: "not-a-uuid",

@@ -123,6 +123,12 @@ export const createPlaceSchema = z.object({
     .max(80, "El estado del negocio no es valido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
+  phoneNumber: z
+    .string()
+    .trim()
+    .max(40, "El telefono no es valido.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
   imageUrl: z
     .string()
     .trim()
@@ -130,10 +136,6 @@ export const createPlaceSchema = z.object({
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen invalida."),
-  isFavorite: z
-    .string()
-    .optional()
-    .transform((value) => value === "true"),
   latitude: z
     .preprocess(
       (value) => (value === "" || value === null || value === undefined ? undefined : value),
@@ -204,6 +206,12 @@ export const createPersonalPlaceSchema = z.object({
     .string()
     .trim()
     .max(80, "El estado del negocio no es valido.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  phoneNumber: z
+    .string()
+    .trim()
+    .max(40, "El telefono no es valido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   imageUrl: z

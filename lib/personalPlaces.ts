@@ -14,6 +14,7 @@ export type PersonalPlace = {
   externalPlaceId: string | null;
   googleMapsUrl: string | null;
   businessStatus: string | null;
+  phoneNumber: string | null;
   imageUrl?: string | null;
   latitude: number;
   longitude: number;
@@ -33,6 +34,7 @@ type CreatePersonalPlaceInput = {
   externalPlaceId?: string | null;
   googleMapsUrl?: string | null;
   businessStatus?: string | null;
+  phoneNumber?: string | null;
   imageUrl?: string | null;
   latitude: number;
   longitude: number;
@@ -56,7 +58,7 @@ export async function getPersonalPlacesForUser(userId: string): Promise<Personal
   const { data, error } = await supabase
     .from("personal_places")
     .select(
-      "id, user_id, name, address, city, notes, category, source, provider, external_place_id, google_maps_url, business_status, image_url, latitude, longitude, created_at, updated_at"
+      "id, user_id, name, address, city, notes, category, source, provider, external_place_id, google_maps_url, business_status, phone_number, image_url, latitude, longitude, created_at, updated_at"
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -78,6 +80,7 @@ export async function getPersonalPlacesForUser(userId: string): Promise<Personal
     externalPlaceId: item.external_place_id,
     googleMapsUrl: item.google_maps_url,
     businessStatus: item.business_status,
+    phoneNumber: item.phone_number,
     imageUrl: item.image_url,
     latitude: item.latitude,
     longitude: item.longitude,
@@ -144,6 +147,7 @@ export async function createPersonalPlace(input: CreatePersonalPlaceInput): Prom
     external_place_id: externalPlaceId,
     google_maps_url: input.googleMapsUrl?.trim() || null,
     business_status: input.businessStatus?.trim() || null,
+    phone_number: input.phoneNumber?.trim() || null,
     image_url: input.imageUrl?.trim() || null,
     latitude: input.latitude,
     longitude: input.longitude

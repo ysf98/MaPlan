@@ -120,6 +120,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
             externalPlaceId: nearby.place.externalPlaceId,
             googleMapsUrl: nearby.place.googleMapsUrl,
             businessStatus: nearby.place.businessStatus,
+            phoneNumber: nearby.place.phoneNumber,
             imageUrl: nearby.place.imageUrl
           });
           return;
@@ -293,6 +294,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
       externalPlaceId: resolved.externalPlaceId,
       googleMapsUrl: resolved.googleMapsUrl,
       businessStatus: resolved.businessStatus,
+      phoneNumber: resolved.phoneNumber,
       imageUrl: resolved.imageUrl
     };
 
@@ -501,12 +503,24 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
                     Ir
                   </button>
                 )}
-                <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
-                  <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
-                  </svg>
-                  Llamar
-                </button>
+                {selectedPlace.phoneNumber ? (
+                  <a
+                    className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
+                    href={`tel:${selectedPlace.phoneNumber}`}
+                  >
+                    <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    Llamar
+                  </a>
+                ) : (
+                  <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
+                    <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    Llamar
+                  </button>
+                )}
                 <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95" type="button">
                   <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="M12 20h9" />

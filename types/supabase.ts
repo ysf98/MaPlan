@@ -315,6 +315,7 @@ export type Database = {
           longitude: number
           name: string
           notes: string | null
+          phone_number: string | null
           provider: string | null
           source: string | null
           updated_at: string
@@ -334,6 +335,7 @@ export type Database = {
           longitude: number
           name: string
           notes?: string | null
+          phone_number?: string | null
           provider?: string | null
           source?: string | null
           updated_at?: string
@@ -353,6 +355,7 @@ export type Database = {
           longitude?: number
           name?: string
           notes?: string | null
+          phone_number?: string | null
           provider?: string | null
           source?: string | null
           updated_at?: string
@@ -379,6 +382,7 @@ export type Database = {
           name: string
           notes: string | null
           original_url: string | null
+          phone_number: string | null
           provider: string | null
           source: string | null
           status: string
@@ -402,6 +406,7 @@ export type Database = {
           name: string
           notes?: string | null
           original_url?: string | null
+          phone_number?: string | null
           provider?: string | null
           source?: string | null
           status?: string
@@ -425,6 +430,7 @@ export type Database = {
           name?: string
           notes?: string | null
           original_url?: string | null
+          phone_number?: string | null
           provider?: string | null
           source?: string | null
           status?: string

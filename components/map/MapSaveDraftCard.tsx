@@ -25,14 +25,12 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
   const [address, setAddress] = useState(draft.address);
   const [city, setCity] = useState(draft.city);
   const [mode, setMode] = useState<"confirm" | "editName">("confirm");
-  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     setName(draft.name);
     setAddress(draft.address);
     setCity(draft.city);
     setMode("confirm");
-    setIsFavorite(false);
   }, [draft.address, draft.city, draft.latitude, draft.longitude, draft.name]);
 
   return (
@@ -46,8 +44,8 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
         <input name="externalPlaceId" type="hidden" value={draft.externalPlaceId || ""} />
         <input name="googleMapsUrl" type="hidden" value={draft.googleMapsUrl || ""} />
         <input name="businessStatus" type="hidden" value={draft.businessStatus || ""} />
+        <input name="phoneNumber" type="hidden" value={draft.phoneNumber || ""} />
         <input name="imageUrl" type="hidden" value={draft.imageUrl || ""} />
-        <input name="isFavorite" type="hidden" value={String(isFavorite)} />
         <input name="category" type="hidden" value={draft.category || "Otros"} />
         <input name="address" type="hidden" value={address} />
         <input name="city" type="hidden" value={city} />
@@ -67,38 +65,24 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
                   <path d="m6 6 12 12" />
                 </svg>
               </button>
-              <div className="flex shrink-0 items-center gap-1.5">
-                <button
-                  aria-label={isFavorite ? "Quitar favorito" : "Marcar favorito"}
-                  className={`flex h-9 w-9 items-center justify-center rounded-full border transition ${
-                    isFavorite ? "border-rose-200 bg-rose-50 text-[#c6283a]" : "border-zinc-200 bg-white text-zinc-500"
-                  }`}
-                  onClick={() => setIsFavorite((value) => !value)}
-                  type="button"
-                >
-                  <svg className="h-5 w-5" fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="m12 21-1.5-1.35C5.4 15.08 2 12 2 8.24A4.24 4.24 0 0 1 6.24 4C8 4 9.7 4.81 10.8 6.09L12 7.5l1.2-1.41A5 5 0 0 1 17.76 4 4.24 4.24 0 0 1 22 8.24c0 3.76-3.4 6.84-8.5 11.41Z" />
+              <button
+                aria-label="Guardar lugar"
+                className="group flex h-9 w-9 items-center justify-center rounded-full bg-[#c6283a] text-white shadow transition hover:scale-105 hover:bg-[#b32033] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={isPending}
+                type="submit"
+              >
+                {isPending ? (
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                    <path className="opacity-90" d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeLinecap="round" strokeWidth="3" />
                   </svg>
-                </button>
-                <button
-                  aria-label="Guardar lugar"
-                  className="group flex h-9 w-9 items-center justify-center rounded-full bg-[#c6283a] text-white shadow transition hover:scale-105 hover:bg-[#b32033] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
-                  disabled={isPending}
-                  type="submit"
-                >
-                  {isPending ? (
-                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                      <path className="opacity-90" d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeLinecap="round" strokeWidth="3" />
-                    </svg>
-                  ) : (
-                    <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.8" viewBox="0 0 24 24">
-                      <path d="M12 5v14" />
-                      <path d="M5 12h14" />
-                    </svg>
-                  )}
-                </button>
-              </div>
+                ) : (
+                  <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.8" viewBox="0 0 24 24">
+                    <path d="M12 5v14" />
+                    <path d="M5 12h14" />
+                  </svg>
+                )}
+              </button>
             </div>
 
             <div className="mt-2 flex items-start gap-3">
@@ -118,20 +102,44 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
               </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-between pl-[18px] pr-1 pt-1">
-              <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600" type="button">
-                <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
-                </svg>
-                Ir
-              </button>
-              <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600" type="button">
-                <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
-                </svg>
-                Llamar
-              </button>
+            <div className="mt-3 flex items-center justify-center gap-20 pt-1">
+              {draft.googleMapsUrl ? (
+                <a
+                  className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600"
+                  href={draft.googleMapsUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
+                  </svg>
+                  Ir
+                </a>
+              ) : (
+                <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
+                  <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
+                  </svg>
+                  Ir
+                </button>
+              )}
+              {draft.phoneNumber ? (
+                <a className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600" href={`tel:${draft.phoneNumber}`}>
+                  <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
+                  </svg>
+                  Llamar
+                </a>
+              ) : (
+                <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
+                  <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
+                  </svg>
+                  Llamar
+                </button>
+              )}
               <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600" onClick={() => setMode("editName")} type="button">
                 <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M12 20h9" />

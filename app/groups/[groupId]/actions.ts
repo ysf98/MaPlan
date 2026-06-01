@@ -135,8 +135,8 @@ export async function addPlaceAction(
     externalPlaceId: String(formData.get("externalPlaceId") || ""),
     googleMapsUrl: String(formData.get("googleMapsUrl") || ""),
     businessStatus: String(formData.get("businessStatus") || ""),
+    phoneNumber: String(formData.get("phoneNumber") || ""),
     imageUrl: String(formData.get("imageUrl") || ""),
-    isFavorite: String(formData.get("isFavorite") || ""),
     latitude: formData.get("latitude"),
     longitude: formData.get("longitude")
   });
@@ -163,8 +163,8 @@ export async function addPlaceAction(
     externalPlaceId,
     googleMapsUrl,
     businessStatus,
+    phoneNumber,
     imageUrl,
-    isFavorite,
     latitude,
     longitude
   } = parsedInput.data;
@@ -183,8 +183,8 @@ export async function addPlaceAction(
     externalPlaceId: externalPlaceId || null,
     googleMapsUrl: googleMapsUrl || null,
     businessStatus: businessStatus || null,
+    phoneNumber: phoneNumber || null,
     imageUrl: imageUrl || null,
-    isFavorite,
     latitude: typeof latitude === "number" ? latitude : null,
     longitude: typeof longitude === "number" ? longitude : null
   });

@@ -71,6 +71,42 @@ describe("places server actions", () => {
     expect(result.error).toBe("Identificador invalido.");
   });
 
+  it("addPlaceAction creates new places without favorite state", async () => {
+    createPlaceMock.mockResolvedValue({ error: null });
+
+    const formData = new FormData();
+    formData.set("groupId", "11111111-1111-4111-8111-111111111111");
+    formData.set("name", "Lugar nuevo");
+    formData.set("address", "Calle Mayor 1");
+    formData.set("city", "Madrid");
+    formData.set("category", "Otros");
+    formData.set("isFavorite", "true");
+    formData.set("latitude", "40.4168");
+    formData.set("longitude", "-3.7038");
+
+    const result = await placesActions.addPlaceAction({ error: null, success: false }, formData);
+
+    expect(result).toEqual({ error: null, success: true });
+    expect(createPlaceMock).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        isFavorite: expect.any(Boolean)
+      })
+    );
+    expect(createPlaceMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        groupId: "11111111-1111-4111-8111-111111111111",
+        name: "Lugar nuevo",
+        address: "Calle Mayor 1",
+        city: "Madrid",
+        category: "Otros",
+        latitude: 40.4168,
+        longitude: -3.7038
+      })
+    );
+    expect(revalidatePathMock).toHaveBeenCalledWith("/groups/11111111-1111-4111-8111-111111111111");
+  });
+
   it("updatePlaceStatusAction updates without revalidating pages", async () => {
     updatePlaceStatusMock.mockResolvedValue({ error: null });
 
