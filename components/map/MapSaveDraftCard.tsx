@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
@@ -34,7 +34,7 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
   }, [draft.address, draft.city, draft.latitude, draft.longitude, draft.name]);
 
   return (
-    <Card className="pointer-events-auto rounded-3xl border-zinc-100 bg-white/95 p-2 shadow-xl backdrop-blur">
+    <Card className="pointer-events-auto mx-auto w-full max-w-[380px] rounded-2xl border-zinc-100 bg-white/95 p-1 shadow-xl backdrop-blur">
       <form action={formAction} className="space-y-2">
         <input name={scopeIdName} type="hidden" value={scopeIdValue} />
         <input name="latitude" type="hidden" value={String(draft.latitude)} />
@@ -53,10 +53,10 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
 
         {mode === "confirm" ? (
           <>
-            <div className="-mt-2 flex items-center justify-between">
+            <div className="-mt-1 flex items-center justify-between">
               <button
                 aria-label="Cerrar"
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition hover:bg-zinc-50"
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition hover:bg-zinc-50"
                 onClick={onCancel}
                 type="button"
               >
@@ -67,7 +67,7 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
               </button>
               <button
                 aria-label="Guardar lugar"
-                className="group flex h-9 w-9 items-center justify-center rounded-full bg-[#c6283a] text-white shadow transition hover:scale-105 hover:bg-[#b32033] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                className="group flex h-7 w-7 items-center justify-center rounded-full bg-[#c6283a] text-white shadow transition hover:scale-105 hover:bg-[#b32033] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
                 disabled={isPending}
                 type="submit"
               >
@@ -85,8 +85,8 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
               </button>
             </div>
 
-            <div className="mt-2 flex items-start gap-3">
-              <div className="h-[74px] w-[74px] shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+            <div className="mt-1.5 flex items-start gap-2.5">
+              <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-xl bg-zinc-100">
                 {draft.imageUrl ? (
                   <img alt={name} className="h-full w-full object-cover" src={draft.imageUrl} />
                 ) : (
@@ -94,31 +94,31 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 text-lg font-semibold leading-5 text-zinc-900">{name}</p>
-                <p className="mt-1 truncate text-xs text-zinc-500">
+                <p className="line-clamp-2 text-sm font-semibold leading-4 text-zinc-900">{name}</p>
+                <p className="mt-0.5 truncate text-[11px] text-zinc-500">
                   {address}
                   {city ? ` · ${city}` : ""}
                 </p>
               </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-center gap-20 pt-1">
+            <div className="mt-1.5 flex items-center justify-center gap-11 pt-0">
               {draft.googleMapsUrl ? (
                 <a
-                  className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600"
+                  className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600"
                   href={draft.googleMapsUrl}
                   rel="noreferrer"
                   target="_blank"
                 >
-                  <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
+                  <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="9" />
                     <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
                   </svg>
                   Ir
                 </a>
               ) : (
-                <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
-                  <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
+                <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-400" disabled type="button">
+                  <svg className="h-[18px] w-[18px] text-zinc-300" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="9" />
                     <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
                   </svg>
@@ -126,22 +126,22 @@ export function MapSaveDraftCard({ scopeIdName, scopeIdValue, draft, state, isPe
                 </button>
               )}
               {draft.phoneNumber ? (
-                <a className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600" href={`tel:${draft.phoneNumber}`}>
-                  <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <a className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600" href={`tel:${draft.phoneNumber}`}>
+                  <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
                   </svg>
                   Llamar
                 </a>
               ) : (
-                <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
-                  <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-400" disabled type="button">
+                  <svg className="h-[18px] w-[18px] text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
                   </svg>
                   Llamar
                 </button>
               )}
-              <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600" onClick={() => setMode("editName")} type="button">
-                <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600" onClick={() => setMode("editName")} type="button">
+                <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M12 20h9" />
                   <path d="m16.5 3.5 4 4L7 21H3v-4z" />
                 </svg>

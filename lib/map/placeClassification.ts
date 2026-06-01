@@ -135,24 +135,33 @@ export function getPlaceTypeLabel(primaryType: string | null, placeName: string,
 }
 
 export function inferCategoryFromSuggestion(result: GooglePlaceSuggestion): string {
-  const primaryType = (result.primaryType || "").toLowerCase();
-  const name = normalize(result.name);
+  return inferCategoryFromGoogleSignals(result.primaryType, result.name);
+}
 
-  if (primaryType.includes("cafe") || primaryType.includes("bakery") || name.includes("cafe")) return "Cafeteria";
+export function inferCategoryFromGoogleSignals(primaryType: string | null, placeName: string): string {
+  const normalizedPrimaryType = (primaryType || "").toLowerCase();
+  const name = normalize(placeName);
+
+  if (normalizedPrimaryType.includes("cafe") || normalizedPrimaryType.includes("bakery") || name.includes("cafe")) return "Cafeteria";
   if (
-    primaryType.includes("restaurant") ||
-    primaryType.includes("meal_takeaway") ||
-    primaryType.includes("meal_delivery") ||
-    primaryType.includes("food") ||
+    normalizedPrimaryType.includes("restaurant") ||
+    normalizedPrimaryType.includes("meal_takeaway") ||
+    normalizedPrimaryType.includes("meal_delivery") ||
+    normalizedPrimaryType.includes("food") ||
     name.includes("restaurante") ||
     name.includes("burger") ||
     name.includes("pizza")
   ) {
     return "Comer";
   }
-  if (primaryType.includes("night_club") || name.includes("discoteca") || name.includes("pub") || name.includes("cocktail")) return "Fiesta";
-  if (primaryType.includes("bar")) return "Comer";
-  if (primaryType.includes("store") || primaryType.includes("supermarket") || primaryType.includes("shopping_mall") || primaryType.includes("convenience_store")) {
+  if (normalizedPrimaryType.includes("night_club") || name.includes("discoteca") || name.includes("pub") || name.includes("cocktail")) return "Fiesta";
+  if (normalizedPrimaryType.includes("bar")) return "Comer";
+  if (
+    normalizedPrimaryType.includes("store") ||
+    normalizedPrimaryType.includes("supermarket") ||
+    normalizedPrimaryType.includes("shopping_mall") ||
+    normalizedPrimaryType.includes("convenience_store")
+  ) {
     return "Compras";
   }
   return "Otros";

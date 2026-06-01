@@ -16,7 +16,8 @@ import {
 import { MapSearchBox } from "@/components/map/MapSearchBox";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { getGooglePlaceDetails, getGooglePlaceNearby, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
-import { inferCategoryFromSuggestion } from "@/lib/map/placeClassification";
+import { inferCategoryFromGoogleSignals } from "@/lib/map/placeClassification";
+import { getPlaceMarkerColorFromPlace } from "@/lib/map/placeMarkerColor";
 
 type GroupMapProps = {
   groupId: string;
@@ -25,6 +26,15 @@ type GroupMapProps = {
   selectedPlaceId?: string | null;
   onSelectPlace?: (placeId: string | null) => void;
 };
+
+type PlaceMapFilter = "all" | "pending" | "visited" | "favorite";
+
+const placeFilterChips: Array<{ label: string; value: PlaceMapFilter }> = [
+  { label: "Todos", value: "all" },
+  { label: "Pendientes", value: "pending" },
+  { label: "Visitados", value: "visited" },
+  { label: "Favoritos", value: "favorite" }
+];
 
 const addPlaceInitialState: AddPlaceActionState = {
   error: null,
@@ -64,6 +74,13 @@ function getDistanceInMeters(first: { latitude: number; longitude: number }, sec
   return earthRadiusInMeters * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 }
 
+function placeMatchesMapFilter(place: GroupPlace, filter: PlaceMapFilter): boolean {
+  if (filter === "pending") return place.status === "pending";
+  if (filter === "visited") return place.status === "visited";
+  if (filter === "favorite") return place.isFavorite;
+  return true;
+}
+
 export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onSelectPlace }: GroupMapProps) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const mapStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE || "mapbox://styles/mapbox/standard";
@@ -73,6 +90,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   const draftCardMobileRef = useRef<HTMLDivElement | null>(null);
   const draftCardDesktopRef = useRef<HTMLDivElement | null>(null);
   const selectedSearchMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const markerByPlaceIdRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const skipNextMapClickRef = useRef(false);
   const pendingMapClickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -80,6 +98,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   const [resolveHint, setResolveHint] = useState<string | null>(null);
   const [draftSelection, setDraftSelection] = useState<MapDraftPlace | null>(null);
   const [searchCloseSignal, setSearchCloseSignal] = useState(0);
+  const [activePlaceFilter, setActivePlaceFilter] = useState<PlaceMapFilter>("all");
   const [localSelectedPlaceId, setLocalSelectedPlaceId] = useState<string | null>(null);
   const [isSelectedFavorite, setIsSelectedFavorite] = useState(false);
   const [addPlaceState, addPlaceFormAction, isAddPlacePending] = useActionState(addPlaceAction, addPlaceInitialState);
@@ -91,6 +110,10 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   const wasAddPlacePendingRef = useRef(false);
 
   const placesWithCoordinates = useMemo(() => places.filter((place) => hasValidCoordinates(place)), [places]);
+  const filteredPlacesWithCoordinates = useMemo(
+    () => placesWithCoordinates.filter((place) => placeMatchesMapFilter(place, activePlaceFilter)),
+    [activePlaceFilter, placesWithCoordinates]
+  );
   const effectiveSelectedPlaceId = selectedPlaceId ?? localSelectedPlaceId;
   const internalSelectedPlace = useMemo(
     () => placesWithCoordinates.find((place) => place.id === effectiveSelectedPlaceId) ?? null,
@@ -163,6 +186,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
     });
 
     mapRef.current = map;
+    markerByPlaceIdRef.current.clear();
     setMapError(null);
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
     const handleMapClick = async (event: mapboxgl.MapMouseEvent) => {
@@ -191,7 +215,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
             name: nearby.place.name,
             address: nearby.place.address,
             city: nearby.place.city,
-            category: "Otros",
+            category: inferCategoryFromGoogleSignals(nearby.place.primaryType, nearby.place.name),
             provider: "google_places",
             externalPlaceId: nearby.place.externalPlaceId,
             googleMapsUrl: nearby.place.googleMapsUrl,
@@ -254,7 +278,8 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
     placesWithCoordinates.forEach((place) => {
       const latitude = place.latitude as number;
       const longitude = place.longitude as number;
-      const marker = new mapboxgl.Marker({ color: "#14b8a6" }).setLngLat([longitude, latitude]).addTo(map);
+      const marker = new mapboxgl.Marker({ color: getPlaceMarkerColorFromPlace(place) }).setLngLat([longitude, latitude]).addTo(map);
+      markerByPlaceIdRef.current.set(place.id, marker);
 
       marker.getElement().addEventListener("click", (event) => {
         event.stopPropagation();
@@ -278,10 +303,46 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
       }
       selectedSearchMarkerRef.current?.remove();
       selectedSearchMarkerRef.current = null;
+      markerByPlaceIdRef.current.clear();
       map.remove();
       mapRef.current = null;
     };
   }, [canEdit, mapStyle, onSelectPlace, placesWithCoordinates, token]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+
+    const visiblePlaceIds = new Set(filteredPlacesWithCoordinates.map((place) => place.id));
+    markerByPlaceIdRef.current.forEach((marker, placeId) => {
+      marker.getElement().style.display = visiblePlaceIds.has(placeId) ? "" : "none";
+    });
+
+    if (internalSelectedPlace && !visiblePlaceIds.has(internalSelectedPlace.id)) {
+      setLocalSelectedPlaceId(null);
+      onSelectPlace?.(null);
+    }
+
+    if (filteredPlacesWithCoordinates.length === 1) {
+      const place = filteredPlacesWithCoordinates[0];
+      map.flyTo({
+        center: [place.longitude as number, place.latitude as number],
+        zoom: Math.max(map.getZoom(), 13),
+        essential: true
+      });
+      return;
+    }
+
+    if (filteredPlacesWithCoordinates.length > 1) {
+      const bounds = new mapboxgl.LngLatBounds();
+      filteredPlacesWithCoordinates.forEach((place) => {
+        bounds.extend([place.longitude as number, place.latitude as number]);
+      });
+      map.fitBounds(bounds, { padding: 48, maxZoom: 13 });
+    }
+  }, [activePlaceFilter, filteredPlacesWithCoordinates, internalSelectedPlace, onSelectPlace]);
 
   useEffect(() => {
     if (!internalSelectedPlace || !mapRef.current) {
@@ -290,7 +351,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
 
     mapRef.current.flyTo({
       center: [internalSelectedPlace.longitude as number, internalSelectedPlace.latitude as number],
-      zoom: Math.max(mapRef.current.getZoom(), 13),
+      zoom: Math.max(mapRef.current.getZoom(), 16),
       essential: true
     });
   }, [internalSelectedPlace]);
@@ -393,7 +454,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
       name: resolved.name,
       address: resolved.address,
       city: resolved.city,
-      category: inferCategoryFromSuggestion(result),
+      category: inferCategoryFromGoogleSignals(resolved.primaryType ?? result.primaryType, resolved.name),
       provider: resolved.provider,
       externalPlaceId: resolved.externalPlaceId,
       googleMapsUrl: resolved.googleMapsUrl,
@@ -450,7 +511,6 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
       center: center ? { lng: center.lng, lat: center.lat } : null
     };
   }, []);
-  const filterChips = ["Todos", "Pendientes", "Visitados", "Favoritos"];
 
   if (!token) {
     return <EmptyState description="Define NEXT_PUBLIC_MAPBOX_TOKEN para habilitar el mapa." title="Falta configurar Mapbox" />;
@@ -483,15 +543,19 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
             onPointerDownCapture={(event) => event.stopPropagation()}
             onTouchStartCapture={(event) => event.stopPropagation()}
           >
-            {filterChips.map((chip) => (
+            {placeFilterChips.map((chip) => (
               <button
-                key={chip}
+                aria-pressed={activePlaceFilter === chip.value}
+                key={chip.value}
+                onClick={() => {
+                  setActivePlaceFilter(chip.value);
+                }}
                 type="button"
                 className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${
-                  chip === "Todos" ? "bg-[#c6283a] text-white" : "bg-white/95 text-zinc-600 shadow"
+                  activePlaceFilter === chip.value ? "bg-[#c6283a] text-white" : "bg-white/95 text-zinc-600 shadow"
                 }`}
               >
-                {chip}
+                {chip.label}
               </button>
             ))}
           </div>
@@ -519,11 +583,11 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
         {internalSelectedPlace ? (
           <div className="pointer-events-none absolute inset-x-3 bottom-3 z-30">
             <div className="pointer-events-auto" ref={selectedPlaceCardRef}>
-              <Card className="rounded-3xl border-zinc-100 bg-white/95 p-2 shadow-xl backdrop-blur">
-              <div className="-mt-2 flex items-center justify-between">
+              <Card className="mx-auto w-full max-w-[380px] rounded-2xl border-zinc-100 bg-white/95 p-1 shadow-xl backdrop-blur">
+              <div className="-mt-1 flex items-center justify-between">
                 <button
                   aria-label="Cerrar"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:bg-zinc-50 active:scale-95"
+                  className="flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:bg-zinc-50 active:scale-95"
                   onClick={() => {
                     setLocalSelectedPlaceId(null);
                     onSelectPlace?.(null);
@@ -537,7 +601,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
                 </button>
                 <button
                   aria-label={isSelectedFavorite ? "Quitar favorito" : "Marcar favorito"}
-                  className={`flex h-9 w-9 items-center justify-center rounded-full border transition-transform duration-150 hover:scale-110 active:scale-95 ${
+                  className={`flex h-7 w-7 items-center justify-center rounded-full border transition-transform duration-150 hover:scale-110 active:scale-95 ${
                     isSelectedFavorite ? "border-rose-200 bg-rose-50 text-[#c6283a]" : "border-zinc-200 bg-white text-zinc-500"
                   }`}
                   disabled={!canEdit || isFavoritePlacePending}
@@ -554,7 +618,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
                   }}
                   type="button"
                 >
-                  <svg className="h-5 w-5" fill={isSelectedFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4" fill={isSelectedFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="m12 21-1.5-1.35C5.4 15.08 2 12 2 8.24A4.24 4.24 0 0 1 6.24 4C8 4 9.7 4.81 10.8 6.09L12 7.5l1.2-1.41A5 5 0 0 1 17.76 4 4.24 4.24 0 0 1 22 8.24c0 3.76-3.4 6.84-8.5 11.41Z" />
                   </svg>
                 </button>
@@ -563,11 +627,11 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
                   <input name="placeId" type="hidden" value={internalSelectedPlace.id} />
                   <button
                   aria-label="Eliminar lugar"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:border-rose-200 hover:bg-rose-50 hover:text-[#c6283a] active:scale-95"
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:border-rose-200 hover:bg-rose-50 hover:text-[#c6283a] active:scale-95"
                   disabled={isDeletePlacePending}
                   type="submit"
                 >
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path d="M3 6h18" />
                       <path d="M8 6V4h8v2" />
                       <path d="M19 6l-1 14H6L5 6" />
@@ -580,8 +644,8 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
               {deletePlaceState.error ? <p className="mt-2 text-xs text-rose-600">{deletePlaceState.error}</p> : null}
               {favoritePlaceState.error ? <p className="mt-2 text-xs text-rose-600">{favoritePlaceState.error}</p> : null}
 
-              <div className="mt-2 flex items-start gap-3">
-                <div className="h-[74px] w-[74px] shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+              <div className="mt-1.5 flex items-start gap-2.5">
+                <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-xl bg-zinc-100">
                   {internalSelectedPlace.imageUrl ? (
                     <img alt={internalSelectedPlace.name} className="h-full w-full object-cover" src={internalSelectedPlace.imageUrl} />
                   ) : (
@@ -589,31 +653,31 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="line-clamp-2 text-lg font-semibold leading-5 text-zinc-900">{internalSelectedPlace.name}</p>
-                  <p className="mt-1 truncate text-xs text-zinc-500">
+                  <p className="line-clamp-2 text-sm font-semibold leading-4 text-zinc-900">{internalSelectedPlace.name}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-zinc-500">
                     {internalSelectedPlace.address}
-                    {internalSelectedPlace.city ? ` · ${internalSelectedPlace.city}` : ""}
+                    {internalSelectedPlace.city ? ` Ã‚Â· ${internalSelectedPlace.city}` : ""}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-3 flex items-center justify-center gap-20 pt-1">
+              <div className="mt-1.5 flex items-center justify-center gap-11 pt-0">
                 {internalSelectedPlace.googleMapsUrl ? (
                   <a
-                    className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
+                    className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
                     href={internalSelectedPlace.googleMapsUrl}
                     rel="noreferrer"
                     target="_blank"
                   >
-                    <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
+                    <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="9" />
                       <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
                     </svg>
                     Ir
                   </a>
                 ) : (
-                  <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
-                    <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
+                  <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-400" disabled type="button">
+                    <svg className="h-[18px] w-[18px] text-zinc-300" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="9" />
                       <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
                     </svg>
@@ -622,24 +686,24 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
                 )}
                 {internalSelectedPlace.phoneNumber ? (
                   <a
-                    className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
+                    className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
                     href={`tel:${internalSelectedPlace.phoneNumber}`}
                   >
-                    <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
                     </svg>
                     Llamar
                   </a>
                 ) : (
-                  <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
-                    <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-400" disabled type="button">
+                    <svg className="h-[18px] w-[18px] text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
                     </svg>
                     Llamar
                   </button>
                 )}
-                <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95" type="button">
-                  <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95" type="button">
+                  <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="M12 20h9" />
                     <path d="m16.5 3.5 4 4L7 21H3v-4z" />
                   </svg>

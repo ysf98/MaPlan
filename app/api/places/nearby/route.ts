@@ -49,6 +49,7 @@ type GooglePlaceDetailsResult = {
   business_status?: string;
   formatted_phone_number?: string;
   international_phone_number?: string;
+  types?: string[];
   photos?: Array<{ photo_reference?: string }>;
 };
 
@@ -176,6 +177,7 @@ function normalizePlaceFromDetails(
     googleMapsUrl: buildGoogleMapsUrl(placeId),
     businessStatus: (details.business_status || "").trim() || null,
     phoneNumber: (details.international_phone_number || details.formatted_phone_number || "").trim() || null,
+    primaryType: details.types?.[0] || selected.types[0] || null,
     imageUrl: photoReference ? buildPhotoProxyUrl(photoReference) : null
   };
 }
@@ -194,6 +196,7 @@ function normalizePlaceFromNearby(result: GoogleNearbyResult, selected: NearbySe
     googleMapsUrl: buildGoogleMapsUrl(selected.placeId),
     businessStatus: (result.business_status || "").trim() || null,
     phoneNumber: null,
+    primaryType: selected.types[0] || null,
     imageUrl: selected.photoReference ? buildPhotoProxyUrl(selected.photoReference) : null
   };
 }
@@ -212,6 +215,7 @@ function normalizePlaceFromRecord(record: CandidateSourceRecord, selected: Nearb
     googleMapsUrl: buildGoogleMapsUrl(selected.placeId),
     businessStatus: record.businessStatus,
     phoneNumber: null,
+    primaryType: selected.types[0] || null,
     imageUrl: (selected.photoReference || record.photoReference) ? buildPhotoProxyUrl(selected.photoReference || record.photoReference || "") : null
   };
 }
@@ -220,7 +224,7 @@ async function fetchGoogleDetails(placeId: string, apiKey: string): Promise<Goog
   const detailsParams = new URLSearchParams({
     place_id: placeId,
     language: "es",
-    fields: "place_id,name,formatted_address,address_components,geometry,business_status,formatted_phone_number,international_phone_number,photos",
+    fields: "place_id,name,formatted_address,address_components,geometry,business_status,formatted_phone_number,international_phone_number,types,photos",
     key: apiKey
   });
 

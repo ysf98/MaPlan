@@ -28,6 +28,7 @@ export type GooglePlaceFeature = {
   businessStatus: string | null;
   imageUrl: string | null;
   phoneNumber: string | null;
+  primaryType: string | null;
 };
 
 export type GoogleNearbyFallbackReason = "no_candidate" | "too_far" | "google_error";

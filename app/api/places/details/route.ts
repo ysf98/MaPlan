@@ -17,6 +17,7 @@ type GooglePlaceDetailsResult = {
   business_status?: string;
   formatted_phone_number?: string;
   international_phone_number?: string;
+  types?: string[];
   photos?: Array<{ photo_reference?: string }>;
 };
 
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
   const params = new URLSearchParams({
     place_id: externalPlaceId,
     language: "es",
-    fields: "place_id,name,formatted_address,address_components,geometry,business_status,formatted_phone_number,international_phone_number,photos",
+    fields: "place_id,name,formatted_address,address_components,geometry,business_status,formatted_phone_number,international_phone_number,types,photos",
     key: apiKey
   });
   const response = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`, {
@@ -91,6 +92,7 @@ export async function POST(request: Request) {
     googleMapsUrl: buildGoogleMapsUrl(placeId),
     businessStatus: (result.business_status || "").trim() || null,
     phoneNumber: (result.international_phone_number || result.formatted_phone_number || "").trim() || null,
+    primaryType: result.types?.[0] || null,
     imageUrl: result.photos?.[0]?.photo_reference
       ? `/api/places/photo?photoReference=${encodeURIComponent(result.photos[0].photo_reference)}&maxWidth=800`
       : null

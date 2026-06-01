@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
@@ -12,7 +12,8 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { MapSearchBox } from "@/components/map/MapSearchBox";
-import { inferCategoryFromSuggestion } from "@/lib/map/placeClassification";
+import { inferCategoryFromGoogleSignals } from "@/lib/map/placeClassification";
+import { getPlaceMarkerColorFromPlace } from "@/lib/map/placeMarkerColor";
 import {
   buildDraftFromRenderedFeature,
   extractFallbackNameFromRenderedFeatures,
@@ -115,7 +116,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
             name: nearby.place.name,
             address: nearby.place.address,
             city: nearby.place.city,
-            category: "Otros",
+            category: inferCategoryFromGoogleSignals(nearby.place.primaryType, nearby.place.name),
             provider: "google_places",
             externalPlaceId: nearby.place.externalPlaceId,
             googleMapsUrl: nearby.place.googleMapsUrl,
@@ -176,7 +177,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
 
     const bounds = new mapboxgl.LngLatBounds();
     places.forEach((place) => {
-      const marker = new mapboxgl.Marker({ color: "#0f766e" }).setLngLat([place.longitude, place.latitude]).addTo(map);
+      const marker = new mapboxgl.Marker({ color: getPlaceMarkerColorFromPlace(place) }).setLngLat([place.longitude, place.latitude]).addTo(map);
 
       marker.getElement().addEventListener("click", (event) => {
         event.stopPropagation();
@@ -212,7 +213,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
 
     mapRef.current.flyTo({
       center: [selectedPlace.longitude, selectedPlace.latitude],
-      zoom: Math.max(mapRef.current.getZoom(), 13),
+      zoom: Math.max(mapRef.current.getZoom(), 16),
       essential: true
     });
   }, [selectedPlace]);
@@ -289,7 +290,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
       name: resolved.name,
       address: resolved.address,
       city: resolved.city,
-      category: inferCategoryFromSuggestion(result),
+      category: inferCategoryFromGoogleSignals(resolved.primaryType ?? result.primaryType, resolved.name),
       provider: resolved.provider,
       externalPlaceId: resolved.externalPlaceId,
       googleMapsUrl: resolved.googleMapsUrl,
@@ -415,11 +416,11 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
         {selectedPlace ? (
           <div className="pointer-events-none absolute inset-x-3 bottom-3 z-30">
             <div className="pointer-events-auto" ref={selectedPlaceCardRef}>
-              <Card className="rounded-3xl border-zinc-100 bg-white/95 p-2 shadow-xl backdrop-blur">
-              <div className="-mt-2 flex items-center justify-between">
+              <Card className="mx-auto w-full max-w-[380px] rounded-2xl border-zinc-100 bg-white/95 p-1 shadow-xl backdrop-blur">
+              <div className="-mt-1 flex items-center justify-between">
                 <button
                   aria-label="Cerrar"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:bg-zinc-50 active:scale-95"
+                  className="flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:bg-zinc-50 active:scale-95"
                   onClick={() => {
                     setLocalSelectedPlaceId(null);
                     onSelectPlace?.(null);
@@ -433,13 +434,13 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
                 </button>
                 <button
                   aria-label={isSelectedFavorite ? "Quitar favorito" : "Marcar favorito"}
-                  className={`flex h-9 w-9 items-center justify-center rounded-full border transition-transform duration-150 hover:scale-110 active:scale-95 ${
+                  className={`flex h-7 w-7 items-center justify-center rounded-full border transition-transform duration-150 hover:scale-110 active:scale-95 ${
                     isSelectedFavorite ? "border-rose-200 bg-rose-50 text-[#c6283a]" : "border-zinc-200 bg-white text-zinc-500"
                   }`}
                   onClick={() => setIsSelectedFavorite((value) => !value)}
                   type="button"
                 >
-                  <svg className="h-5 w-5" fill={isSelectedFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4" fill={isSelectedFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="m12 21-1.5-1.35C5.4 15.08 2 12 2 8.24A4.24 4.24 0 0 1 6.24 4C8 4 9.7 4.81 10.8 6.09L12 7.5l1.2-1.41A5 5 0 0 1 17.76 4 4.24 4.24 0 0 1 22 8.24c0 3.76-3.4 6.84-8.5 11.41Z" />
                   </svg>
                 </button>
@@ -447,11 +448,11 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
                   <input name="placeId" type="hidden" value={selectedPlace.id} />
                   <button
                   aria-label="Eliminar lugar"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:border-rose-200 hover:bg-rose-50 hover:text-[#c6283a] active:scale-95"
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:border-rose-200 hover:bg-rose-50 hover:text-[#c6283a] active:scale-95"
                   disabled={isDeletePlacePending}
                   type="submit"
                 >
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path d="M3 6h18" />
                       <path d="M8 6V4h8v2" />
                       <path d="M19 6l-1 14H6L5 6" />
@@ -463,8 +464,8 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
               </div>
               {deletePlaceState.error ? <p className="mt-2 text-xs text-rose-600">{deletePlaceState.error}</p> : null}
 
-              <div className="mt-2 flex items-start gap-3">
-                <div className="h-[74px] w-[74px] shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+              <div className="mt-1.5 flex items-start gap-2.5">
+                <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-xl bg-zinc-100">
                   {selectedPlace.imageUrl ? (
                     <img alt={selectedPlace.name} className="h-full w-full object-cover" src={selectedPlace.imageUrl} />
                   ) : (
@@ -472,31 +473,31 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="line-clamp-2 text-lg font-semibold leading-5 text-zinc-900">{selectedPlace.name}</p>
-                  <p className="mt-1 truncate text-xs text-zinc-500">
+                  <p className="line-clamp-2 text-sm font-semibold leading-4 text-zinc-900">{selectedPlace.name}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-zinc-500">
                     {selectedPlace.address}
-                    {selectedPlace.city ? ` · ${selectedPlace.city}` : ""}
+                    {selectedPlace.city ? ` Ãƒâ€šÃ‚Â· ${selectedPlace.city}` : ""}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-3 flex items-center justify-center gap-20 pt-1">
+              <div className="mt-1.5 flex items-center justify-center gap-11 pt-0">
                 {selectedPlace.googleMapsUrl ? (
                   <a
-                    className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
+                    className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
                     href={selectedPlace.googleMapsUrl}
                     rel="noreferrer"
                     target="_blank"
                   >
-                    <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
+                    <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="9" />
                       <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
                     </svg>
                     Ir
                   </a>
                 ) : (
-                  <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
-                    <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
+                  <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-400" disabled type="button">
+                    <svg className="h-[18px] w-[18px] text-zinc-300" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="9" />
                       <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
                     </svg>
@@ -505,24 +506,24 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
                 )}
                 {selectedPlace.phoneNumber ? (
                   <a
-                    className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
+                    className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95"
                     href={`tel:${selectedPlace.phoneNumber}`}
                   >
-                    <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
                     </svg>
                     Llamar
                   </a>
                 ) : (
-                  <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-400" disabled type="button">
-                    <svg className="h-6 w-6 text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-400" disabled type="button">
+                    <svg className="h-[18px] w-[18px] text-zinc-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
                     </svg>
                     Llamar
                   </button>
                 )}
-                <button className="flex flex-col items-center gap-1 text-xs font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95" type="button">
-                  <svg className="h-6 w-6 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <button className="flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95" type="button">
+                  <svg className="h-[18px] w-[18px] text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="M12 20h9" />
                     <path d="m16.5 3.5 4 4L7 21H3v-4z" />
                   </svg>
@@ -577,3 +578,4 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
     </div>
   );
 }
+
