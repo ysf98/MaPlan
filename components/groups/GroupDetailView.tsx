@@ -8,6 +8,7 @@ import { GroupMapTab } from "@/components/groups/GroupMapTab";
 import { GroupOverviewHeader } from "@/components/groups/GroupOverviewHeader";
 import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
 import { GroupPlacesTab } from "@/components/groups/GroupPlacesTab";
+import { cn } from "@/lib/cn";
 import type { GroupActivityFeedItem } from "@/lib/groupActivity";
 import type { GroupDetailTab } from "@/lib/groups/tabs";
 import type { GroupDetail, GroupJoinRequestItem, GroupMemberPreview } from "@/lib/groups/types";
@@ -203,10 +204,14 @@ export function GroupDetailView({
           style={{ height: activePanelHeight === null ? undefined : activePanelHeight + 16 }}
         >
           <div
-            className={`flex items-start ${isDragging ? "" : "transition-transform duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]"}`}
+            className={cn(
+              "flex items-start",
+              !isDragging && "transition-transform duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]",
+              currentTab === "mapa" && "max-sm:!transform-none"
+            )}
             style={{ transform: `translateX(calc(${-tabIndex * 100}% - ${dragOffsetPct}%))` }}
           >
-            <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[0] = node; }}>
+            <div className={cn("w-full shrink-0 px-1.5", currentTab === "mapa" && "max-sm:hidden")} ref={(node) => { tabPanelRefs.current[0] = node; }}>
               <GroupPlacesTab
                 canEditPlaces={group.canEditPlaces}
                 groupId={groupId}
@@ -219,13 +224,14 @@ export function GroupDetailView({
                 selectedPlaceId={selectedPlaceId}
               />
             </div>
-            <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[1] = node; }}>
+            <div className={cn("w-full shrink-0 px-1.5", currentTab === "mapa" && "max-sm:hidden")} ref={(node) => { tabPanelRefs.current[1] = node; }}>
               <GroupActivityTab events={activityEvents} joinRequests={joinRequests} />
             </div>
             <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[2] = node; }}>
               <GroupMapTab
                 canEditPlaces={group.canEditPlaces}
                 groupId={groupId}
+                isImmersive={currentTab === "mapa"}
                 onSelectPlace={setSelectedPlaceId}
                 places={places}
                 selectedPlaceId={selectedPlaceId}

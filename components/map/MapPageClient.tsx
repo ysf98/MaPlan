@@ -7,6 +7,7 @@ import { PersonalMap } from "@/components/map/PersonalMap";
 import { PersonalMapTabs } from "@/components/map/PersonalMapTabs";
 import { SimplePlacesList } from "@/components/map/SimplePlacesList";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { cn } from "@/lib/cn";
 import type { PersonalMapTab } from "@/lib/map/tabs";
 import type { PersonalPlace } from "@/lib/personalPlaces";
 
@@ -171,10 +172,14 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
         style={{ height: activePanelHeight === null ? undefined : activePanelHeight }}
       >
         <div
-          className={`flex items-start ${isDragging ? "" : "transition-transform duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]"}`}
+          className={cn(
+            "flex items-start",
+            !isDragging && "transition-transform duration-220 ease-[cubic-bezier(0.22,0.61,0.36,1)]",
+            currentTab === "mapa" && "max-sm:!transform-none"
+          )}
           style={{ transform: `translateX(calc(${-tabIndex * 100}% - ${dragOffsetPct}%))` }}
         >
-          <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[0] = node; }}>
+          <div className={cn("w-full shrink-0 px-1.5", currentTab === "mapa" && "max-sm:hidden")} ref={(node) => { tabPanelRefs.current[0] = node; }}>
             {personalPlaces.length > 0 ? (
               <div>
                 <SimplePlacesList
@@ -225,7 +230,12 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
           </div>
 
           <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[1] = node; }}>
-            <div className="rounded-[32px] border border-zinc-400/60 bg-zinc-500/35 p-1 backdrop-blur-sm">
+            <div
+              className={cn(
+                "rounded-[32px] border border-zinc-400/60 bg-zinc-500/35 p-1 backdrop-blur-sm",
+                currentTab === "mapa" && "max-sm:fixed max-sm:inset-0 max-sm:z-50 max-sm:overflow-hidden max-sm:rounded-none max-sm:border-0 max-sm:bg-zinc-950 max-sm:p-0"
+              )}
+            >
               <PersonalMap onSelectPlace={setSelectedPlaceId} places={personalPlaces} selectedPlaceId={selectedPlaceId} />
             </div>
           </div>

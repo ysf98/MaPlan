@@ -19,6 +19,7 @@ import {
   type MapDraftPlace
 } from "@/lib/map/geocoding";
 import { MapSearchBox } from "@/components/map/MapSearchBox";
+import { MapBackButton } from "@/components/map/MapBackButton";
 import { MapPlaceCard } from "@/components/map/MapPlaceCard";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { UserLocationButton } from "@/components/map/UserLocationButton";
@@ -562,22 +563,25 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
 
   return (
     <div className="space-y-3">
-      <div className="relative h-[620px] min-h-[560px] w-full overflow-hidden rounded-[30px] border border-zinc-300/60 bg-zinc-200/30 shadow-[0_18px_42px_rgba(24,24,27,0.12)] sm:h-[500px] sm:min-h-0 sm:shadow-none">
+      <div className="relative h-[100dvh] min-h-0 w-full overflow-hidden rounded-none border-0 bg-zinc-200/30 shadow-none sm:h-[500px] sm:rounded-[30px] sm:border sm:border-zinc-300/60">
         <div className="h-full w-full" data-lock-swipe ref={mapContainerRef} />
         <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_center,transparent_0%,rgba(244,244,245,0.12)_100%)]" />
 
         <div className="pointer-events-none absolute inset-x-4 top-4 z-20">
-          <div
-            className="pointer-events-auto"
-            onPointerDownCapture={(event) => event.stopPropagation()}
-            onTouchStartCapture={(event) => event.stopPropagation()}
-          >
-            <MapSearchBox
-              closeSignal={searchCloseSignal}
-              getMapContext={getMapContext}
-              onManualCreate={handleManualCreateFromSearch}
-              onSelectResult={handleSelectSearchResult}
-            />
+          <div className="flex items-center gap-2">
+            <MapBackButton />
+            <div
+              className="pointer-events-auto min-w-0 flex-1"
+              onPointerDownCapture={(event) => event.stopPropagation()}
+              onTouchStartCapture={(event) => event.stopPropagation()}
+            >
+              <MapSearchBox
+                closeSignal={searchCloseSignal}
+                getMapContext={getMapContext}
+                onManualCreate={handleManualCreateFromSearch}
+                onSelectResult={handleSelectSearchResult}
+              />
+            </div>
           </div>
           <div
             className="pointer-events-auto mt-2 flex gap-2 overflow-x-auto pb-2 pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
