@@ -93,7 +93,7 @@ export function PersonalMap({
   const wasAddPlacePendingRef = useRef(false);
   const userLocation = useUserLocationMarker(mapRef);
   const isMapVisible = !activeMobileTab || activeMobileTab === "mapa";
-  useMapboxResizeOnVisible(mapRef, isMapVisible);
+  useMapboxResizeOnVisible(mapRef, mapContainerRef, isMapVisible);
 
   const effectiveSelectedPlaceId = selectedPlaceId ?? localSelectedPlaceId;
   const selectedPlace = useMemo(() => places.find((place) => place.id === effectiveSelectedPlaceId) ?? null, [places, effectiveSelectedPlaceId]);

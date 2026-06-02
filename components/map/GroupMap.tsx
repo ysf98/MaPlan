@@ -126,7 +126,7 @@ export function GroupMap({
   const wasAddPlacePendingRef = useRef(false);
   const userLocation = useUserLocationMarker(mapRef);
   const isMapVisible = !activeMobileTab || activeMobileTab === "mapa";
-  useMapboxResizeOnVisible(mapRef, isMapVisible);
+  useMapboxResizeOnVisible(mapRef, mapContainerRef, isMapVisible);
 
   const placesWithCoordinates = useMemo(() => places.filter((place) => hasValidCoordinates(place)), [places]);
   const filteredPlacesWithCoordinates = useMemo(
