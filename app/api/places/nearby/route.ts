@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import type { GooglePlaceFeature } from "@/lib/map/googlePlaces";
 import { selectNearbyPlaceCandidate, type NearbyFallbackReason, type NearbySelectionInput } from "@/lib/map/googlePlacesNearby";
 import { pickCityFromComponents, pickStreetFromComponents, splitAddressParts } from "@/lib/map/addressParsing";
+import { buildGoogleMapsUrl } from "@/lib/map/googleMapsUrl";
 import { googlePlacesNearbySchema } from "@/lib/validation/schemas";
 
 type GoogleNearbyResult = {
@@ -70,10 +71,6 @@ type CandidateSourceRecord = {
   businessStatus: string | null;
   photoReference: string | null;
 };
-
-function buildGoogleMapsUrl(placeId: string): string {
-  return `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(placeId)}`;
-}
 
 function buildPhotoProxyUrl(photoReference: string): string {
   return `/api/places/photo?photoReference=${encodeURIComponent(photoReference)}&maxWidth=800`;
@@ -165,16 +162,26 @@ function normalizePlaceFromDetails(
   const cityFromComponents = pickCityFromComponents(details.address_components);
   const streetFromComponents = pickStreetFromComponents(details.address_components, parts.street || fullAddress);
   const photoReference = details.photos?.[0]?.photo_reference || selected.photoReference;
+  const name = (details.name || "").trim() || "Resultado";
+  const address = streetFromComponents || "Sin direccion";
+  const city = cityFromComponents || parts.city || "";
 
   return {
     externalPlaceId: placeId,
     provider: "google_places",
-    name: (details.name || "").trim() || "Resultado",
-    address: streetFromComponents || "Sin direccion",
-    city: cityFromComponents || parts.city || "",
+    name,
+    address,
+    city,
     latitude,
     longitude,
-    googleMapsUrl: buildGoogleMapsUrl(placeId),
+    googleMapsUrl: buildGoogleMapsUrl({
+      placeId,
+      name,
+      address,
+      city,
+      latitude,
+      longitude
+    }),
     businessStatus: (details.business_status || "").trim() || null,
     phoneNumber: (details.international_phone_number || details.formatted_phone_number || "").trim() || null,
     primaryType: details.types?.[0] || selected.types[0] || null,
@@ -185,15 +192,25 @@ function normalizePlaceFromDetails(
 function normalizePlaceFromNearby(result: GoogleNearbyResult, selected: NearbySelectionInput): GooglePlaceFeature {
   const rawAddress = (result.formatted_address || result.vicinity || "").trim();
   const parts = splitAddressParts(rawAddress);
+  const name = (result.name || "").trim() || "Resultado";
+  const address = parts.street || rawAddress || "Sin direccion";
+  const city = parts.city || "";
   return {
     externalPlaceId: selected.placeId,
     provider: "google_places",
-    name: (result.name || "").trim() || "Resultado",
-    address: parts.street || rawAddress || "Sin direccion",
-    city: parts.city || "",
+    name,
+    address,
+    city,
     latitude: selected.latitude,
     longitude: selected.longitude,
-    googleMapsUrl: buildGoogleMapsUrl(selected.placeId),
+    googleMapsUrl: buildGoogleMapsUrl({
+      placeId: selected.placeId,
+      name,
+      address,
+      city,
+      latitude: selected.latitude,
+      longitude: selected.longitude
+    }),
     businessStatus: (result.business_status || "").trim() || null,
     phoneNumber: null,
     primaryType: selected.types[0] || null,
@@ -204,15 +221,25 @@ function normalizePlaceFromNearby(result: GoogleNearbyResult, selected: NearbySe
 function normalizePlaceFromRecord(record: CandidateSourceRecord, selected: NearbySelectionInput): GooglePlaceFeature {
   const rawAddress = record.address;
   const parts = splitAddressParts(rawAddress);
+  const name = record.name || "Resultado";
+  const address = parts.street || rawAddress || "Sin direccion";
+  const city = parts.city || "";
   return {
     externalPlaceId: selected.placeId,
     provider: "google_places",
-    name: record.name || "Resultado",
-    address: parts.street || rawAddress || "Sin direccion",
-    city: parts.city || "",
+    name,
+    address,
+    city,
     latitude: selected.latitude,
     longitude: selected.longitude,
-    googleMapsUrl: buildGoogleMapsUrl(selected.placeId),
+    googleMapsUrl: buildGoogleMapsUrl({
+      placeId: selected.placeId,
+      name,
+      address,
+      city,
+      latitude: selected.latitude,
+      longitude: selected.longitude
+    }),
     businessStatus: record.businessStatus,
     phoneNumber: null,
     primaryType: selected.types[0] || null,

@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { normalizeGoogleMapsUrl } from "@/lib/map/googleMapsUrl";
 import type { PlaceProvider, PlaceSource } from "@/types/supabase";
 
 export type PersonalPlace = {
@@ -84,7 +85,14 @@ export async function getPersonalPlacesForUser(userId: string): Promise<Personal
     source: item.source && isPlaceSource(item.source) ? item.source : null,
     provider: item.provider && isPlaceProvider(item.provider) ? item.provider : null,
     externalPlaceId: item.external_place_id,
-    googleMapsUrl: item.google_maps_url,
+    googleMapsUrl: normalizeGoogleMapsUrl(item.google_maps_url, {
+      placeId: item.external_place_id,
+      name: item.name,
+      address: item.address,
+      city: item.city,
+      latitude: item.latitude,
+      longitude: item.longitude
+    }),
     businessStatus: item.business_status,
     phoneNumber: item.phone_number,
     imageUrl: item.image_url,

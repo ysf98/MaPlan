@@ -7,6 +7,7 @@ import {
   splitAddressParts,
   stripPostalCodes
 } from "@/lib/map/addressParsing";
+import { buildGoogleMapsUrl } from "@/lib/map/googleMapsUrl";
 import { googlePlacesSearchSchema } from "@/lib/validation/schemas";
 
 type GoogleTextSearchPlace = {
@@ -22,10 +23,6 @@ type GoogleTextSearchResponse = {
   results?: GoogleTextSearchPlace[];
   status?: string;
 };
-
-function buildGoogleMapsUrl(placeId: string): string {
-  return `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(placeId)}`;
-}
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -85,17 +82,26 @@ export async function POST(request: Request) {
       const parsedCity = extractCityFromFormattedAddress(fullAddress);
       const parsedProvince = extractProvinceFromFormattedAddress(fullAddress);
       const cleanAddress = stripPostalCodes(parts.street || fullAddress || "Sin direccion");
+      const name = (place.name || "").trim() || "Resultado";
+      const city = stripPostalCodes(parsedCity || parts.city || "");
       return [
         {
         externalPlaceId,
         provider: "google_places",
-        name: (place.name || "").trim() || "Resultado",
+        name,
         address: cleanAddress,
-        city: stripPostalCodes(parsedCity || parts.city || ""),
+        city,
         province: parsedProvince,
         latitude: lat,
         longitude: lng,
-        googleMapsUrl: buildGoogleMapsUrl(externalPlaceId),
+        googleMapsUrl: buildGoogleMapsUrl({
+          placeId: externalPlaceId,
+          name,
+          address: cleanAddress,
+          city,
+          latitude: lat,
+          longitude: lng
+        }),
         businessStatus: (place.business_status || "").trim() || null,
         imageUrl: null,
         phoneNumber: null,

@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canEditPlaces, isGroupMember } from "@/lib/groupPermissions";
 import { recordPlaceAddedGroupActivity } from "@/lib/groupActivity";
+import { normalizeGoogleMapsUrl } from "@/lib/map/googleMapsUrl";
 import { INITIAL_PLACE_CATEGORIES, type GroupPlace, type PlaceCategory } from "@/lib/places/shared";
 import type { PlaceProvider, PlaceSource, PlaceStatus } from "@/types/supabase";
 
@@ -179,7 +180,14 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
       source,
       provider,
       externalPlaceId: place.external_place_id,
-      googleMapsUrl: place.google_maps_url,
+      googleMapsUrl: normalizeGoogleMapsUrl(place.google_maps_url, {
+        placeId: place.external_place_id,
+        name: place.name,
+        address: place.address,
+        city: place.city,
+        latitude: place.latitude,
+        longitude: place.longitude
+      }),
       businessStatus: place.business_status,
       phoneNumber: place.phone_number,
       imageUrl: place.image_url,

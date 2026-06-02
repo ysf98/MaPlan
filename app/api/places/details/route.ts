@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import type { GooglePlaceFeature } from "@/lib/map/googlePlaces";
 import { pickCityFromComponents, pickStreetFromComponents, splitAddressParts } from "@/lib/map/addressParsing";
+import { buildGoogleMapsUrl } from "@/lib/map/googleMapsUrl";
 import { googlePlaceDetailsSchema } from "@/lib/validation/schemas";
 
 type GooglePlaceDetailsResult = {
@@ -25,10 +26,6 @@ type GooglePlaceDetailsResponse = {
   result?: GooglePlaceDetailsResult;
   status?: string;
 };
-
-function buildGoogleMapsUrl(placeId: string): string {
-  return `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(placeId)}`;
-}
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -80,16 +77,26 @@ export async function POST(request: Request) {
   const parts = splitAddressParts(fullAddress);
   const cityFromComponents = pickCityFromComponents(result.address_components);
   const streetFromComponents = pickStreetFromComponents(result.address_components, parts.street || fullAddress);
+  const name = (result.name || "").trim() || "Resultado";
+  const address = streetFromComponents || "Sin direccion";
+  const city = cityFromComponents || parts.city || "";
 
   const place: GooglePlaceFeature = {
     externalPlaceId: placeId,
     provider: "google_places",
-    name: (result.name || "").trim() || "Resultado",
-    address: streetFromComponents || "Sin direccion",
-    city: cityFromComponents || parts.city || "",
+    name,
+    address,
+    city,
     latitude,
     longitude,
-    googleMapsUrl: buildGoogleMapsUrl(placeId),
+    googleMapsUrl: buildGoogleMapsUrl({
+      placeId,
+      name,
+      address,
+      city,
+      latitude,
+      longitude
+    }),
     businessStatus: (result.business_status || "").trim() || null,
     phoneNumber: (result.international_phone_number || result.formatted_phone_number || "").trim() || null,
     primaryType: result.types?.[0] || null,
