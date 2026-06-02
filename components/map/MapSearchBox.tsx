@@ -80,7 +80,7 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
   return (
     <div className="relative">
       <input
-        className="h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+        className="h-11 w-full rounded-full border border-zinc-200 bg-white px-4 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
         onChange={(event) => {
           setSearchQuery(event.target.value);
           setIsResultsOpen(true);
@@ -94,7 +94,7 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
         value={searchQuery}
       />
       {isResultsOpen && extractSearchQueryFromLink(searchQuery).length >= 3 ? (
-        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-zinc-100 bg-white shadow-lg">
+        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-lg">
           {isSearching ? (
             <p className="px-3 py-2 text-xs text-zinc-500">Buscando...</p>
           ) : isSelecting ? (

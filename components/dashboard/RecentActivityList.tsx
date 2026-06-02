@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { GroupActivityFeedItem } from "@/lib/groupActivity";
 
 type RecentActivityListProps = {
@@ -36,26 +37,38 @@ export function RecentActivityList({ activityFeed }: RecentActivityListProps) {
 
   return (
     <ul className="space-y-5">
-      {activityFeed.slice(0, 5).map((event) => (
-        <li className="flex items-center gap-3" key={event.id}>
-          <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-rose-100 text-sm font-semibold text-[#c6283a] ring-4 ring-white">
-            {event.actorAvatarUrl ? (
-              <img alt={event.actorUsername || "Avatar"} className="h-full w-full object-cover" src={event.actorAvatarUrl} />
+      {activityFeed.map((event) => {
+        const content = (
+          <>
+            <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-rose-100 text-sm font-semibold text-[#c6283a] ring-4 ring-white">
+              {event.actorAvatarUrl ? (
+                <img alt={event.actorUsername || "Avatar"} className="h-full w-full object-cover" src={event.actorAvatarUrl} />
+              ) : (
+                getInitial(event.actorUsername)
+              )}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-zinc-800">{event.message}</p>
+              <p className="mt-0.5 truncate text-xs font-medium text-zinc-500">{formatRelativeTime(event.createdAt)}</p>
+            </div>
+          </>
+        );
+
+        return (
+          <li key={event.id}>
+            {event.href ? (
+              <Link
+                className="flex items-center gap-3 rounded-3xl border border-transparent px-2 py-2 transition hover:-translate-y-0.5 hover:border-rose-100 hover:bg-white hover:shadow-sm"
+                href={event.href}
+              >
+                {content}
+              </Link>
             ) : (
-              getInitial(event.actorUsername)
+              <div className="flex items-center gap-3 px-2 py-2">{content}</div>
             )}
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-zinc-800">
-              {event.actorUsername ? event.actorUsername : "Alguien"} guardo{" "}
-              <span className="text-[#c6283a]">{event.entityName || "un lugar"}</span>
-            </p>
-            <p className="mt-0.5 truncate text-xs font-medium text-zinc-500">
-              {formatRelativeTime(event.createdAt)} - {event.groupName}
-            </p>
-          </div>
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
 }

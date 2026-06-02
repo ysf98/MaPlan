@@ -14,6 +14,7 @@ export type GroupActivityFeedItem = {
   entityName: string | null;
   createdAt: string;
   message: string;
+  href: string | null;
 };
 
 export type GroupWithActivityItem = {
@@ -35,14 +36,28 @@ function buildActivityMessage(input: {
   eventType: GroupActivityEventType;
   entityName: string | null;
   groupName: string;
+  includeGroupName?: boolean;
 }): string {
   const actor = input.actorUsername ? `@${input.actorUsername}` : "Alguien";
+  const groupSuffix = input.includeGroupName ? ` en "${input.groupName}"` : "";
   if (input.eventType === "place_added") {
     const place = input.entityName ? `"${input.entityName}"` : "un lugar";
-    return `${actor} anadio ${place} en "${input.groupName}".`;
+    return `${actor} anadio ${place}${groupSuffix}.`;
   }
 
-  return `${actor} hizo una accion en "${input.groupName}".`;
+  return `${actor} hizo una accion${groupSuffix}.`;
+}
+
+function buildActivityHref(input: {
+  eventType: GroupActivityEventType;
+  groupId: string;
+  entityId: string | null;
+}): string | null {
+  if (input.eventType !== "place_added" || !input.entityId) {
+    return null;
+  }
+
+  return `/groups/${encodeURIComponent(input.groupId)}?tab=mapa&placeId=${encodeURIComponent(input.entityId)}`;
 }
 
 export async function recordPlaceAddedGroupActivity(input: RecordPlaceAddedInput): Promise<void> {
@@ -57,7 +72,11 @@ export async function recordPlaceAddedGroupActivity(input: RecordPlaceAddedInput
   });
 }
 
-export async function getGroupActivityFeedForUser(userId: string, limit = 20): Promise<GroupActivityFeedItem[]> {
+export async function getGroupActivityFeedForUser(
+  userId: string,
+  limit = 20,
+  options: { includeGroupName?: boolean; maxAgeDays?: number } = {}
+): Promise<GroupActivityFeedItem[]> {
   const supabase = await createSupabaseServerClient();
   const membershipResult = await supabase.from("group_members").select("group_id").eq("user_id", userId);
   const groupIds = (membershipResult.data || []).map((item) => item.group_id);
@@ -66,12 +85,18 @@ export async function getGroupActivityFeedForUser(userId: string, limit = 20): P
     return [];
   }
 
-  const eventsResult = await supabase
+  let eventsQuery = supabase
     .from("group_activity_events")
     .select("id, group_id, actor_user_id, event_type, entity_id, entity_name, created_at")
     .in("group_id", groupIds)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .order("created_at", { ascending: false });
+
+  if (typeof options.maxAgeDays === "number") {
+    const since = new Date(Date.now() - options.maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
+    eventsQuery = eventsQuery.gte("created_at", since);
+  }
+
+  const eventsResult = await eventsQuery.limit(limit);
 
   const events = eventsResult.data || [];
   if (events.length === 0) {
@@ -114,11 +139,17 @@ export async function getGroupActivityFeedForUser(userId: string, limit = 20): P
       entityId: event.entity_id,
       entityName: event.entity_name,
       createdAt: event.created_at,
+      href: buildActivityHref({
+        eventType,
+        groupId: event.group_id,
+        entityId: event.entity_id
+      }),
       message: buildActivityMessage({
         actorUsername,
         eventType,
         entityName: event.entity_name,
-        groupName
+        groupName,
+        includeGroupName: options.includeGroupName ?? true
       })
     };
   });

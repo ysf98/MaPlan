@@ -16,6 +16,7 @@ import type { GroupPlace } from "@/lib/places/shared";
 type GroupDetailViewProps = {
   group: GroupDetail;
   groupId: string;
+  initialSelectedPlaceId?: string | null;
   places: GroupPlace[];
   membersPreview: GroupMemberPreview[];
   totalMembersCount: number;
@@ -30,6 +31,7 @@ type GroupDetailViewProps = {
 export function GroupDetailView({
   group,
   groupId,
+  initialSelectedPlaceId = null,
   places,
   membersPreview,
   totalMembersCount,
@@ -48,7 +50,7 @@ export function GroupDetailView({
   const [isDragging, setIsDragging] = useState(false);
   const [dragAxis, setDragAxis] = useState<"x" | "y" | null>(null);
   const [lockSwipeGesture, setLockSwipeGesture] = useState(false);
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(initialSelectedPlaceId);
   const tabPanelRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [activePanelHeight, setActivePanelHeight] = useState<number | null>(null);
 

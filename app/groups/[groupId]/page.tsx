@@ -31,6 +31,8 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
 
   const [{ groupId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
   const activeTab = getGroupDetailTab(resolvedSearchParams?.tab);
+  const rawPlaceId = resolvedSearchParams?.placeId;
+  const initialSelectedPlaceId = Array.isArray(rawPlaceId) ? rawPlaceId[0] ?? null : rawPlaceId ?? null;
 
   const group = await getGroupDetailForUser(user.id, groupId);
 
@@ -44,7 +46,7 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
       getGroupMembersPreviewForUser(user.id, groupId),
       group.canInviteMembers ? getInvitableFriendsForGroup(user.id, groupId) : Promise.resolve([]),
       group.canInviteMembers ? getFriends(user.id) : Promise.resolve([]),
-      getGroupActivityFeedForUser(user.id, 50),
+      getGroupActivityFeedForUser(user.id, 50, { includeGroupName: false }),
       group.role === "owner" ? getPendingJoinRequestsForOwner(user.id, groupId) : Promise.resolve([]),
       group.role === "owner" ? getReviewedJoinRequestsForOwner(user.id, groupId) : Promise.resolve([])
     ]);
@@ -58,6 +60,7 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
         activityEvents={activityEvents}
         group={group}
         groupId={groupId}
+        initialSelectedPlaceId={initialSelectedPlaceId}
         invitableFriends={invitableFriends}
         membersPreview={membersPreviewResult.members}
         pendingJoinRequests={pendingJoinRequests}

@@ -8,10 +8,10 @@ type UserLocationButtonProps = {
 
 export function UserLocationButton({ error, isLocating, onClick }: UserLocationButtonProps) {
   return (
-    <div className="pointer-events-none absolute right-3 top-24 z-20 flex max-w-[220px] flex-col items-end gap-2" data-map-control="">
+    <div className="pointer-events-none absolute bottom-3 left-3 z-20 flex max-w-[240px] flex-col items-start gap-2" data-map-control="">
       <button
         aria-label="Mostrar mi ubicacion"
-        className="pointer-events-auto inline-flex h-10 items-center gap-2 rounded-full border border-rose-100 bg-white/95 px-3 text-xs font-semibold text-[#c6283a] shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-rose-50 active:translate-y-0 disabled:cursor-wait disabled:opacity-75"
+        className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-100 bg-white/95 text-[#c6283a] shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-rose-50 active:translate-y-0 disabled:cursor-wait disabled:opacity-75"
         data-map-control=""
         disabled={isLocating}
         onClick={onClick}
@@ -33,10 +33,9 @@ export function UserLocationButton({ error, isLocating, onClick }: UserLocationB
             <circle cx="12" cy="12" r="5" />
           </svg>
         )}
-        Mi ubicacion
       </button>
       {error ? (
-        <div className="pointer-events-auto rounded-2xl border border-rose-100 bg-white/95 px-3 py-2 text-right text-xs font-medium text-rose-700 shadow-sm backdrop-blur">
+        <div className="pointer-events-auto rounded-2xl border border-rose-100 bg-white/95 px-3 py-2 text-left text-xs font-medium text-rose-700 shadow-sm backdrop-blur">
           {error}
         </div>
       ) : null}
