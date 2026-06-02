@@ -23,6 +23,7 @@ import { MapMobileTabs } from "@/components/map/MapMobileTabs";
 import { MapPlaceCard } from "@/components/map/MapPlaceCard";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { UserLocationButton } from "@/components/map/UserLocationButton";
+import { resizeMapboxAfterLayout, useMapboxResizeOnVisible } from "@/components/map/useMapboxResize";
 import { useUserLocationMarker } from "@/components/map/useUserLocationMarker";
 import { formatDistance, getDistanceInMeters } from "@/lib/map/distance";
 import { getGooglePlaceDetails, getGooglePlaceNearby, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
@@ -124,6 +125,8 @@ export function GroupMap({
   const [placeNameState, placeNameFormAction, isPlaceNamePending] = useActionState(updatePlaceNameAction, placeNameInitialState);
   const wasAddPlacePendingRef = useRef(false);
   const userLocation = useUserLocationMarker(mapRef);
+  const isMapVisible = !activeMobileTab || activeMobileTab === "mapa";
+  useMapboxResizeOnVisible(mapRef, isMapVisible);
 
   const placesWithCoordinates = useMemo(() => places.filter((place) => hasValidCoordinates(place)), [places]);
   const filteredPlacesWithCoordinates = useMemo(
@@ -229,6 +232,12 @@ export function GroupMap({
     markerByPlaceIdRef.current.clear();
     setMapError(null);
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
+    const cleanupInitialResize = resizeMapboxAfterLayout(map);
+    let cleanupLoadResize: (() => void) | null = null;
+    const handleMapLoad = () => {
+      cleanupLoadResize = resizeMapboxAfterLayout(map);
+    };
+    map.once("load", handleMapLoad);
     const handleMapClick = async (event: mapboxgl.MapMouseEvent) => {
       if (skipNextMapClickRef.current) {
         skipNextMapClickRef.current = false;
@@ -340,6 +349,9 @@ export function GroupMap({
       selectedSearchMarkerRef.current?.remove();
       selectedSearchMarkerRef.current = null;
       markerByPlaceIdRef.current.clear();
+      cleanupInitialResize();
+      cleanupLoadResize?.();
+      map.off("load", handleMapLoad);
       map.remove();
       mapRef.current = null;
     };

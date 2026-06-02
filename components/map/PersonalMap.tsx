@@ -17,6 +17,7 @@ import { MapPlaceCard } from "@/components/map/MapPlaceCard";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { MapSearchBox } from "@/components/map/MapSearchBox";
 import { UserLocationButton } from "@/components/map/UserLocationButton";
+import { resizeMapboxAfterLayout, useMapboxResizeOnVisible } from "@/components/map/useMapboxResize";
 import { useUserLocationMarker } from "@/components/map/useUserLocationMarker";
 import { formatDistance, getDistanceInMeters } from "@/lib/map/distance";
 import { inferCategoryFromGoogleSignals } from "@/lib/map/placeClassification";
@@ -91,6 +92,8 @@ export function PersonalMap({
   );
   const wasAddPlacePendingRef = useRef(false);
   const userLocation = useUserLocationMarker(mapRef);
+  const isMapVisible = !activeMobileTab || activeMobileTab === "mapa";
+  useMapboxResizeOnVisible(mapRef, isMapVisible);
 
   const effectiveSelectedPlaceId = selectedPlaceId ?? localSelectedPlaceId;
   const selectedPlace = useMemo(() => places.find((place) => place.id === effectiveSelectedPlaceId) ?? null, [places, effectiveSelectedPlaceId]);
@@ -146,6 +149,12 @@ export function PersonalMap({
     mapRef.current = map;
     setMapError(null);
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
+    const cleanupInitialResize = resizeMapboxAfterLayout(map);
+    let cleanupLoadResize: (() => void) | null = null;
+    const handleMapLoad = () => {
+      cleanupLoadResize = resizeMapboxAfterLayout(map);
+    };
+    map.once("load", handleMapLoad);
     const handleMapClick = async (event: mapboxgl.MapMouseEvent) => {
       if (skipNextMapClickRef.current) {
         skipNextMapClickRef.current = false;
@@ -253,6 +262,9 @@ export function PersonalMap({
       }
       selectedSearchMarkerRef.current?.remove();
       selectedSearchMarkerRef.current = null;
+      cleanupInitialResize();
+      cleanupLoadResize?.();
+      map.off("load", handleMapLoad);
       map.remove();
       mapRef.current = null;
     };
