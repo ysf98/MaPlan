@@ -183,4 +183,106 @@ describe("places domain", () => {
     expect(result).toEqual({ error: null });
     expect(updateEqMock).toHaveBeenCalledWith("id", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");
   });
+
+  it("miembro actualiza su estado individual sin editar el lugar compartido", async () => {
+    isGroupMemberMock.mockResolvedValue(true);
+    const upsertMock = vi.fn(() => ({
+      select: vi.fn(() => ({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: "state-1" }, error: null })
+      }))
+    }));
+
+    createSupabaseServerClientMock.mockResolvedValue({
+      from: vi.fn((table: string) => {
+        if (table === "places") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: "place-1" }, error: null })
+                }))
+              }))
+            }))
+          };
+        }
+
+        if (table === "group_place_user_states") {
+          return {
+            upsert: upsertMock
+          };
+        }
+
+        throw new Error(`Unexpected table ${table}`);
+      })
+    });
+
+    const { updatePlaceStatus } = await import("@/lib/places");
+    const result = await updatePlaceStatus({
+      userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      groupId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      placeId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      status: "visited"
+    });
+
+    expect(result).toEqual({ error: null });
+    expect(upsertMock).toHaveBeenCalledWith(
+      {
+        place_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        user_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        status: "visited"
+      },
+      { onConflict: "place_id,user_id" }
+    );
+  });
+
+  it("miembro actualiza su favorito individual sin editar el lugar compartido", async () => {
+    isGroupMemberMock.mockResolvedValue(true);
+    const upsertMock = vi.fn(() => ({
+      select: vi.fn(() => ({
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: "state-1" }, error: null })
+      }))
+    }));
+
+    createSupabaseServerClientMock.mockResolvedValue({
+      from: vi.fn((table: string) => {
+        if (table === "places") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: "place-1" }, error: null })
+                }))
+              }))
+            }))
+          };
+        }
+
+        if (table === "group_place_user_states") {
+          return {
+            upsert: upsertMock
+          };
+        }
+
+        throw new Error(`Unexpected table ${table}`);
+      })
+    });
+
+    const { updatePlaceFavorite } = await import("@/lib/places");
+    const result = await updatePlaceFavorite({
+      userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      groupId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      placeId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      isFavorite: true
+    });
+
+    expect(result).toEqual({ error: null });
+    expect(upsertMock).toHaveBeenCalledWith(
+      {
+        place_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        user_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        is_favorite: true
+      },
+      { onConflict: "place_id,user_id" }
+    );
+  });
 });

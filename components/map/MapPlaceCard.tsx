@@ -30,6 +30,7 @@ type MapPlaceCardProps = {
   mode: MapPlaceCardMode;
   variant: MapPlaceCardVariant;
   capabilities: MapPlaceCardCapabilities;
+  distanceLabel?: string | null;
   error?: string | null;
   editNameValue?: string;
   isSaving?: boolean;
@@ -97,6 +98,7 @@ export function MapPlaceCard({
   mode,
   variant,
   capabilities,
+  distanceLabel,
   error,
   editNameValue,
   isSaving = false,
@@ -209,6 +211,11 @@ export function MapPlaceCard({
                 {place.address}
                 {place.city ? ` - ${place.city}` : ""}
               </p>
+              {distanceLabel ? (
+                <p className="mt-1 inline-flex rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-[#c6283a]">
+                  A {distanceLabel} de ti
+                </p>
+              ) : null}
             </div>
           </div>
 

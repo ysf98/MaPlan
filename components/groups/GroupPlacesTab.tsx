@@ -132,49 +132,45 @@ export function GroupPlacesTab({
 
           return (
             <div className="flex items-center gap-2">
-              {canEditPlaces ? (
-                <>
-                  <div data-card-control="" data-lock-swipe="" onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
-                    <button
-                      aria-label={displayed.favorite ? "Quitar favorito" : "Marcar favorito"}
-                      className={`flex h-9 w-9 items-center justify-center rounded-full border bg-white/95 shadow-sm transition hover:scale-105 ${
-                        displayed.favorite
-                          ? "border-rose-200 text-[#c6283a]"
-                          : "border-zinc-200 text-zinc-400"
-                      }`}
-                      disabled={isUpdatingFavorite}
-                      onClick={() => {
-                        const nextFavorite = !displayed.favorite;
-                        setOptimisticFavoriteById((current) => ({ ...current, [place.id]: nextFavorite }));
-                        sendFavorite(nextFavorite);
-                      }}
-                      type="button"
-                    >
-                      <svg className="h-4 w-4" fill={displayed.favorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path d="m12 21-1.5-1.35C5.4 15.08 2 12 2 8.24A4.24 4.24 0 0 1 6.24 4C8 4 9.7 4.81 10.8 6.09L12 7.5l1.2-1.41A5 5 0 0 1 17.76 4 4.24 4.24 0 0 1 22 8.24c0 3.76-3.4 6.84-8.5 11.41Z" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div data-card-control="" data-lock-swipe="" onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
-                    <button
-                      className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold shadow-sm transition hover:scale-105 ${
-                        displayed.visited
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-rose-50 text-[#c6283a]"
-                      }`}
-                      disabled={isUpdatingStatus}
-                      onClick={() => {
-                        const nextVisited = !displayed.visited;
-                        setOptimisticVisitedById((current) => ({ ...current, [place.id]: nextVisited }));
-                        sendStatus(nextVisited ? "visited" : "pending");
-                      }}
-                      type="button"
-                    >
-                      {displayed.visited ? "Visitado" : "Pendiente"}
-                    </button>
-                  </div>
-                </>
-              ) : null}
+              <div data-card-control="" data-lock-swipe="" onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
+                <button
+                  aria-label={displayed.favorite ? "Quitar favorito" : "Marcar favorito"}
+                  className={`flex h-9 w-9 items-center justify-center rounded-full border bg-white/95 shadow-sm transition hover:scale-105 ${
+                    displayed.favorite
+                      ? "border-rose-200 text-[#c6283a]"
+                      : "border-zinc-200 text-zinc-400"
+                  }`}
+                  disabled={isUpdatingFavorite}
+                  onClick={() => {
+                    const nextFavorite = !displayed.favorite;
+                    setOptimisticFavoriteById((current) => ({ ...current, [place.id]: nextFavorite }));
+                    sendFavorite(nextFavorite);
+                  }}
+                  type="button"
+                >
+                  <svg className="h-4 w-4" fill={displayed.favorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="m12 21-1.5-1.35C5.4 15.08 2 12 2 8.24A4.24 4.24 0 0 1 6.24 4C8 4 9.7 4.81 10.8 6.09L12 7.5l1.2-1.41A5 5 0 0 1 17.76 4 4.24 4.24 0 0 1 22 8.24c0 3.76-3.4 6.84-8.5 11.41Z" />
+                  </svg>
+                </button>
+              </div>
+              <div data-card-control="" data-lock-swipe="" onClick={(event) => event.stopPropagation()} onPointerDown={(event) => event.stopPropagation()}>
+                <button
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold shadow-sm transition hover:scale-105 ${
+                    displayed.visited
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-rose-50 text-[#c6283a]"
+                  }`}
+                  disabled={isUpdatingStatus}
+                  onClick={() => {
+                    const nextVisited = !displayed.visited;
+                    setOptimisticVisitedById((current) => ({ ...current, [place.id]: nextVisited }));
+                    sendStatus(nextVisited ? "visited" : "pending");
+                  }}
+                  type="button"
+                >
+                  {displayed.visited ? "Visitado" : "Pendiente"}
+                </button>
+              </div>
             </div>
           );
         }}

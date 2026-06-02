@@ -16,6 +16,7 @@ type MapSaveDraftCardProps = {
   state: SaveDraftActionState;
   isPending: boolean;
   canSave?: boolean;
+  distanceLabel?: string | null;
   formAction: (payload: FormData) => void;
   onCancel: () => void;
 };
@@ -27,6 +28,7 @@ export function MapSaveDraftCard({
   state,
   isPending,
   canSave = true,
+  distanceLabel,
   formAction,
   onCancel
 }: MapSaveDraftCardProps) {
@@ -73,6 +75,7 @@ export function MapSaveDraftCard({
           canOpenMaps: Boolean(draft.googleMapsUrl),
           canSave
         }}
+        distanceLabel={distanceLabel}
         editNameValue={name}
         error={state.error}
         isEditingPending={isPending}

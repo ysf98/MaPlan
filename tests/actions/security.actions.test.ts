@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const redirectMock = vi.fn();
 const getCurrentUserMock = vi.fn();
 const canEditPlacesMock = vi.fn();
+const isGroupMemberMock = vi.fn();
 const canReviewJoinRequestsMock = vi.fn();
 const isGroupOwnerMock = vi.fn();
 const canChangeGroupPrivacyMock = vi.fn();
@@ -23,7 +24,7 @@ vi.mock("@/lib/groupPermissions", () => ({
   canChangeGroupPrivacy: canChangeGroupPrivacyMock,
   canEditGroupDetails: canEditGroupDetailsMock,
   isGroupOwner: isGroupOwnerMock,
-  isGroupMember: vi.fn()
+  isGroupMember: isGroupMemberMock
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -52,8 +53,8 @@ describe("security checks", () => {
     expect(result).toEqual({ error: "No tienes permisos para editar lugares en este grupo." });
   });
 
-  it("miembro no puede editar si el grupo es privado", async () => {
-    canEditPlacesMock.mockResolvedValue(false);
+  it("usuario no miembro no puede actualizar su estado individual de lugar", async () => {
+    isGroupMemberMock.mockResolvedValue(false);
     const { updatePlaceStatus } = await import("@/lib/places");
 
     const result = await updatePlaceStatus({
@@ -63,7 +64,7 @@ describe("security checks", () => {
       status: "visited"
     });
 
-    expect(result).toEqual({ error: "No tienes permisos para editar lugares en este grupo." });
+    expect(result).toEqual({ error: "No tienes permisos para actualizar este lugar." });
   });
 
   it("no owner no puede revisar join requests", async () => {

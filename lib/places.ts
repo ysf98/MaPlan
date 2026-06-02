@@ -133,6 +133,23 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
     return [];
   }
 
+  const placeIds = places.map((place) => place.id);
+  const stateByPlaceId = new Map<string, { status: PlaceStatus; isFavorite: boolean }>();
+  if (placeIds.length > 0) {
+    const { data: userStates } = await supabase
+      .from("group_place_user_states")
+      .select("place_id, status, is_favorite")
+      .eq("user_id", userId)
+      .in("place_id", placeIds);
+
+    userStates?.forEach((state) => {
+      stateByPlaceId.set(state.place_id, {
+        status: isPlaceStatus(state.status) ? state.status : "pending",
+        isFavorite: Boolean(state.is_favorite)
+      });
+    });
+  }
+
   const categoryIds = places.map((place) => place.category_id).filter((value): value is string => Boolean(value));
   const categoryNameById = new Map<string, string>();
 
@@ -150,7 +167,7 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
     const categoryName = place.category_id ? categoryNameById.get(place.category_id) : null;
     const source = place.source && isPlaceSource(place.source) ? place.source : null;
     const provider = place.provider && isPlaceProvider(place.provider) ? place.provider : null;
-    const status = isPlaceStatus(place.status) ? place.status : "pending";
+    const userState = stateByPlaceId.get(place.id);
 
     return {
       id: place.id,
@@ -168,8 +185,8 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
       imageUrl: place.image_url,
       latitude: place.latitude,
       longitude: place.longitude,
-      status,
-      isFavorite: Boolean(place.is_favorite),
+      status: userState?.status ?? "pending",
+      isFavorite: userState?.isFavorite ?? false,
       category: normalizeCategory(categoryName),
       createdAt: place.created_at
     };
@@ -283,9 +300,9 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
 }
 
 export async function updatePlaceStatus(input: UpdatePlaceStatusInput): Promise<{ error: string | null }> {
-  const canEdit = await canEditPlaces(input.userId, input.groupId);
-  if (!canEdit) {
-    return { error: "No tienes permisos para editar lugares en este grupo." };
+  const hasAccess = await isGroupMember(input.userId, input.groupId);
+  if (!hasAccess) {
+    return { error: "No tienes permisos para actualizar este lugar." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -301,12 +318,16 @@ export async function updatePlaceStatus(input: UpdatePlaceStatusInput): Promise<
   }
 
   const { error: updateError } = await supabase
-    .from("places")
-    .update({
-      status: input.status,
-      updated_at: new Date().toISOString()
+    .from("group_place_user_states")
+    .upsert({
+      place_id: input.placeId,
+      user_id: input.userId,
+      status: input.status
+    }, {
+      onConflict: "place_id,user_id"
     })
-    .eq("id", input.placeId);
+    .select("id")
+    .maybeSingle();
 
   if (updateError) {
     return { error: updateError.message };
@@ -316,9 +337,9 @@ export async function updatePlaceStatus(input: UpdatePlaceStatusInput): Promise<
 }
 
 export async function updatePlaceFavorite(input: UpdatePlaceFavoriteInput): Promise<{ error: string | null }> {
-  const canEdit = await canEditPlaces(input.userId, input.groupId);
-  if (!canEdit) {
-    return { error: "No tienes permisos para editar lugares en este grupo." };
+  const hasAccess = await isGroupMember(input.userId, input.groupId);
+  if (!hasAccess) {
+    return { error: "No tienes permisos para actualizar este lugar." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -334,12 +355,16 @@ export async function updatePlaceFavorite(input: UpdatePlaceFavoriteInput): Prom
   }
 
   const { error: updateError } = await supabase
-    .from("places")
-    .update({
-      is_favorite: input.isFavorite,
-      updated_at: new Date().toISOString()
+    .from("group_place_user_states")
+    .upsert({
+      place_id: input.placeId,
+      user_id: input.userId,
+      is_favorite: input.isFavorite
+    }, {
+      onConflict: "place_id,user_id"
     })
-    .eq("id", input.placeId);
+    .select("id")
+    .maybeSingle();
 
   if (updateError) {
     return { error: updateError.message };

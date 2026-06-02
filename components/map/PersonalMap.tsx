@@ -15,6 +15,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { MapPlaceCard } from "@/components/map/MapPlaceCard";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { MapSearchBox } from "@/components/map/MapSearchBox";
+import { UserLocationButton } from "@/components/map/UserLocationButton";
+import { useUserLocationMarker } from "@/components/map/useUserLocationMarker";
+import { formatDistance, getDistanceInMeters } from "@/lib/map/distance";
 import { inferCategoryFromGoogleSignals } from "@/lib/map/placeClassification";
 import { getPlaceMarkerColorFromPlace } from "@/lib/map/placeMarkerColor";
 import {
@@ -75,9 +78,34 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
     updatePersonalPlaceNameInitialState
   );
   const wasAddPlacePendingRef = useRef(false);
+  const userLocation = useUserLocationMarker(mapRef);
 
   const effectiveSelectedPlaceId = selectedPlaceId ?? localSelectedPlaceId;
   const selectedPlace = useMemo(() => places.find((place) => place.id === effectiveSelectedPlaceId) ?? null, [places, effectiveSelectedPlaceId]);
+  const selectedPlaceDistanceLabel = useMemo(() => {
+    if (!userLocation.location || !selectedPlace) {
+      return null;
+    }
+
+    return formatDistance(
+      getDistanceInMeters(userLocation.location, {
+        latitude: selectedPlace.latitude,
+        longitude: selectedPlace.longitude
+      })
+    );
+  }, [selectedPlace, userLocation.location]);
+  const draftDistanceLabel = useMemo(() => {
+    if (!userLocation.location || !draftSelection) {
+      return null;
+    }
+
+    return formatDistance(
+      getDistanceInMeters(userLocation.location, {
+        latitude: draftSelection.latitude,
+        longitude: draftSelection.longitude
+      })
+    );
+  }, [draftSelection, userLocation.location]);
 
   useEffect(() => {
     if (wasAddPlacePendingRef.current && !isAddPlacePending && addPlaceState.success) {
@@ -257,6 +285,10 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
 
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
+      const targetElement = event.target as HTMLElement | null;
+      if (targetElement?.closest("[data-map-control]")) {
+        return;
+      }
       const isInsideMobile = Boolean(draftCardMobileRef.current && target && draftCardMobileRef.current.contains(target));
       const isInsideDesktop = Boolean(draftCardDesktopRef.current && target && draftCardDesktopRef.current.contains(target));
 
@@ -284,6 +316,10 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
 
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
+      const targetElement = event.target as HTMLElement | null;
+      if (targetElement?.closest("[data-map-control]")) {
+        return;
+      }
         if (selectedPlaceCardRef.current && target && selectedPlaceCardRef.current.contains(target)) {
           return;
         }
@@ -416,6 +452,8 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
           </div>
         </div>
 
+        <UserLocationButton error={userLocation.error} isLocating={userLocation.isLocating} onClick={userLocation.requestLocation} />
+
         {isResolvingLocation ? (
           <div className="pointer-events-none absolute bottom-5 left-1/2 z-20 -translate-x-1/2">
             <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/92 shadow-sm backdrop-blur">
@@ -489,6 +527,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
                   name: selectedPlace.name,
                   phoneNumber: selectedPlace.phoneNumber
                 }}
+                distanceLabel={selectedPlaceDistanceLabel}
                 variant="saved"
               />
             </div>
@@ -498,6 +537,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
           <div className="pointer-events-none absolute inset-x-3 bottom-3 z-40 md:hidden">
             <div className="pointer-events-auto" ref={draftCardMobileRef}>
               <MapSaveDraftCard
+                distanceLabel={draftDistanceLabel}
                 draft={draftSelection}
                 formAction={addPlaceFormAction}
                 isPending={isAddPlacePending}
@@ -519,6 +559,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
       {draftSelection ? (
         <div className="hidden md:block" ref={draftCardDesktopRef}>
           <MapSaveDraftCard
+            distanceLabel={draftDistanceLabel}
             draft={draftSelection}
             formAction={addPlaceFormAction}
             isPending={isAddPlacePending}

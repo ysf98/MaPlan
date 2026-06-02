@@ -75,4 +75,15 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("create policy group_activity_select_group_member");
     expect(sql).toContain("create policy group_activity_insert_editor_only");
   });
+
+  it("stores group place state per user with own-member RLS policies", () => {
+    const sql = readFileSync(resolve(process.cwd(), "supabase/group_place_user_states.sql"), "utf8");
+    expect(sql).toContain("create table if not exists public.group_place_user_states");
+    expect(sql).toContain("constraint group_place_user_states_place_user_unique unique (place_id, user_id)");
+    expect(sql).toContain("constraint group_place_user_states_status_check check (status in ('pending', 'visited'))");
+    expect(sql).toContain("create policy group_place_user_states_select_own_member");
+    expect(sql).toContain("create policy group_place_user_states_insert_own_member");
+    expect(sql).toContain("create policy group_place_user_states_update_own_member");
+    expect(sql).toContain("user_id = auth.uid()");
+  });
 });

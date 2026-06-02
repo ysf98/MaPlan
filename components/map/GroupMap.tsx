@@ -21,6 +21,9 @@ import {
 import { MapSearchBox } from "@/components/map/MapSearchBox";
 import { MapPlaceCard } from "@/components/map/MapPlaceCard";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
+import { UserLocationButton } from "@/components/map/UserLocationButton";
+import { useUserLocationMarker } from "@/components/map/useUserLocationMarker";
+import { formatDistance, getDistanceInMeters } from "@/lib/map/distance";
 import { getGooglePlaceDetails, getGooglePlaceNearby, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
 import { inferCategoryFromGoogleSignals } from "@/lib/map/placeClassification";
 import { getPlaceMarkerColorFromPlace } from "@/lib/map/placeMarkerColor";
@@ -69,20 +72,6 @@ function normalizePlaceMatchValue(value: string | null | undefined): string {
     .trim();
 }
 
-function getDistanceInMeters(first: { latitude: number; longitude: number }, second: { latitude: number; longitude: number }): number {
-  const earthRadiusInMeters = 6371000;
-  const toRadians = (value: number) => (value * Math.PI) / 180;
-  const deltaLat = toRadians(second.latitude - first.latitude);
-  const deltaLng = toRadians(second.longitude - first.longitude);
-  const firstLat = toRadians(first.latitude);
-  const secondLat = toRadians(second.latitude);
-  const haversine =
-    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-    Math.cos(firstLat) * Math.cos(secondLat) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
-
-  return earthRadiusInMeters * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
-}
-
 function placeMatchesMapFilter(place: GroupPlace, filter: PlaceMapFilter): boolean {
   if (filter === "pending") return place.status === "pending";
   if (filter === "visited") return place.status === "visited";
@@ -120,6 +109,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
   );
   const [placeNameState, placeNameFormAction, isPlaceNamePending] = useActionState(updatePlaceNameAction, placeNameInitialState);
   const wasAddPlacePendingRef = useRef(false);
+  const userLocation = useUserLocationMarker(mapRef);
 
   const placesWithCoordinates = useMemo(() => places.filter((place) => hasValidCoordinates(place)), [places]);
   const filteredPlacesWithCoordinates = useMemo(
@@ -131,6 +121,30 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
     () => placesWithCoordinates.find((place) => place.id === effectiveSelectedPlaceId) ?? null,
     [placesWithCoordinates, effectiveSelectedPlaceId]
   );
+  const selectedPlaceDistanceLabel = useMemo(() => {
+    if (!userLocation.location || !internalSelectedPlace || !hasValidCoordinates(internalSelectedPlace)) {
+      return null;
+    }
+
+    return formatDistance(
+      getDistanceInMeters(userLocation.location, {
+        latitude: internalSelectedPlace.latitude as number,
+        longitude: internalSelectedPlace.longitude as number
+      })
+    );
+  }, [internalSelectedPlace, userLocation.location]);
+  const draftDistanceLabel = useMemo(() => {
+    if (!userLocation.location || !draftSelection) {
+      return null;
+    }
+
+    return formatDistance(
+      getDistanceInMeters(userLocation.location, {
+        latitude: draftSelection.latitude,
+        longitude: draftSelection.longitude
+      })
+    );
+  }, [draftSelection, userLocation.location]);
   const findSavedPlaceFromGoogleResult = useCallback(
     (result: Pick<GooglePlaceSuggestion, "externalPlaceId" | "name" | "address" | "latitude" | "longitude">) => {
       const byExternalId = placesWithCoordinates.find(
@@ -391,6 +405,10 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
 
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
+      const targetElement = event.target as HTMLElement | null;
+      if (targetElement?.closest("[data-map-control]")) {
+        return;
+      }
       const isInsideMobile = Boolean(draftCardMobileRef.current && target && draftCardMobileRef.current.contains(target));
       const isInsideDesktop = Boolean(draftCardDesktopRef.current && target && draftCardDesktopRef.current.contains(target));
 
@@ -418,6 +436,10 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
 
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
+      const targetElement = event.target as HTMLElement | null;
+      if (targetElement?.closest("[data-map-control]")) {
+        return;
+      }
         if (selectedPlaceCardRef.current && target && selectedPlaceCardRef.current.contains(target)) {
           return;
         }
@@ -579,6 +601,8 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
           </div>
         </div>
 
+        <UserLocationButton error={userLocation.error} isLocating={userLocation.isLocating} onClick={userLocation.requestLocation} />
+
         {isResolvingLocation ? (
           <div className="pointer-events-none absolute bottom-5 left-1/2 z-20 -translate-x-1/2">
             <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/92 shadow-sm backdrop-blur">
@@ -606,7 +630,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
                   canCall: Boolean(internalSelectedPlace.phoneNumber),
                   canDelete: canEdit,
                   canEditName: canEdit,
-                  canFavorite: canEdit,
+                  canFavorite: true,
                   canOpenMaps: Boolean(internalSelectedPlace.googleMapsUrl),
                   canSave: false
                 }}
@@ -665,6 +689,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
                   name: internalSelectedPlace.name,
                   phoneNumber: internalSelectedPlace.phoneNumber
                 }}
+                distanceLabel={selectedPlaceDistanceLabel}
                 variant="saved"
               />
             </div>
@@ -675,6 +700,7 @@ export function GroupMap({ groupId, canEdit, places, selectedPlaceId = null, onS
             <div className="pointer-events-auto" ref={draftCardMobileRef}>
               <MapSaveDraftCard
                 canSave={canEdit}
+                distanceLabel={draftDistanceLabel}
                 draft={draftSelection}
                 formAction={addPlaceFormAction}
                 scopeIdName="groupId"
