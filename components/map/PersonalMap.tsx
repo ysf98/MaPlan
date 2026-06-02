@@ -12,7 +12,7 @@ import {
 } from "@/app/map/actions";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { MapBackButton } from "@/components/map/MapBackButton";
+import { MapMobileTabs } from "@/components/map/MapMobileTabs";
 import { MapPlaceCard } from "@/components/map/MapPlaceCard";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { MapSearchBox } from "@/components/map/MapSearchBox";
@@ -29,6 +29,7 @@ import {
 } from "@/lib/map/geocoding";
 import { getGooglePlaceDetails, getGooglePlaceNearby, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
 import type { PersonalPlace } from "@/lib/personalPlaces";
+import type { PersonalMapTab } from "@/lib/map/tabs";
 
 const addPersonalPlaceInitialState: AddPersonalPlaceActionState = {
   error: null,
@@ -47,9 +48,19 @@ type PersonalMapProps = {
   places: PersonalPlace[];
   selectedPlaceId?: string | null;
   onSelectPlace?: (placeId: string | null) => void;
+  mobileTabs?: Array<{ label: string; value: PersonalMapTab }>;
+  activeMobileTab?: PersonalMapTab;
+  onMobileTabChange?: (tab: PersonalMapTab) => void;
 };
 
-export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: PersonalMapProps) {
+export function PersonalMap({
+  places,
+  selectedPlaceId = null,
+  onSelectPlace,
+  mobileTabs,
+  activeMobileTab,
+  onMobileTabChange
+}: PersonalMapProps) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const mapStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE || "mapbox://styles/mapbox/standard";
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -418,25 +429,25 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
 
   return (
     <div className="space-y-3">
-      <div className="relative h-[100dvh] min-h-0 w-full overflow-hidden rounded-none border-0 bg-zinc-200/30 shadow-none sm:h-[500px] sm:rounded-[30px] sm:border sm:border-zinc-300/60">
+      <div className="relative h-[100svh] min-h-[100dvh] w-full overflow-hidden rounded-none border-0 bg-zinc-200/30 shadow-none sm:h-[500px] sm:min-h-0 sm:rounded-[30px] sm:border sm:border-zinc-300/60">
         <div className="h-full w-full" data-lock-swipe ref={mapContainerRef} />
         <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_center,transparent_0%,rgba(244,244,245,0.12)_100%)]" />
 
-        <div className="pointer-events-none absolute inset-x-4 top-4 z-20">
-          <div className="flex items-center gap-2">
-            <MapBackButton />
-            <div
-              className="pointer-events-auto min-w-0 flex-1"
-              onPointerDownCapture={(event) => event.stopPropagation()}
-              onTouchStartCapture={(event) => event.stopPropagation()}
-            >
-              <MapSearchBox
-                closeSignal={searchCloseSignal}
-                getMapContext={getMapContext}
-                onManualCreate={handleManualCreateFromSearch}
-                onSelectResult={handleSelectSearchResult}
-              />
-            </div>
+        <div className="pointer-events-none absolute inset-x-4 top-[calc(env(safe-area-inset-top)+12px)] z-20">
+          {mobileTabs && activeMobileTab && onMobileTabChange ? (
+            <MapMobileTabs activeValue={activeMobileTab} onChange={onMobileTabChange} tabs={mobileTabs} />
+          ) : null}
+          <div
+            className="pointer-events-auto mt-2 min-w-0 sm:mt-0"
+            onPointerDownCapture={(event) => event.stopPropagation()}
+            onTouchStartCapture={(event) => event.stopPropagation()}
+          >
+            <MapSearchBox
+              closeSignal={searchCloseSignal}
+              getMapContext={getMapContext}
+              onManualCreate={handleManualCreateFromSearch}
+              onSelectResult={handleSelectSearchResult}
+            />
           </div>
           <div
             className="pointer-events-auto mt-2 flex gap-2 overflow-x-auto pb-2 pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -473,7 +484,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
         ) : null}
 
         {resolveHint && !isResolvingLocation ? (
-          <div className="pointer-events-none absolute left-4 top-32 z-10">
+          <div className="pointer-events-none absolute left-4 top-44 z-10 sm:top-32">
             <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
               <p className="text-sm text-zinc-700">{resolveHint}</p>
             </Card>
@@ -481,7 +492,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
         ) : null}
 
         {selectedPlace ? (
-          <div className="pointer-events-none absolute inset-x-4 bottom-4 z-30">
+          <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-30 sm:bottom-4">
             <div className="pointer-events-auto" ref={selectedPlaceCardRef}>
               <MapPlaceCard
                 capabilities={{
@@ -541,7 +552,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
           </div>
         ) : null}
         {draftSelection ? (
-          <div className="pointer-events-none absolute inset-x-4 bottom-4 z-40 md:hidden">
+          <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-40 md:hidden">
             <div className="pointer-events-auto" ref={draftCardMobileRef}>
               <MapSaveDraftCard
                 distanceLabel={draftDistanceLabel}

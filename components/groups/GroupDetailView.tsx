@@ -230,8 +230,10 @@ export function GroupDetailView({
             <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[2] = node; }}>
               <GroupMapTab
                 canEditPlaces={group.canEditPlaces}
+                activeTab={currentTab}
                 groupId={groupId}
                 isImmersive={currentTab === "mapa"}
+                onTabChange={setCurrentTab}
                 onSelectPlace={setSelectedPlaceId}
                 places={places}
                 selectedPlaceId={selectedPlaceId}

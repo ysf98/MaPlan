@@ -1,5 +1,6 @@
 import { GroupMap } from "@/components/map/GroupMap";
 import { cn } from "@/lib/cn";
+import type { GroupDetailTab } from "@/lib/groups/tabs";
 import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupMapTabProps = {
@@ -9,7 +10,15 @@ type GroupMapTabProps = {
   selectedPlaceId: string | null;
   onSelectPlace: (placeId: string | null) => void;
   isImmersive?: boolean;
+  activeTab?: GroupDetailTab;
+  onTabChange?: (tab: GroupDetailTab) => void;
 };
+
+const groupMapTabs: Array<{ label: string; value: GroupDetailTab }> = [
+  { label: "Lugares", value: "lugares" },
+  { label: "Actividad", value: "actividad" },
+  { label: "Mapa", value: "mapa" }
+];
 
 export function GroupMapTab({
   groupId,
@@ -17,7 +26,9 @@ export function GroupMapTab({
   canEditPlaces,
   selectedPlaceId,
   onSelectPlace,
-  isImmersive = false
+  isImmersive = false,
+  activeTab,
+  onTabChange
 }: GroupMapTabProps) {
   return (
     <div
@@ -26,7 +37,16 @@ export function GroupMapTab({
         isImmersive && "max-sm:fixed max-sm:inset-0 max-sm:z-50 max-sm:overflow-hidden max-sm:rounded-none max-sm:border-0 max-sm:bg-zinc-950 max-sm:p-0"
       )}
     >
-      <GroupMap canEdit={canEditPlaces} groupId={groupId} onSelectPlace={onSelectPlace} places={places} selectedPlaceId={selectedPlaceId} />
+      <GroupMap
+        activeMobileTab={activeTab}
+        canEdit={canEditPlaces}
+        groupId={groupId}
+        mobileTabs={groupMapTabs}
+        onMobileTabChange={onTabChange}
+        onSelectPlace={onSelectPlace}
+        places={places}
+        selectedPlaceId={selectedPlaceId}
+      />
     </div>
   );
 }

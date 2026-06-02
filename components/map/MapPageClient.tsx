@@ -21,6 +21,11 @@ const deleteInitialState: DeletePersonalPlaceActionState = {
   success: false
 };
 
+const personalMapTabs: Array<{ label: string; value: PersonalMapTab }> = [
+  { label: "Lugares", value: "lugares" },
+  { label: "Mapa", value: "mapa" }
+];
+
 export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps) {
   const tabs = useMemo(() => ["lugares", "mapa"] as const, []);
   const [currentTab, setCurrentTab] = useState<PersonalMapTab>(activeTab);
@@ -236,7 +241,14 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
                 currentTab === "mapa" && "max-sm:fixed max-sm:inset-0 max-sm:z-50 max-sm:overflow-hidden max-sm:rounded-none max-sm:border-0 max-sm:bg-zinc-950 max-sm:p-0"
               )}
             >
-              <PersonalMap onSelectPlace={setSelectedPlaceId} places={personalPlaces} selectedPlaceId={selectedPlaceId} />
+              <PersonalMap
+                activeMobileTab={currentTab}
+                mobileTabs={personalMapTabs}
+                onMobileTabChange={setCurrentTab}
+                onSelectPlace={setSelectedPlaceId}
+                places={personalPlaces}
+                selectedPlaceId={selectedPlaceId}
+              />
             </div>
           </div>
         </div>
