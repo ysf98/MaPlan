@@ -417,10 +417,11 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
 
   return (
     <div className="space-y-3">
-      <div className="relative h-[500px] w-full overflow-hidden rounded-2xl border border-zinc-100">
+      <div className="relative h-[620px] min-h-[560px] w-full overflow-hidden rounded-[30px] border border-zinc-300/60 bg-zinc-200/30 shadow-[0_18px_42px_rgba(24,24,27,0.12)] sm:h-[500px] sm:min-h-0 sm:shadow-none">
         <div className="h-full w-full" data-lock-swipe ref={mapContainerRef} />
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_center,transparent_0%,rgba(244,244,245,0.12)_100%)]" />
 
-        <div className="pointer-events-none absolute inset-x-3 top-3 z-20">
+        <div className="pointer-events-none absolute inset-x-4 top-4 z-20">
           <div
             className="pointer-events-auto"
             onPointerDownCapture={(event) => event.stopPropagation()}
@@ -434,7 +435,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
             />
           </div>
           <div
-            className="pointer-events-auto mt-2 flex gap-2 overflow-x-auto pb-1"
+            className="pointer-events-auto mt-2 flex gap-2 overflow-x-auto pb-2 pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             onPointerDownCapture={(event) => event.stopPropagation()}
             onTouchStartCapture={(event) => event.stopPropagation()}
           >
@@ -442,8 +443,10 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
               <button
                 key={chip}
                 type="button"
-                className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${
-                  chip === "Todos" ? "bg-[#c6283a] text-white" : "bg-white/95 text-zinc-600 shadow"
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition hover:-translate-y-0.5 active:translate-y-0 ${
+                  chip === "Todos"
+                    ? "bg-[#c6283a] text-white shadow-[0_6px_14px_rgba(24,24,27,0.12)]"
+                    : "border border-zinc-200/80 bg-white/90 text-zinc-600 shadow-[0_6px_14px_rgba(24,24,27,0.10)] backdrop-blur-xl"
                 }`}
               >
                 {chip}
@@ -466,7 +469,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
         ) : null}
 
         {resolveHint && !isResolvingLocation ? (
-          <div className="pointer-events-none absolute left-3 top-24 z-10">
+          <div className="pointer-events-none absolute left-4 top-32 z-10">
             <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
               <p className="text-sm text-zinc-700">{resolveHint}</p>
             </Card>
@@ -474,7 +477,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
         ) : null}
 
         {selectedPlace ? (
-          <div className="pointer-events-none absolute inset-x-3 bottom-3 z-30">
+          <div className="pointer-events-none absolute inset-x-4 bottom-4 z-30">
             <div className="pointer-events-auto" ref={selectedPlaceCardRef}>
               <MapPlaceCard
                 capabilities={{
@@ -534,7 +537,7 @@ export function PersonalMap({ places, selectedPlaceId = null, onSelectPlace }: P
           </div>
         ) : null}
         {draftSelection ? (
-          <div className="pointer-events-none absolute inset-x-3 bottom-3 z-40 md:hidden">
+          <div className="pointer-events-none absolute inset-x-4 bottom-4 z-40 md:hidden">
             <div className="pointer-events-auto" ref={draftCardMobileRef}>
               <MapSaveDraftCard
                 distanceLabel={draftDistanceLabel}

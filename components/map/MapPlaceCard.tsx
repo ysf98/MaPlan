@@ -47,8 +47,8 @@ type MapPlaceCardProps = {
   onToggleFavorite?: () => void;
 };
 
-const iconActionClass = "flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-600 transition-transform duration-150 hover:scale-110 active:scale-95";
-const disabledIconActionClass = "flex flex-col items-center gap-1 text-[10px] font-medium text-zinc-400";
+const iconActionClass = "flex flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[10px] font-medium text-zinc-600 transition duration-150 hover:scale-110 hover:bg-rose-50 active:scale-95";
+const disabledIconActionClass = "flex flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[10px] font-medium text-zinc-400";
 
 function DirectionsIcon({ disabled = false }: { disabled?: boolean }) {
   return (
@@ -118,7 +118,7 @@ export function MapPlaceCard({
   const canCall = Boolean(capabilities.canCall && place.phoneNumber);
 
   return (
-    <Card className="pointer-events-auto mx-auto w-full max-w-[380px] rounded-2xl border-zinc-100 bg-white/95 p-1 shadow-xl backdrop-blur">
+    <Card className="pointer-events-auto mx-auto w-full max-w-[430px] rounded-[28px] border-rose-100/80 bg-[#fff8f7]/95 p-3 shadow-[0_-16px_40px_rgba(181,35,48,0.18)] backdrop-blur-xl sm:max-w-[380px] sm:rounded-2xl sm:p-1 sm:shadow-xl">
       {mode === "edit" ? (
         <PlaceNameEditor
           error={error}
@@ -132,11 +132,11 @@ export function MapPlaceCard({
         />
       ) : (
         <>
-          <div className="-mt-1 flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 sm:-mt-1">
             {onClose ? (
               <button
                 aria-label="Cerrar"
-                className="flex h-6 w-6 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-transform duration-150 hover:scale-110 hover:bg-zinc-50 active:scale-95"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-rose-100 bg-white/90 text-zinc-500 shadow-sm transition-transform duration-150 hover:scale-110 hover:bg-zinc-50 active:scale-95 sm:h-6 sm:w-6"
                 onClick={onClose}
                 type="button"
               >
@@ -146,13 +146,13 @@ export function MapPlaceCard({
                 </svg>
               </button>
             ) : (
-              <span className="h-6 w-6" />
+              <span className="h-8 w-8 sm:h-6 sm:w-6" />
             )}
 
             {variant === "draft" && capabilities.canSave ? (
               <button
                 aria-label="Guardar lugar"
-                className="group flex h-7 items-center justify-center rounded-full bg-[#c6283a] px-3 text-xs font-semibold text-white shadow transition hover:scale-105 hover:bg-[#b32033] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                className="group flex h-8 items-center justify-center rounded-full bg-[#c6283a] px-4 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(198,40,58,0.24)] transition hover:scale-105 hover:bg-[#b32033] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 sm:h-7 sm:px-3"
                 disabled={isSaving}
                 onClick={onSave}
                 type="button"
@@ -168,7 +168,7 @@ export function MapPlaceCard({
             {variant === "saved" && capabilities.canFavorite ? (
               <button
                 aria-label={place.isFavorite ? "Quitar favorito" : "Marcar favorito"}
-                className={`flex h-7 w-7 items-center justify-center rounded-full border transition-transform duration-150 hover:scale-110 active:scale-95 ${
+                className={`flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-transform duration-150 hover:scale-110 active:scale-95 sm:h-7 sm:w-7 ${
                   place.isFavorite ? "border-rose-200 bg-rose-50 text-[#c6283a]" : "border-zinc-200 bg-white text-zinc-500"
                 }`}
                 disabled={isFavoritePending}
@@ -184,7 +184,7 @@ export function MapPlaceCard({
             {variant === "saved" && capabilities.canDelete ? (
               <button
                 aria-label="Eliminar lugar"
-                className="flex h-7 items-center justify-center rounded-full border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-500 transition-transform duration-150 hover:scale-105 hover:border-rose-200 hover:bg-rose-50 hover:text-[#c6283a] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex h-8 items-center justify-center rounded-full border border-zinc-200 bg-white/90 px-4 text-xs font-semibold text-zinc-500 shadow-sm transition-transform duration-150 hover:scale-105 hover:border-rose-200 hover:bg-rose-50 hover:text-[#c6283a] active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 sm:h-7 sm:px-3"
                 disabled={isDeleting}
                 onClick={onDelete}
                 title="Eliminar lugar"
@@ -197,8 +197,8 @@ export function MapPlaceCard({
 
           {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
 
-          <div className="mt-1.5 flex items-start gap-2.5">
-            <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+          <div className="mt-3 flex items-start gap-3 sm:mt-1.5 sm:gap-2.5">
+            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-zinc-100 shadow-sm sm:h-[52px] sm:w-[52px] sm:rounded-xl sm:shadow-none">
               {place.imageUrl ? (
                 <img alt={place.name} className="h-full w-full object-cover" src={place.imageUrl} />
               ) : (
@@ -206,8 +206,8 @@ export function MapPlaceCard({
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-sm font-semibold leading-4 text-zinc-900">{place.name}</p>
-              <p className="mt-0.5 truncate text-[11px] text-zinc-500">
+              <p className="line-clamp-2 text-base font-bold leading-5 text-zinc-950 sm:text-sm sm:font-semibold sm:leading-4">{place.name}</p>
+              <p className="mt-1 truncate text-xs text-zinc-500 sm:mt-0.5 sm:text-[11px]">
                 {place.address}
                 {place.city ? ` - ${place.city}` : ""}
               </p>
@@ -219,7 +219,7 @@ export function MapPlaceCard({
             </div>
           </div>
 
-          <div className="mt-1.5 flex items-center justify-center gap-11 pt-0">
+          <div className="mt-3 flex items-center justify-center gap-10 border-t border-rose-100/70 pt-2 sm:mt-1.5 sm:gap-11 sm:border-t-0 sm:pt-0">
             {canOpenMaps ? (
               <a className={iconActionClass} href={place.googleMapsUrl ?? "#"} rel="noreferrer" target="_blank">
                 <DirectionsIcon />

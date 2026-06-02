@@ -225,7 +225,7 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
           </div>
 
           <div className="w-full shrink-0 px-1.5" ref={(node) => { tabPanelRefs.current[1] = node; }}>
-            <div className="rounded-3xl border border-zinc-100 bg-white p-3">
+            <div className="rounded-[32px] border border-zinc-400/60 bg-zinc-500/35 p-1 backdrop-blur-sm">
               <PersonalMap onSelectPlace={setSelectedPlaceId} places={personalPlaces} selectedPlaceId={selectedPlaceId} />
             </div>
           </div>

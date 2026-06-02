@@ -79,22 +79,28 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
 
   return (
     <div className="relative">
-      <input
-        className="h-11 w-full rounded-full border border-zinc-200 bg-white px-4 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
-        onChange={(event) => {
-          setSearchQuery(event.target.value);
-          setIsResultsOpen(true);
-        }}
-        onFocus={() => {
-          if (extractSearchQueryFromLink(searchQuery).length >= 3) {
+      <div className="flex h-12 items-center gap-2 rounded-full border border-rose-100/80 bg-white/90 px-4 shadow-[0_10px_28px_rgba(181,35,48,0.14)] backdrop-blur-xl transition focus-within:border-rose-200 focus-within:bg-white focus-within:ring-2 focus-within:ring-rose-100">
+        <svg className="h-4 w-4 shrink-0 text-[#8e706f]" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+        <input
+          className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium text-zinc-950 placeholder:text-zinc-400 focus:outline-none focus:ring-0"
+          onChange={(event) => {
+            setSearchQuery(event.target.value);
             setIsResultsOpen(true);
-          }
-        }}
-        placeholder="Buscar lugares cercanos o pegar un enlace de sitio"
-        value={searchQuery}
-      />
+          }}
+          onFocus={() => {
+            if (extractSearchQueryFromLink(searchQuery).length >= 3) {
+              setIsResultsOpen(true);
+            }
+          }}
+          placeholder="Buscar lugares cercanos o pegar un enlace de sitio"
+          value={searchQuery}
+        />
+      </div>
       {isResultsOpen && extractSearchQueryFromLink(searchQuery).length >= 3 ? (
-        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-lg">
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-[24px] border border-rose-100 bg-white/95 shadow-[0_16px_36px_rgba(181,35,48,0.16)] backdrop-blur-xl">
           {isSearching ? (
             <p className="px-3 py-2 text-xs text-zinc-500">Buscando...</p>
           ) : isSelecting ? (
