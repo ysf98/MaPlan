@@ -13,6 +13,8 @@ import {
   respondFriendRequestSchema,
   reviewJoinRequestSchema,
   sendFriendRequestSchema,
+  updatePersonalPlaceFavoriteSchema,
+  updatePersonalPlaceStatusSchema,
   updatePlaceLocationSchema,
   updatePlaceFavoriteSchema,
   updatePlaceStatusSchema
@@ -212,6 +214,49 @@ describe("updatePlaceFavoriteSchema", () => {
   it("rejects invalid favorite values", () => {
     const result = updatePlaceFavoriteSchema.safeParse({
       groupId: "11111111-1111-4111-8111-111111111111",
+      placeId: "22222222-2222-4222-8222-222222222222",
+      isFavorite: "yes"
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("updatePersonalPlaceStatusSchema", () => {
+  it("accepts allowed personal status values", () => {
+    const result = updatePersonalPlaceStatusSchema.safeParse({
+      placeId: "22222222-2222-4222-8222-222222222222",
+      status: "visited"
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid personal status", () => {
+    const result = updatePersonalPlaceStatusSchema.safeParse({
+      placeId: "22222222-2222-4222-8222-222222222222",
+      status: "favorite"
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("updatePersonalPlaceFavoriteSchema", () => {
+  it("accepts boolean-like personal favorite values", () => {
+    const result = updatePersonalPlaceFavoriteSchema.safeParse({
+      placeId: "22222222-2222-4222-8222-222222222222",
+      isFavorite: "true"
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isFavorite).toBe(true);
+    }
+  });
+
+  it("rejects invalid personal favorite values", () => {
+    const result = updatePersonalPlaceFavoriteSchema.safeParse({
       placeId: "22222222-2222-4222-8222-222222222222",
       isFavorite: "yes"
     });

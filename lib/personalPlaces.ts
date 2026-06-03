@@ -1,6 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizeGoogleMapsUrl } from "@/lib/map/googleMapsUrl";
-import type { PlaceProvider, PlaceSource } from "@/types/supabase";
+import type { PlaceProvider, PlaceSource, PlaceStatus } from "@/types/supabase";
 
 export type PersonalPlace = {
   id: string;
@@ -17,6 +17,8 @@ export type PersonalPlace = {
   businessStatus: string | null;
   phoneNumber: string | null;
   imageUrl?: string | null;
+  status: PlaceStatus;
+  isFavorite: boolean;
   latitude: number;
   longitude: number;
   createdAt: string;
@@ -52,6 +54,22 @@ type UpdatePersonalPlaceNameInput = {
   name: string;
 };
 
+type UpdatePersonalPlaceStatusInput = {
+  userId: string;
+  placeId: string;
+  status: PlaceStatus;
+};
+
+type UpdatePersonalPlaceFavoriteInput = {
+  userId: string;
+  placeId: string;
+  isFavorite: boolean;
+};
+
+function isPlaceStatus(value: string): value is PlaceStatus {
+  return value === "pending" || value === "visited";
+}
+
 function isPlaceSource(value: string): value is PlaceSource {
   return value === "manual" || value === "google_maps" || value === "tiktok" || value === "instagram" || value === "website";
 }
@@ -65,7 +83,7 @@ export async function getPersonalPlacesForUser(userId: string): Promise<Personal
   const { data, error } = await supabase
     .from("personal_places")
     .select(
-      "id, user_id, name, address, city, notes, category, source, provider, external_place_id, google_maps_url, business_status, phone_number, image_url, latitude, longitude, created_at, updated_at"
+      "id, user_id, name, address, city, notes, category, source, provider, external_place_id, google_maps_url, business_status, phone_number, image_url, status, is_favorite, latitude, longitude, created_at, updated_at"
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -96,6 +114,8 @@ export async function getPersonalPlacesForUser(userId: string): Promise<Personal
     businessStatus: item.business_status,
     phoneNumber: item.phone_number,
     imageUrl: item.image_url,
+    status: isPlaceStatus(item.status) ? item.status : "pending",
+    isFavorite: Boolean(item.is_favorite),
     latitude: item.latitude,
     longitude: item.longitude,
     createdAt: item.created_at,
@@ -163,6 +183,8 @@ export async function createPersonalPlace(input: CreatePersonalPlaceInput): Prom
     business_status: input.businessStatus?.trim() || null,
     phone_number: input.phoneNumber?.trim() || null,
     image_url: input.imageUrl?.trim() || null,
+    status: "pending",
+    is_favorite: false,
     latitude: input.latitude,
     longitude: input.longitude
   });
@@ -204,6 +226,52 @@ export async function updatePersonalPlaceName(input: UpdatePersonalPlaceNameInpu
 
   if (error) {
     return { error: error.message };
+  }
+
+  return { error: null };
+}
+
+export async function updatePersonalPlaceStatus(input: UpdatePersonalPlaceStatusInput): Promise<{ error: string | null }> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("personal_places")
+    .update({
+      status: input.status,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", input.placeId)
+    .eq("user_id", input.userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { error: error.message };
+  }
+  if (!data) {
+    return { error: "No se encontro el lugar." };
+  }
+
+  return { error: null };
+}
+
+export async function updatePersonalPlaceFavorite(input: UpdatePersonalPlaceFavoriteInput): Promise<{ error: string | null }> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("personal_places")
+    .update({
+      is_favorite: input.isFavorite,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", input.placeId)
+    .eq("user_id", input.userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { error: error.message };
+  }
+  if (!data) {
+    return { error: "No se encontro el lugar." };
   }
 
   return { error: null };

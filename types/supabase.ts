@@ -349,6 +349,7 @@ export type Database = {
           google_maps_url: string | null
           id: string
           image_url: string | null
+          is_favorite: boolean
           latitude: number
           longitude: number
           name: string
@@ -356,6 +357,7 @@ export type Database = {
           phone_number: string | null
           provider: string | null
           source: string | null
+          status: string
           updated_at: string
           user_id: string
         }
@@ -369,6 +371,7 @@ export type Database = {
           google_maps_url?: string | null
           id?: string
           image_url?: string | null
+          is_favorite?: boolean
           latitude: number
           longitude: number
           name: string
@@ -376,6 +379,7 @@ export type Database = {
           phone_number?: string | null
           provider?: string | null
           source?: string | null
+          status?: string
           updated_at?: string
           user_id: string
         }
@@ -389,6 +393,7 @@ export type Database = {
           google_maps_url?: string | null
           id?: string
           image_url?: string | null
+          is_favorite?: boolean
           latitude?: number
           longitude?: number
           name?: string
@@ -396,6 +401,7 @@ export type Database = {
           phone_number?: string | null
           provider?: string | null
           source?: string | null
+          status?: string
           updated_at?: string
           user_id?: string
         }
@@ -558,6 +564,7 @@ export type Database = {
         }[]
       }
       can_join_group_as_member: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
+      kick_group_member: { Args: { p_group_id: string; p_member_user_id: string }; Returns: undefined }
       can_manage_group_members: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
       is_group_creator: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
       is_group_member: { Args: { target_group_id: string }; Returns: boolean }

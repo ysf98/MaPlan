@@ -13,6 +13,18 @@ function isGroupPrivacy(value: string): value is GroupPrivacy {
   return value === "privado" || value === "abierto";
 }
 
+async function isGroupCreator(userId: string, groupId: string): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("groups")
+    .select("id")
+    .eq("id", groupId)
+    .eq("created_by", userId)
+    .maybeSingle();
+
+  return !error && Boolean(data);
+}
+
 export async function isGroupMember(userId: string, groupId: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
@@ -22,7 +34,11 @@ export async function isGroupMember(userId: string, groupId: string): Promise<bo
     .eq("group_id", groupId)
     .maybeSingle();
 
-  return !error && Boolean(data);
+  if (!error && data) {
+    return true;
+  }
+
+  return isGroupCreator(userId, groupId);
 }
 
 export async function isGroupOwner(userId: string, groupId: string): Promise<boolean> {
@@ -35,7 +51,11 @@ export async function isGroupOwner(userId: string, groupId: string): Promise<boo
     .eq("role", "owner")
     .maybeSingle();
 
-  return !error && Boolean(data);
+  if (!error && data) {
+    return true;
+  }
+
+  return isGroupCreator(userId, groupId);
 }
 
 export async function getGroupMembership(userId: string, groupId: string): Promise<GroupMembership | null> {
@@ -48,11 +68,11 @@ export async function getGroupMembership(userId: string, groupId: string): Promi
     .maybeSingle();
 
   if (error || !data) {
-    return null;
+    return (await isGroupCreator(userId, groupId)) ? { role: "owner" } : null;
   }
 
   if (!isGroupRole(data.role)) {
-    return null;
+    return (await isGroupCreator(userId, groupId)) ? { role: "owner" } : null;
   }
 
   return { role: data.role };

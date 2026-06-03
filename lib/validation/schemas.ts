@@ -300,6 +300,11 @@ export const updateGroupDetailsSchema = z.object({
     )
 });
 
+export const removeGroupMemberSchema = z.object({
+  groupId: uuidSchema,
+  memberUserId: uuidSchema
+});
+
 export const sendFriendRequestSchema = z.object({
   receiverId: uuidSchema
 });
@@ -365,6 +370,25 @@ export const updatePlaceFavoriteSchema = z.object({
     .transform((value) => value === "true")
 });
 
+export const updatePersonalPlaceStatusSchema = z.object({
+  placeId: uuidSchema,
+  status: z
+    .string()
+    .refine((value): value is (typeof PLACE_STATUS_VALUES)[number] => PLACE_STATUS_VALUES.includes(value as never), {
+      message: "Estado invalido."
+    })
+});
+
+export const updatePersonalPlaceFavoriteSchema = z.object({
+  placeId: uuidSchema,
+  isFavorite: z
+    .string()
+    .refine((value): value is "true" | "false" => value === "true" || value === "false", {
+      message: "Favorito invalido."
+    })
+    .transform((value) => value === "true")
+});
+
 export const googlePlacesNearbySchema = z.object({
   lat: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
   lng: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida."),
@@ -406,10 +430,13 @@ export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;
 export type CreatePersonalPlaceInput = z.infer<typeof createPersonalPlaceSchema>;
 export type UpdatePlaceStatusInput = z.infer<typeof updatePlaceStatusSchema>;
 export type UpdatePlaceFavoriteInput = z.infer<typeof updatePlaceFavoriteSchema>;
+export type UpdatePersonalPlaceStatusInput = z.infer<typeof updatePersonalPlaceStatusSchema>;
+export type UpdatePersonalPlaceFavoriteInput = z.infer<typeof updatePersonalPlaceFavoriteSchema>;
 export type UpdatePlaceLocationInput = z.infer<typeof updatePlaceLocationSchema>;
 export type ReviewJoinRequestInput = z.infer<typeof reviewJoinRequestSchema>;
 export type UpdateGroupSettingsInput = z.infer<typeof updateGroupSettingsSchema>;
 export type UpdateGroupDetailsInput = z.infer<typeof updateGroupDetailsSchema>;
+export type RemoveGroupMemberInput = z.infer<typeof removeGroupMemberSchema>;
 export type SendFriendRequestInput = z.infer<typeof sendFriendRequestSchema>;
 export type RespondFriendRequestInput = z.infer<typeof respondFriendRequestSchema>;
 export type RemoveFriendInput = z.infer<typeof removeFriendSchema>;

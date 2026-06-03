@@ -7,6 +7,7 @@ import { getFriends } from "@/lib/friends";
 import { getInvitableFriendsForGroup } from "@/lib/groupInvitations";
 import {
   getGroupDetailForUser,
+  getGroupMembersForUser,
   getGroupMembersPreviewForUser,
   getPendingJoinRequestsForOwner,
   getReviewedJoinRequestsForOwner
@@ -40,10 +41,11 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
     notFound();
   }
 
-  const [places, membersPreviewResult, invitableFriends, friends, activityFeed, pendingJoinRequests, reviewedJoinRequests] =
+  const [places, membersPreviewResult, allMembers, invitableFriends, friends, activityFeed, pendingJoinRequests, reviewedJoinRequests] =
     await Promise.all([
       getGroupPlacesForUser(user.id, groupId),
       getGroupMembersPreviewForUser(user.id, groupId),
+      getGroupMembersForUser(user.id, groupId),
       group.canInviteMembers ? getInvitableFriendsForGroup(user.id, groupId) : Promise.resolve([]),
       group.canInviteMembers ? getFriends(user.id) : Promise.resolve([]),
       getGroupActivityFeedForUser(user.id, 50, { includeGroupName: false }),
@@ -58,6 +60,8 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
       <GroupDetailView
         activeTab={activeTab}
         activityEvents={activityEvents}
+        allMembers={allMembers}
+        currentUserId={user.id}
         group={group}
         groupId={groupId}
         initialSelectedPlaceId={initialSelectedPlaceId}

@@ -520,6 +520,76 @@ $$;
 revoke execute on function public.get_group_members_with_profiles(uuid, integer) from public;
 grant execute on function public.get_group_members_with_profiles(uuid, integer) to authenticated;
 
+create or replace function public.kick_group_member(p_group_id uuid, p_member_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_owner_user_id uuid;
+  v_target_role text;
+begin
+  select g.created_by
+  into v_owner_user_id
+  from public.groups g
+  where g.id = p_group_id;
+
+  if v_owner_user_id is null then
+    raise exception 'Grupo invalido.';
+  end if;
+
+  if auth.uid() is null or not (
+    v_owner_user_id = auth.uid()
+    or exists (
+      select 1
+      from public.group_members gm
+      where gm.group_id = p_group_id
+        and gm.user_id = auth.uid()
+        and gm.role = 'owner'
+    )
+  ) then
+    raise exception 'Solo el administrador puede expulsar miembros.';
+  end if;
+
+  if p_member_user_id = v_owner_user_id then
+    raise exception 'No puedes expulsar al administrador del grupo.';
+  end if;
+
+  select gm.role
+  into v_target_role
+  from public.group_members gm
+  where gm.group_id = p_group_id
+    and gm.user_id = p_member_user_id
+  for update;
+
+  if v_target_role is null then
+    raise exception 'El miembro ya no pertenece al grupo.';
+  end if;
+
+  if v_target_role <> 'member' then
+    raise exception 'No puedes expulsar al administrador del grupo.';
+  end if;
+
+  delete from public.group_members
+  where group_id = p_group_id
+    and user_id = p_member_user_id;
+
+  delete from public.group_join_requests
+  where group_id = p_group_id
+    and user_id = p_member_user_id;
+
+  update public.group_invitations
+  set status = 'rejected', updated_at = now()
+  where group_id = p_group_id
+    and invited_user_id = p_member_user_id
+    and status = 'pending';
+end;
+$$;
+
+revoke execute on function public.kick_group_member(uuid, uuid) from public;
+grant execute on function public.kick_group_member(uuid, uuid) to authenticated;
+
 -- If invitations table exists, keep visibility for invited users on groups
 -- so invitation UIs can show group names (not only IDs) after re-running this file.
 do $$

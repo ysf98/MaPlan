@@ -3,12 +3,25 @@
 import { revalidatePath } from "next/cache";
 import { actionFailure, actionSuccess, INITIAL_ACTION_STATE, type ActionState } from "@/lib/actions/actionState";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
-import { createPersonalPlace, deletePersonalPlace, updatePersonalPlaceName } from "@/lib/personalPlaces";
-import { createPersonalPlaceSchema } from "@/lib/validation/schemas";
+import {
+  createPersonalPlace,
+  deletePersonalPlace,
+  updatePersonalPlaceFavorite,
+  updatePersonalPlaceName,
+  updatePersonalPlaceStatus
+} from "@/lib/personalPlaces";
+import {
+  createPersonalPlaceSchema,
+  updatePersonalPlaceFavoriteSchema,
+  updatePersonalPlaceStatusSchema
+} from "@/lib/validation/schemas";
+import type { PlaceStatus } from "@/types/supabase";
 
 export type AddPersonalPlaceActionState = ActionState;
 export type DeletePersonalPlaceActionState = ActionState;
 export type UpdatePersonalPlaceNameActionState = ActionState;
+export type UpdatePersonalPlaceStatusActionState = ActionState;
+export type UpdatePersonalPlaceFavoriteActionState = ActionState;
 
 export async function addPersonalPlaceAction(
   _previousState: AddPersonalPlaceActionState = INITIAL_ACTION_STATE,
@@ -89,6 +102,64 @@ export async function updatePersonalPlaceNameAction(
     userId: user.id,
     placeId,
     name
+  });
+
+  if (result.error) {
+    return actionFailure(result.error);
+  }
+
+  revalidatePath("/map");
+  return actionSuccess();
+}
+
+export async function updatePersonalPlaceStatusAction(
+  _previousState: UpdatePersonalPlaceStatusActionState = INITIAL_ACTION_STATE,
+  formData: FormData
+): Promise<UpdatePersonalPlaceStatusActionState> {
+  const user = await requireAuthenticatedUser("/map");
+
+  const parsedInput = updatePersonalPlaceStatusSchema.safeParse({
+    placeId: String(formData.get("placeId") || ""),
+    status: String(formData.get("status") || "")
+  });
+
+  if (!parsedInput.success) {
+    return actionFailure(getValidationErrorMessage(parsedInput.error));
+  }
+
+  const result = await updatePersonalPlaceStatus({
+    userId: user.id,
+    placeId: parsedInput.data.placeId,
+    status: parsedInput.data.status as PlaceStatus
+  });
+
+  if (result.error) {
+    return actionFailure(result.error);
+  }
+
+  revalidatePath("/map");
+  return actionSuccess();
+}
+
+export async function updatePersonalPlaceFavoriteAction(
+  _previousState: UpdatePersonalPlaceFavoriteActionState = INITIAL_ACTION_STATE,
+  formData: FormData
+): Promise<UpdatePersonalPlaceFavoriteActionState> {
+  const user = await requireAuthenticatedUser("/map");
+
+  const parsedInput = updatePersonalPlaceFavoriteSchema.safeParse({
+    placeId: String(formData.get("placeId") || ""),
+    isFavorite: String(formData.get("isFavorite") || "")
+  });
+
+  if (!parsedInput.success) {
+    return actionFailure(getValidationErrorMessage(parsedInput.error));
+  }
+
+  const result = await updatePersonalPlaceFavorite({
+    userId: user.id,
+    placeId: parsedInput.data.placeId,
+    isFavorite: parsedInput.data.isFavorite
   });
 
   if (result.error) {

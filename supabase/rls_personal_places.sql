@@ -13,9 +13,24 @@ create table if not exists public.personal_places (
   external_place_id text,
   google_maps_url text,
   business_status text,
+  status text not null default 'pending',
+  is_favorite boolean not null default false,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint personal_places_status_check check (status in ('pending', 'visited'))
 );
+
+alter table public.personal_places
+  add column if not exists status text not null default 'pending';
+
+alter table public.personal_places
+  add column if not exists is_favorite boolean not null default false;
+
+alter table public.personal_places
+  drop constraint if exists personal_places_status_check;
+
+alter table public.personal_places
+  add constraint personal_places_status_check check (status in ('pending', 'visited'));
 
 create index if not exists personal_places_user_id_idx on public.personal_places(user_id);
 create index if not exists personal_places_created_at_desc_idx on public.personal_places(created_at desc);

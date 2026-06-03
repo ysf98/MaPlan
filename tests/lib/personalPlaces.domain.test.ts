@@ -43,6 +43,12 @@ describe("personal places domain", () => {
 
     expect(result).toEqual({ error: null });
     expect(insertMock).toHaveBeenCalled();
+    expect(insertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "pending",
+        is_favorite: false
+      })
+    );
   });
 
   it("rechaza duplicado por provider + external_place_id", async () => {
@@ -92,5 +98,76 @@ describe("personal places domain", () => {
     expect(result).toEqual({ error: null });
     expect(eqIdMock).toHaveBeenCalledWith("id", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
     expect(eqUserIdMock).toHaveBeenCalledWith("user_id", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+  });
+
+  it("actualiza estado personal solo por user_id e id", async () => {
+    const maybeSingleMock = vi.fn().mockResolvedValue({ data: { id: "place-1" }, error: null });
+    const selectMock = vi.fn(() => ({ maybeSingle: maybeSingleMock }));
+    const eqUserIdMock = vi.fn(() => ({ select: selectMock }));
+    const eqIdMock = vi.fn(() => ({ eq: eqUserIdMock }));
+    const updateMock = vi.fn(() => ({ eq: eqIdMock }));
+    createSupabaseServerClientMock.mockResolvedValue({
+      from: vi.fn(() => ({
+        update: updateMock
+      }))
+    });
+
+    const { updatePersonalPlaceStatus } = await import("@/lib/personalPlaces");
+    const result = await updatePersonalPlaceStatus({
+      userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      placeId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      status: "visited"
+    });
+
+    expect(result).toEqual({ error: null });
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ status: "visited" }));
+    expect(eqIdMock).toHaveBeenCalledWith("id", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
+    expect(eqUserIdMock).toHaveBeenCalledWith("user_id", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+  });
+
+  it("actualiza favorito personal solo por user_id e id", async () => {
+    const maybeSingleMock = vi.fn().mockResolvedValue({ data: { id: "place-1" }, error: null });
+    const selectMock = vi.fn(() => ({ maybeSingle: maybeSingleMock }));
+    const eqUserIdMock = vi.fn(() => ({ select: selectMock }));
+    const eqIdMock = vi.fn(() => ({ eq: eqUserIdMock }));
+    const updateMock = vi.fn(() => ({ eq: eqIdMock }));
+    createSupabaseServerClientMock.mockResolvedValue({
+      from: vi.fn(() => ({
+        update: updateMock
+      }))
+    });
+
+    const { updatePersonalPlaceFavorite } = await import("@/lib/personalPlaces");
+    const result = await updatePersonalPlaceFavorite({
+      userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      placeId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      isFavorite: true
+    });
+
+    expect(result).toEqual({ error: null });
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ is_favorite: true }));
+    expect(eqIdMock).toHaveBeenCalledWith("id", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
+    expect(eqUserIdMock).toHaveBeenCalledWith("user_id", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+  });
+
+  it("devuelve error si el lugar personal no pertenece al usuario", async () => {
+    const maybeSingleMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    const selectMock = vi.fn(() => ({ maybeSingle: maybeSingleMock }));
+    const eqUserIdMock = vi.fn(() => ({ select: selectMock }));
+    const eqIdMock = vi.fn(() => ({ eq: eqUserIdMock }));
+    createSupabaseServerClientMock.mockResolvedValue({
+      from: vi.fn(() => ({
+        update: vi.fn(() => ({ eq: eqIdMock }))
+      }))
+    });
+
+    const { updatePersonalPlaceStatus } = await import("@/lib/personalPlaces");
+    const result = await updatePersonalPlaceStatus({
+      userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      placeId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      status: "visited"
+    });
+
+    expect(result).toEqual({ error: "No se encontro el lugar." });
   });
 });

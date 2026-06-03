@@ -5,10 +5,14 @@ import mapboxgl from "mapbox-gl";
 import {
   addPersonalPlaceAction,
   deletePersonalPlaceAction,
+  updatePersonalPlaceFavoriteAction,
   updatePersonalPlaceNameAction,
+  updatePersonalPlaceStatusAction,
   type AddPersonalPlaceActionState,
   type DeletePersonalPlaceActionState,
-  type UpdatePersonalPlaceNameActionState
+  type UpdatePersonalPlaceFavoriteActionState,
+  type UpdatePersonalPlaceNameActionState,
+  type UpdatePersonalPlaceStatusActionState
 } from "@/app/map/actions";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -44,6 +48,30 @@ const updatePersonalPlaceNameInitialState: UpdatePersonalPlaceNameActionState = 
   error: null,
   success: false
 };
+const updatePersonalPlaceStatusInitialState: UpdatePersonalPlaceStatusActionState = {
+  error: null,
+  success: false
+};
+const updatePersonalPlaceFavoriteInitialState: UpdatePersonalPlaceFavoriteActionState = {
+  error: null,
+  success: false
+};
+
+type PersonalPlaceMapFilter = "all" | "pending" | "visited" | "favorite";
+
+const placeFilterChips: Array<{ label: string; value: PersonalPlaceMapFilter }> = [
+  { label: "Todos", value: "all" },
+  { label: "Pendientes", value: "pending" },
+  { label: "Visitados", value: "visited" },
+  { label: "Favoritos", value: "favorite" }
+];
+
+function placeMatchesMapFilter(place: PersonalPlace, filter: PersonalPlaceMapFilter): boolean {
+  if (filter === "pending") return place.status === "pending";
+  if (filter === "visited") return place.status === "visited";
+  if (filter === "favorite") return place.isFavorite;
+  return true;
+}
 
 type PersonalMapProps = {
   places: PersonalPlace[];
@@ -70,6 +98,7 @@ export function PersonalMap({
   const draftCardMobileRef = useRef<HTMLDivElement | null>(null);
   const draftCardDesktopRef = useRef<HTMLDivElement | null>(null);
   const selectedSearchMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const markerByPlaceIdRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const skipNextMapClickRef = useRef(false);
   const pendingMapClickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -77,8 +106,10 @@ export function PersonalMap({
   const [resolveHint, setResolveHint] = useState<string | null>(null);
   const [draftSelection, setDraftSelection] = useState<MapDraftPlace | null>(null);
   const [searchCloseSignal, setSearchCloseSignal] = useState(0);
+  const [activePlaceFilter, setActivePlaceFilter] = useState<PersonalPlaceMapFilter>("all");
   const [localSelectedPlaceId, setLocalSelectedPlaceId] = useState<string | null>(null);
   const [isSelectedFavorite, setIsSelectedFavorite] = useState(false);
+  const [selectedPlaceStatus, setSelectedPlaceStatus] = useState<"pending" | "visited">("pending");
   const [isEditingSelectedPlace, setIsEditingSelectedPlace] = useState(false);
   const [selectedPlaceEditedName, setSelectedPlaceEditedName] = useState("");
   const [addPlaceState, addPlaceFormAction, isAddPlacePending] = useActionState(addPersonalPlaceAction, addPersonalPlaceInitialState);
@@ -90,11 +121,23 @@ export function PersonalMap({
     updatePersonalPlaceNameAction,
     updatePersonalPlaceNameInitialState
   );
+  const [updateStatusState, updateStatusFormAction, isUpdateStatusPending] = useActionState(
+    updatePersonalPlaceStatusAction,
+    updatePersonalPlaceStatusInitialState
+  );
+  const [updateFavoriteState, updateFavoriteFormAction, isUpdateFavoritePending] = useActionState(
+    updatePersonalPlaceFavoriteAction,
+    updatePersonalPlaceFavoriteInitialState
+  );
   const wasAddPlacePendingRef = useRef(false);
   const userLocation = useUserLocationMarker(mapRef);
   const isMapVisible = !activeMobileTab || activeMobileTab === "mapa";
   useMapboxResizeOnVisible(mapRef, mapContainerRef, isMapVisible);
 
+  const filteredPlaces = useMemo(
+    () => places.filter((place) => placeMatchesMapFilter(place, activePlaceFilter)),
+    [activePlaceFilter, places]
+  );
   const effectiveSelectedPlaceId = selectedPlaceId ?? localSelectedPlaceId;
   const selectedPlace = useMemo(() => places.find((place) => place.id === effectiveSelectedPlaceId) ?? null, [places, effectiveSelectedPlaceId]);
   const selectedPlaceDistanceLabel = useMemo(() => {
@@ -147,6 +190,7 @@ export function PersonalMap({
     });
 
     mapRef.current = map;
+    markerByPlaceIdRef.current.clear();
     setMapError(null);
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
     const cleanupInitialResize = resizeMapboxAfterLayout(map);
@@ -239,6 +283,7 @@ export function PersonalMap({
     const bounds = new mapboxgl.LngLatBounds();
     places.forEach((place) => {
       const marker = new mapboxgl.Marker({ color: getPlaceMarkerColorFromPlace(place) }).setLngLat([place.longitude, place.latitude]).addTo(map);
+      markerByPlaceIdRef.current.set(place.id, marker);
 
       marker.getElement().addEventListener("click", (event) => {
         event.stopPropagation();
@@ -262,6 +307,7 @@ export function PersonalMap({
       }
       selectedSearchMarkerRef.current?.remove();
       selectedSearchMarkerRef.current = null;
+      markerByPlaceIdRef.current.clear();
       cleanupInitialResize();
       cleanupLoadResize?.();
       map.off("load", handleMapLoad);
@@ -269,6 +315,41 @@ export function PersonalMap({
       mapRef.current = null;
     };
   }, [mapStyle, onSelectPlace, places, token]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+
+    const visiblePlaceIds = new Set(filteredPlaces.map((place) => place.id));
+    markerByPlaceIdRef.current.forEach((marker, placeId) => {
+      marker.getElement().style.display = visiblePlaceIds.has(placeId) ? "" : "none";
+    });
+
+    if (selectedPlace && !visiblePlaceIds.has(selectedPlace.id)) {
+      setLocalSelectedPlaceId(null);
+      onSelectPlace?.(null);
+    }
+
+    if (filteredPlaces.length === 1) {
+      const place = filteredPlaces[0];
+      map.flyTo({
+        center: [place.longitude, place.latitude],
+        zoom: Math.max(map.getZoom(), 13),
+        essential: true
+      });
+      return;
+    }
+
+    if (filteredPlaces.length > 1) {
+      const bounds = new mapboxgl.LngLatBounds();
+      filteredPlaces.forEach((place) => {
+        bounds.extend([place.longitude, place.latitude]);
+      });
+      map.fitBounds(bounds, { padding: 48, maxZoom: 13 });
+    }
+  }, [filteredPlaces, onSelectPlace, selectedPlace]);
 
   useEffect(() => {
     if (!selectedPlace || !mapRef.current) {
@@ -283,8 +364,12 @@ export function PersonalMap({
   }, [selectedPlace]);
 
   useEffect(() => {
-    setIsSelectedFavorite(false);
-  }, [selectedPlace?.id]);
+    setIsSelectedFavorite(Boolean(selectedPlace?.isFavorite));
+  }, [selectedPlace?.id, selectedPlace?.isFavorite]);
+
+  useEffect(() => {
+    setSelectedPlaceStatus(selectedPlace?.status ?? "pending");
+  }, [selectedPlace?.id, selectedPlace?.status]);
 
   useEffect(() => {
     setIsEditingSelectedPlace(false);
@@ -429,8 +514,6 @@ export function PersonalMap({
       center: center ? { lng: center.lng, lat: center.lat } : null
     };
   }, []);
-  const filterChips = ["Todos", "Pendientes", "Visitados", "Favoritos"];
-
   if (!token) {
     return <EmptyState description="Define NEXT_PUBLIC_MAPBOX_TOKEN para habilitar el mapa." title="Falta configurar Mapbox" />;
   }
@@ -466,17 +549,21 @@ export function PersonalMap({
             onPointerDownCapture={(event) => event.stopPropagation()}
             onTouchStartCapture={(event) => event.stopPropagation()}
           >
-            {filterChips.map((chip) => (
+            {placeFilterChips.map((chip) => (
               <button
-                key={chip}
+                aria-pressed={activePlaceFilter === chip.value}
+                key={chip.value}
+                onClick={() => {
+                  setActivePlaceFilter(chip.value);
+                }}
                 type="button"
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition hover:-translate-y-0.5 active:translate-y-0 ${
-                  chip === "Todos"
+                  activePlaceFilter === chip.value
                     ? "bg-[#c6283a] text-white shadow-[0_6px_14px_rgba(24,24,27,0.12)]"
                     : "border border-zinc-200/80 bg-white/90 text-zinc-600 shadow-[0_6px_14px_rgba(24,24,27,0.10)] backdrop-blur-xl"
                 }`}
               >
-                {chip}
+                {chip.label}
               </button>
             ))}
           </div>
@@ -512,13 +599,16 @@ export function PersonalMap({
                   canDelete: true,
                   canEditName: true,
                   canFavorite: true,
+                  canUpdateStatus: true,
                   canOpenMaps: Boolean(selectedPlace.googleMapsUrl),
                   canSave: false
                 }}
                 editNameValue={selectedPlaceEditedName}
-                error={isEditingSelectedPlace ? updatePlaceNameState.error : deletePlaceState.error}
+                error={isEditingSelectedPlace ? updatePlaceNameState.error : deletePlaceState.error || updateStatusState.error || updateFavoriteState.error}
                 isDeleting={isDeletePlacePending}
                 isEditingPending={isUpdatePlaceNamePending}
+                isFavoritePending={isUpdateFavoritePending}
+                isStatusPending={isUpdateStatusPending}
                 mode={isEditingSelectedPlace ? "edit" : "view"}
                 onClose={() => {
                   setLocalSelectedPlaceId(null);
@@ -547,7 +637,26 @@ export function PersonalMap({
                   });
                 }}
                 onEditStart={() => setIsEditingSelectedPlace(true)}
-                onToggleFavorite={() => setIsSelectedFavorite((value) => !value)}
+                onToggleFavorite={() => {
+                  const nextFavorite = !isSelectedFavorite;
+                  setIsSelectedFavorite(nextFavorite);
+                  const payload = new FormData();
+                  payload.set("placeId", selectedPlace.id);
+                  payload.set("isFavorite", String(nextFavorite));
+                  startTransition(() => {
+                    updateFavoriteFormAction(payload);
+                  });
+                }}
+                onToggleStatus={() => {
+                  const nextStatus = selectedPlaceStatus === "visited" ? "pending" : "visited";
+                  setSelectedPlaceStatus(nextStatus);
+                  const payload = new FormData();
+                  payload.set("placeId", selectedPlace.id);
+                  payload.set("status", nextStatus);
+                  startTransition(() => {
+                    updateStatusFormAction(payload);
+                  });
+                }}
                 place={{
                   address: selectedPlace.address,
                   city: selectedPlace.city,
@@ -555,7 +664,8 @@ export function PersonalMap({
                   imageUrl: selectedPlace.imageUrl,
                   isFavorite: isSelectedFavorite,
                   name: selectedPlace.name,
-                  phoneNumber: selectedPlace.phoneNumber
+                  phoneNumber: selectedPlace.phoneNumber,
+                  status: selectedPlaceStatus
                 }}
                 distanceLabel={selectedPlaceDistanceLabel}
                 variant="saved"

@@ -15,6 +15,8 @@ import type { GroupDetail, GroupJoinRequestItem, GroupMemberPreview } from "@/li
 import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupDetailViewProps = {
+  allMembers: GroupMemberPreview[];
+  currentUserId: string;
   group: GroupDetail;
   groupId: string;
   initialSelectedPlaceId?: string | null;
@@ -30,6 +32,8 @@ type GroupDetailViewProps = {
 };
 
 export function GroupDetailView({
+  allMembers,
+  currentUserId,
   group,
   groupId,
   initialSelectedPlaceId = null,
@@ -189,7 +193,14 @@ export function GroupDetailView({
             totalFriendsCount={totalFriendsCount}
           />
         </div>
-        <GroupOverviewHeader group={group} membersPreview={membersPreview} totalMembersCount={totalMembersCount} />
+        <GroupOverviewHeader
+          allMembers={allMembers}
+          canManageMembers={group.role === "owner"}
+          currentUserId={currentUserId}
+          group={group}
+          membersPreview={membersPreview}
+          totalMembersCount={totalMembersCount}
+        />
       </div>
 
       <div>

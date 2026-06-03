@@ -31,6 +31,58 @@ function hasTypedPolicies<T extends { privacy: string; join_policy: string }>(
   return isGroupPrivacy(group.privacy) && isGroupJoinPolicy(group.join_policy);
 }
 
+type GroupOwnerRecord = {
+  userId: string;
+  username: string | null;
+  avatarUrl: string | null;
+  role: "owner";
+};
+
+async function getGroupOwnerRecord(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  groupId: string
+): Promise<GroupOwnerRecord | null> {
+  const groupResult = await supabase.from("groups").select("created_by").eq("id", groupId).maybeSingle();
+  const ownerUserId = groupResult.data?.created_by;
+
+  if (groupResult.error || !ownerUserId) {
+    return null;
+  }
+
+  const ownerProfileResult = await supabase.from("profiles").select("username, avatar_url").eq("id", ownerUserId).maybeSingle();
+
+  return {
+    userId: ownerUserId,
+    username: ownerProfileResult.data?.username ?? null,
+    avatarUrl: ownerProfileResult.data?.avatar_url ?? null,
+    role: "owner"
+  };
+}
+
+function normalizeGroupMembers(
+  members: Array<{ user_id: string; username: string | null; avatar_url: string | null; role: string }>,
+  ownerRecord: GroupOwnerRecord | null
+): GroupMemberPreview[] {
+  const normalizedMembers = members.flatMap((member) =>
+    isGroupRole(member.role)
+      ? [
+          {
+            userId: member.user_id,
+            username: member.username ?? null,
+            avatarUrl: member.avatar_url ?? null,
+            role: member.role
+          }
+        ]
+      : []
+  );
+
+  if (!ownerRecord || normalizedMembers.some((member) => member.userId === ownerRecord.userId)) {
+    return normalizedMembers;
+  }
+
+  return [ownerRecord, ...normalizedMembers];
+}
+
 export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
   const supabase = await createSupabaseServerClient();
   const [membershipsResult, createdGroupsResult] = await Promise.all([
@@ -89,21 +141,9 @@ export async function getUserGroups(userId: string): Promise<GroupListItem[]> {
 
 export async function getGroupDetailForUser(userId: string, groupId: string): Promise<GroupDetail | null> {
   const supabase = await createSupabaseServerClient();
-  const membershipResult = await supabase
-    .from("group_members")
-    .select("role")
-    .eq("user_id", userId)
-    .eq("group_id", groupId)
-    .maybeSingle();
-  const { data: membership, error: membershipError } = membershipResult;
-
-  if (membershipError || !membership) {
-    return null;
-  }
-
   const groupResult = await supabase
     .from("groups")
-    .select("id, name, description, cover_image_url, join_code, created_at, privacy, join_policy")
+    .select("id, name, description, cover_image_url, join_code, created_at, privacy, join_policy, created_by")
     .eq("id", groupId)
     .maybeSingle();
   const { data: group, error: groupError } = groupResult;
@@ -111,11 +151,21 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
   if (groupError || !group) {
     return null;
   }
-  if (!isGroupRole(membership.role) || !isGroupPrivacy(group.privacy) || !isGroupJoinPolicy(group.join_policy)) {
+  const membershipResult = await supabase
+    .from("group_members")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("group_id", groupId)
+    .maybeSingle();
+  const membership = membershipResult.data;
+  const resolvedRole =
+    membership && isGroupRole(membership.role) ? membership.role : group.created_by === userId ? "owner" : null;
+
+  if (!resolvedRole || !isGroupPrivacy(group.privacy) || !isGroupJoinPolicy(group.join_policy)) {
     return null;
   }
 
-  const canEditByRole = membership.role === "owner";
+  const canEditByRole = resolvedRole === "owner";
   const canEditByPrivacy = group.privacy === "abierto";
   const canEditPlaces = canEditByRole || canEditByPrivacy;
   const canEditGroup = canEditByRole || canEditByPrivacy;
@@ -128,7 +178,7 @@ export async function getGroupDetailForUser(userId: string, groupId: string): Pr
     coverImageUrl: group.cover_image_url || getGroupCoverImageUrl(group.id),
     joinCode: group.join_code,
     createdAt: group.created_at,
-    role: membership.role,
+    role: resolvedRole,
     privacy: group.privacy,
     joinPolicy: group.join_policy,
     canEditPlaces,
@@ -263,6 +313,8 @@ export async function getReviewedJoinRequestsForOwner(userId: string, groupId: s
 
 export async function getGroupMembersPreviewForUser(userId: string, groupId: string): Promise<GroupMembersPreviewResult> {
   const supabase = await createSupabaseServerClient();
+  const ownerRecord = await getGroupOwnerRecord(supabase, groupId);
+  const isOwnerWithoutMembership = ownerRecord?.userId === userId;
   const membershipResult = await supabase
     .from("group_members")
     .select("id")
@@ -270,7 +322,7 @@ export async function getGroupMembersPreviewForUser(userId: string, groupId: str
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (membershipResult.error || !membershipResult.data) {
+  if ((membershipResult.error || !membershipResult.data) && !isOwnerWithoutMembership) {
     return { members: [], total: 0 };
   }
 
@@ -279,46 +331,48 @@ export async function getGroupMembersPreviewForUser(userId: string, groupId: str
     .from("group_members")
     .select("id", { count: "exact", head: true })
     .eq("group_id", groupId);
-  const total = countResult.count ?? 0;
+  const normalizedTotalBase = countResult.count ?? 0;
 
   if (!previewRpc.error) {
-    const members =
-      (previewRpc.data || []).flatMap((member) =>
-        isGroupRole(member.role)
-          ? [
-              {
-                userId: member.user_id,
-                username: member.username ?? null,
-                avatarUrl: member.avatar_url ?? null,
-                role: member.role
-              }
-            ]
-          : []
-      ) || [];
+    const members = normalizeGroupMembers(previewRpc.data || [], ownerRecord);
+    const total = ownerRecord && !members.some((member) => member.userId === ownerRecord.userId)
+      ? normalizedTotalBase + 1
+      : Math.max(normalizedTotalBase, members.length);
 
     return { members, total };
   }
 
-  const ownMemberResult = await supabase
-    .from("group_members")
-    .select("user_id, role")
-    .eq("group_id", groupId)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (ownMemberResult.error || !ownMemberResult.data) {
-    return { members: [], total };
+  if (ownerRecord?.userId === userId) {
+    return { members: [ownerRecord], total: Math.max(normalizedTotalBase, 1) };
   }
 
   const ownProfileResult = await supabase.from("profiles").select("id, username, avatar_url").eq("id", userId).maybeSingle();
   const ownProfile = ownProfileResult.data;
-  if (!isGroupRole(ownMemberResult.data.role)) {
-    return { members: [], total };
-  }
-  const ownMember = {
-    userId,
-    username: ownProfile?.username ?? null,
-    avatarUrl: ownProfile?.avatar_url ?? null,
-    role: ownMemberResult.data.role
+  return {
+    members: [{ userId, username: ownProfile?.username ?? null, avatarUrl: ownProfile?.avatar_url ?? null, role: "member" }],
+    total: normalizedTotalBase
   };
-  return { members: [ownMember], total };
+}
+
+export async function getGroupMembersForUser(userId: string, groupId: string): Promise<GroupMemberPreview[]> {
+  const supabase = await createSupabaseServerClient();
+  const ownerRecord = await getGroupOwnerRecord(supabase, groupId);
+  const isOwnerWithoutMembership = ownerRecord?.userId === userId;
+  const membershipResult = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if ((membershipResult.error || !membershipResult.data) && !isOwnerWithoutMembership) {
+    return [];
+  }
+
+  const membersRpc = await supabase.rpc("get_group_members_with_profiles", { p_group_id: groupId });
+  if (membersRpc.error) {
+    return ownerRecord?.userId === userId ? [ownerRecord] : [];
+  }
+
+  return normalizeGroupMembers(membersRpc.data || [], ownerRecord);
 }

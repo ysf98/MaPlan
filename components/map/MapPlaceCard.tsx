@@ -13,6 +13,7 @@ export type MapPlaceCardPlace = {
   imageUrl?: string | null;
   googleMapsUrl?: string | null;
   phoneNumber?: string | null;
+  status?: "pending" | "visited";
   isFavorite?: boolean;
 };
 
@@ -21,6 +22,7 @@ export type MapPlaceCardCapabilities = {
   canEditName?: boolean;
   canDelete?: boolean;
   canFavorite?: boolean;
+  canUpdateStatus?: boolean;
   canCall?: boolean;
   canOpenMaps?: boolean;
 };
@@ -36,6 +38,7 @@ type MapPlaceCardProps = {
   isSaving?: boolean;
   isDeleting?: boolean;
   isFavoritePending?: boolean;
+  isStatusPending?: boolean;
   isEditingPending?: boolean;
   onClose?: () => void;
   onSave?: () => void;
@@ -45,6 +48,7 @@ type MapPlaceCardProps = {
   onEditNameChange?: (value: string) => void;
   onDelete?: () => void;
   onToggleFavorite?: () => void;
+  onToggleStatus?: () => void;
 };
 
 const iconActionClass = "flex flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[10px] font-medium text-zinc-600 transition duration-150 hover:scale-110 hover:bg-rose-50 active:scale-95";
@@ -104,6 +108,7 @@ export function MapPlaceCard({
   isSaving = false,
   isDeleting = false,
   isFavoritePending = false,
+  isStatusPending = false,
   isEditingPending = false,
   onClose,
   onSave,
@@ -112,10 +117,12 @@ export function MapPlaceCard({
   onEditSave,
   onEditNameChange,
   onDelete,
-  onToggleFavorite
+  onToggleFavorite,
+  onToggleStatus
 }: MapPlaceCardProps) {
   const canOpenMaps = Boolean(capabilities.canOpenMaps && place.googleMapsUrl);
   const canCall = Boolean(capabilities.canCall && place.phoneNumber);
+  const statusLabel = place.status === "visited" ? "Visitado" : "Pendiente";
 
   return (
     <Card className="pointer-events-auto mx-auto w-full max-w-[430px] rounded-[28px] border-rose-100/80 bg-[#fff8f7]/95 p-3 shadow-[0_-16px_40px_rgba(181,35,48,0.18)] backdrop-blur-xl sm:max-w-[380px] sm:rounded-2xl sm:p-1 sm:shadow-xl">
@@ -178,6 +185,19 @@ export function MapPlaceCard({
                 <svg className="h-4 w-4" fill={place.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="m12 21-1.5-1.35C5.4 15.08 2 12 2 8.24A4.24 4.24 0 0 1 6.24 4C8 4 9.7 4.81 10.8 6.09L12 7.5l1.2-1.41A5 5 0 0 1 17.76 4 4.24 4.24 0 0 1 22 8.24c0 3.76-3.4 6.84-8.5 11.41Z" />
                 </svg>
+              </button>
+            ) : null}
+
+            {variant === "saved" && capabilities.canUpdateStatus ? (
+              <button
+                className={`flex h-8 items-center justify-center rounded-full px-3 text-xs font-semibold shadow-sm transition-transform duration-150 hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 sm:h-7 sm:px-2.5 ${
+                  place.status === "visited" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-[#c6283a]"
+                }`}
+                disabled={isStatusPending}
+                onClick={onToggleStatus}
+                type="button"
+              >
+                {statusLabel}
               </button>
             ) : null}
 

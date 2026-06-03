@@ -56,6 +56,9 @@ describe("RLS policies baseline", () => {
   it("includes strict owner-only policies for personal places", () => {
     const sql = readFileSync(resolve(process.cwd(), "supabase/rls_personal_places.sql"), "utf8");
     expect(sql).toContain("grant select, insert, update, delete on table public.personal_places to authenticated");
+    expect(sql).toContain("status text not null default 'pending'");
+    expect(sql).toContain("is_favorite boolean not null default false");
+    expect(sql).toContain("constraint personal_places_status_check check (status in ('pending', 'visited'))");
     expect(sql).toContain("create policy personal_places_select_own");
     expect(sql).toContain("create policy personal_places_insert_own");
     expect(sql).toContain("create policy personal_places_update_own");

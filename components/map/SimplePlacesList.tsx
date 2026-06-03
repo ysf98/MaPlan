@@ -88,7 +88,19 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
                 >
                   <div className="relative h-40 w-full overflow-hidden bg-zinc-100">
                     {place.imageUrl ? (
-                      <img alt={place.name} className="h-full w-full object-cover" src={place.imageUrl} />
+                      <>
+                        <img
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute inset-0 h-full w-full scale-125 object-cover object-center opacity-70 blur-xl"
+                          src={place.imageUrl}
+                        />
+                        <img
+                          alt={place.name}
+                          className="absolute inset-0 z-[1] h-full w-full object-cover object-center"
+                          src={place.imageUrl}
+                        />
+                      </>
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-xs font-medium text-zinc-500">Sin imagen</div>
                     )}

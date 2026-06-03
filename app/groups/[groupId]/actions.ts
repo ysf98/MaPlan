@@ -6,6 +6,7 @@ import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actio
 import { createPlace, deletePlace, updatePlaceFavorite, updatePlaceLocation, updatePlaceName, updatePlaceStatus } from "@/lib/places";
 import {
   createPlaceSchema,
+  removeGroupMemberSchema,
   reviewJoinRequestSchema,
   updateGroupDetailsSchema,
   updateGroupSettingsSchema,
@@ -71,6 +72,11 @@ export type DeletePlaceActionState = {
   success: boolean;
 };
 
+export type RemoveGroupMemberActionState = {
+  error: string | null;
+  success: boolean;
+};
+
 const ADD_PLACE_INITIAL_STATE: AddPlaceActionState = {
   error: null,
   success: false
@@ -121,6 +127,10 @@ const UPDATE_GROUP_DETAILS_INITIAL_STATE: UpdateGroupDetailsActionState = {
 };
 
 const DELETE_PLACE_INITIAL_STATE: DeletePlaceActionState = {
+  error: null,
+  success: false
+};
+const REMOVE_GROUP_MEMBER_INITIAL_STATE: RemoveGroupMemberActionState = {
   error: null,
   success: false
 };
@@ -570,4 +580,46 @@ export async function deleteGroupAction(
   revalidatePath("/groups");
   revalidatePath("/dashboard");
   redirect("/groups");
+}
+
+export async function removeGroupMemberAction(
+  _previousState: RemoveGroupMemberActionState = REMOVE_GROUP_MEMBER_INITIAL_STATE,
+  formData: FormData
+): Promise<RemoveGroupMemberActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const parsedInput = removeGroupMemberSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    memberUserId: String(formData.get("memberUserId") || "")
+  });
+
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
+  }
+
+  const { groupId, memberUserId } = parsedInput.data;
+  const owner = await isGroupOwner(user.id, groupId);
+
+  if (!owner) {
+    return { error: "Solo el administrador puede expulsar miembros.", success: false };
+  }
+
+  if (memberUserId === user.id) {
+    return { error: "No puedes expulsarte a ti mismo.", success: false };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const kickResult = await supabase.rpc("kick_group_member", {
+    p_group_id: groupId,
+    p_member_user_id: memberUserId
+  });
+
+  if (kickResult.error) {
+    return { error: kickResult.error.message, success: false };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/groups");
+  revalidatePath("/dashboard");
+  return { error: null, success: true };
 }

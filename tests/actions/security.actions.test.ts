@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const redirectMock = vi.fn();
+const revalidatePathMock = vi.fn();
 const getCurrentUserMock = vi.fn();
 const canEditPlacesMock = vi.fn();
 const isGroupMemberMock = vi.fn();
@@ -12,6 +13,10 @@ const createSupabaseServerClientMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   redirect: redirectMock
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: revalidatePathMock
 }));
 
 vi.mock("@/lib/auth/getCurrentUser", () => ({
@@ -112,6 +117,60 @@ describe("security checks", () => {
     const result = await deleteGroupAction({ error: null, success: false }, formData);
     expect(result).toEqual({
       error: "Solo el propietario puede eliminar este grupo.",
+      success: false
+    });
+  });
+
+  it("no owner no puede expulsar miembros", async () => {
+    getCurrentUserMock.mockResolvedValue({ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
+    isGroupOwnerMock.mockResolvedValue(false);
+    const { removeGroupMemberAction } = await import("@/app/groups/[groupId]/actions");
+
+    const formData = new FormData();
+    formData.set("groupId", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
+    formData.set("memberUserId", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+
+    const result = await removeGroupMemberAction({ error: null, success: false }, formData);
+    expect(result).toEqual({
+      error: "Solo el administrador puede expulsar miembros.",
+      success: false
+    });
+  });
+
+  it("owner puede expulsar miembro cuando la RPC confirma el borrado", async () => {
+    getCurrentUserMock.mockResolvedValue({ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
+    isGroupOwnerMock.mockResolvedValue(true);
+    createSupabaseServerClientMock.mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({ data: null, error: null })
+    });
+    const { removeGroupMemberAction } = await import("@/app/groups/[groupId]/actions");
+
+    const formData = new FormData();
+    formData.set("groupId", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
+    formData.set("memberUserId", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+
+    const result = await removeGroupMemberAction({ error: null, success: false }, formData);
+    expect(result).toEqual({
+      error: null,
+      success: true
+    });
+  });
+
+  it("owner recibe error si el miembro ya no pertenece al grupo", async () => {
+    getCurrentUserMock.mockResolvedValue({ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" });
+    isGroupOwnerMock.mockResolvedValue(true);
+    createSupabaseServerClientMock.mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: "El miembro ya no pertenece al grupo." } })
+    });
+    const { removeGroupMemberAction } = await import("@/app/groups/[groupId]/actions");
+
+    const formData = new FormData();
+    formData.set("groupId", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
+    formData.set("memberUserId", "cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+
+    const result = await removeGroupMemberAction({ error: null, success: false }, formData);
+    expect(result).toEqual({
+      error: "El miembro ya no pertenece al grupo.",
       success: false
     });
   });
