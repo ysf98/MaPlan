@@ -34,11 +34,28 @@ function createMembershipClient(role: "owner" | "member", privacy: "privado" | "
 
       if (table === "groups") {
         return {
-          select() {
+          select(columns: string) {
+            if (columns === "id") {
+              return {
+                eq() {
+                  return {
+                    eq() {
+                      return {
+                        maybeSingle: async () => ({
+                          data: null,
+                          error: null
+                        })
+                      };
+                    }
+                  };
+                }
+              };
+            }
+
             return {
               eq() {
                 return {
-                      maybeSingle: async () => ({
+                  maybeSingle: async () => ({
                     data: { privacy },
                     error: null
                   })
