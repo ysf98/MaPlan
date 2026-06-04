@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MaplanMinimalIcon } from "@/components/branding/MaplanMinimalIcon";
+import { BackButton } from "@/components/navigation/BackButton";
 import { APP_NAME, ROUTES } from "@/utils/constants";
 
 type DashboardHeaderProps = {
@@ -19,16 +20,7 @@ export function DashboardHeader({ avatarUrl, backHref, displayName, hasNotificat
       <div className="mx-auto grid h-16 w-full max-w-3xl grid-cols-3 items-center px-[20px]">
         <div className="flex min-w-24 justify-start">
           {backHref ? (
-            <Link
-              aria-label="Volver"
-              className="grid h-10 w-10 place-items-center rounded-full text-[rgb(var(--primary-strong))] transition hover:bg-[rgb(var(--surface-soft))]"
-              href={backHref}
-              prefetch={false}
-            >
-              <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                <path d="M15 6 9 12l6 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-              </svg>
-            </Link>
+            <BackButton fallbackHref={backHref} />
           ) : (
             <ProfileLink avatarUrl={avatarUrl} displayName={displayName} />
           )}

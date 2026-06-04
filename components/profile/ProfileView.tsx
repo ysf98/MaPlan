@@ -1,12 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { updateProfileAction, type UpdateProfileActionState } from "@/app/profile/actions";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import type { ProfileAchievement, ProfileAchievementId } from "@/lib/profileAchievements";
+import { ROUTES } from "@/utils/constants";
 
 type ProfileViewProps = {
+  achievements: ProfileAchievement[];
   initialAvatarUrl: string | null;
   initialFullName: string;
   handle: string;
@@ -24,20 +28,70 @@ type ProfileViewProps = {
 
 const initialState: UpdateProfileActionState = { error: null, success: false };
 
+const achievementStyles: Record<ProfileAchievementId, { bg: string; text: string; bar: string }> = {
+  cartographer: {
+    bg: "bg-rose-50",
+    text: "text-[#c6283a]",
+    bar: "bg-[#c6283a]"
+  },
+  gourmet: {
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    bar: "bg-amber-500"
+  },
+  naturalist: {
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    bar: "bg-emerald-500"
+  },
+  athlete: {
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+    bar: "bg-blue-500"
+  }
+};
+
 function getInitial(name: string): string {
   return name.trim().charAt(0).toUpperCase() || "U";
 }
 
-function StatCard({ label, value, valueClassName }: { label: string; value: number; valueClassName: string }) {
+function StatCard({ href, label, value, valueClassName }: { href: string; label: string; value: number; valueClassName: string }) {
   return (
-    <div className="rounded-2xl border border-rose-100 bg-rose-50/55 px-3 py-4 text-center">
+    <Link className="rounded-2xl border border-rose-100 bg-rose-50/55 px-3 py-4 text-center transition hover:-translate-y-0.5 hover:border-rose-200 hover:bg-rose-50" href={href}>
       <p className={`text-3xl font-bold leading-none ${valueClassName}`}>{value}</p>
       <p className="mt-1 text-xs font-medium text-zinc-600">{label}</p>
-    </div>
+    </Link>
   );
 }
 
-export function ProfileView({ initialAvatarUrl, initialFullName, handle, quickLists, stats }: ProfileViewProps) {
+function AchievementCard({ achievement }: { achievement: ProfileAchievement }) {
+  const style = achievementStyles[achievement.id];
+  const isEmpty = achievement.count === 0;
+
+  return (
+    <article className={`rounded-2xl px-3 py-3 ${style.bg} ${isEmpty ? "opacity-60" : ""}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className={`text-xl font-bold leading-none ${style.text}`}>{achievement.iconLetter}</p>
+          <p className="mt-1 truncate text-sm font-bold text-zinc-900">{achievement.title}</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-white/80 px-2 py-1 text-[10px] font-bold text-zinc-600">
+          Nivel {achievement.level}
+        </span>
+      </div>
+      <p className="mt-2 truncate text-[11px] font-medium text-zinc-500">{achievement.description}</p>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/80">
+        <div className={`h-full rounded-full ${style.bar}`} style={{ width: `${achievement.progressPercent}%` }} />
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2 text-[11px] font-semibold text-zinc-600">
+        <span>{achievement.count} lugares</span>
+        <span>{achievement.nextTarget ? `${achievement.count}/${achievement.nextTarget}` : "Maximo"}</span>
+      </div>
+    </article>
+  );
+}
+
+export function ProfileView({ achievements, initialAvatarUrl, initialFullName, handle, quickLists, stats }: ProfileViewProps) {
   const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [avatarValue, setAvatarValue] = useState(initialAvatarUrl || "");
@@ -53,9 +107,9 @@ export function ProfileView({ initialAvatarUrl, initialFullName, handle, quickLi
 
   const coverStats = useMemo(
     () => [
-      { label: "Lugares", value: stats.places, valueClassName: "text-[#c6283a]" },
-      { label: "Grupos", value: stats.groups, valueClassName: "text-[#1d4ed8]" },
-      { label: "Favoritos", value: stats.favorites, valueClassName: "text-[#15803d]" }
+      { href: `${ROUTES.profilePlaces}?filter=all`, label: "Lugares", value: stats.places, valueClassName: "text-[#c6283a]" },
+      { href: ROUTES.groups, label: "Grupos", value: stats.groups, valueClassName: "text-[#1d4ed8]" },
+      { href: `${ROUTES.profilePlaces}?filter=favorites`, label: "Favoritos", value: stats.favorites, valueClassName: "text-[#15803d]" }
     ],
     [stats.favorites, stats.groups, stats.places]
   );
@@ -111,60 +165,53 @@ export function ProfileView({ initialAvatarUrl, initialFullName, handle, quickLi
 
       <div className="grid grid-cols-3 gap-3">
         {coverStats.map((item) => (
-          <StatCard key={item.label} label={item.label} value={item.value} valueClassName={item.valueClassName} />
+          <StatCard href={item.href} key={item.label} label={item.label} value={item.value} valueClassName={item.valueClassName} />
         ))}
       </div>
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight text-zinc-950">Mis Listas Rapidas</h2>
-          <span className="text-sm font-medium text-[#c6283a]">Ver todas</span>
+          <Link className="text-sm font-medium text-[#c6283a] transition hover:text-[#a91f31]" href={`${ROUTES.profilePlaces}?filter=all`}>
+            Ver todas
+          </Link>
         </div>
 
-        <article className="relative overflow-hidden rounded-3xl border border-zinc-100 p-5 text-white shadow-sm">
+        <Link className="relative block overflow-hidden rounded-3xl border border-zinc-100 p-5 text-white shadow-sm transition hover:-translate-y-0.5" href={`${ROUTES.profilePlaces}?filter=favorites`}>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.25),rgba(0,0,0,0)_42%),linear-gradient(130deg,#2f0b0d,#871827_55%,#ce3b43)]" />
           <div className="absolute inset-0 bg-black/20" />
           <div className="relative">
             <p className="text-2xl font-bold">Favoritos</p>
             <p className="text-sm text-white/90">{quickLists.favorites} lugares seleccionados</p>
           </div>
-        </article>
+        </Link>
 
         <div className="grid grid-cols-2 gap-3">
-          <article className="relative overflow-hidden rounded-3xl border border-zinc-100 p-4 text-white shadow-sm">
+          <Link className="relative overflow-hidden rounded-3xl border border-zinc-100 p-4 text-white shadow-sm transition hover:-translate-y-0.5" href={`${ROUTES.profilePlaces}?filter=pending`}>
             <div className="absolute inset-0 bg-[linear-gradient(145deg,#222b61,#3b82f6_45%,#e2e8f0)]" />
             <div className="absolute inset-0 bg-black/25" />
             <div className="relative">
               <p className="text-lg font-bold">Por visitar</p>
               <p className="text-xs text-white/90">{quickLists.toVisit} pendientes</p>
             </div>
-          </article>
-          <article className="relative overflow-hidden rounded-3xl border border-zinc-100 p-4 text-white shadow-sm">
+          </Link>
+          <Link className="relative overflow-hidden rounded-3xl border border-zinc-100 p-4 text-white shadow-sm transition hover:-translate-y-0.5" href={`${ROUTES.profilePlaces}?filter=visited`}>
             <div className="absolute inset-0 bg-[linear-gradient(145deg,#485563,#29323c_55%,#7f8c8d)]" />
             <div className="absolute inset-0 bg-black/25" />
             <div className="relative">
               <p className="text-lg font-bold">Historial</p>
               <p className="text-xs text-white/90">{quickLists.history} visitados</p>
             </div>
-          </article>
+          </Link>
         </div>
       </section>
 
       <Card className="rounded-3xl border-rose-100 bg-rose-50/45">
         <h2 className="text-2xl font-bold tracking-tight text-zinc-950">Logros de Explorador</h2>
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <div className="rounded-2xl bg-white/80 px-2 py-3 text-center">
-            <p className="text-xl font-bold text-[#c6283a]">C</p>
-            <p className="mt-1 text-xs font-semibold text-zinc-700">Cartografo</p>
-          </div>
-          <div className="rounded-2xl bg-zinc-100/80 px-2 py-3 text-center opacity-55">
-            <p className="text-xl font-bold text-zinc-500">G</p>
-            <p className="mt-1 text-xs font-semibold text-zinc-700">Gourmet</p>
-          </div>
-          <div className="rounded-2xl bg-emerald-100/80 px-2 py-3 text-center">
-            <p className="text-xl font-bold text-emerald-700">N</p>
-            <p className="mt-1 text-xs font-semibold text-zinc-700">Naturalista</p>
-          </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {achievements.map((achievement) => (
+            <AchievementCard achievement={achievement} key={achievement.id} />
+          ))}
         </div>
       </Card>
 
