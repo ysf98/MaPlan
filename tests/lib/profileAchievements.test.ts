@@ -24,7 +24,7 @@ function place(input: Partial<ProfilePlaceItem> & { id: string; name: string }):
 }
 
 describe("profile achievements", () => {
-  it("calcula niveles por rangos", () => {
+  it("calcula niveles por rangos base", () => {
     expect(getAchievementLevel(0)).toBe(1);
     expect(getAchievementLevel(10)).toBe(1);
     expect(getAchievementLevel(11)).toBe(2);
@@ -44,7 +44,62 @@ describe("profile achievements", () => {
       expect.objectContaining({
         count: 2,
         level: 1,
-        nextTarget: 10
+        nextTarget: 50,
+        progressPercent: 4
+      })
+    );
+  });
+
+  it("cartografo usa objetivos mas dificiles", () => {
+    const buildPlaces = (count: number) => Array.from({ length: count }, (_, index) => place({ id: String(index), name: `Lugar ${index}` }));
+
+    expect(getProfileAchievements(buildPlaces(0)).find((achievement) => achievement.id === "cartographer")).toEqual(
+      expect.objectContaining({
+        level: 1,
+        nextTarget: 50,
+        progressPercent: 0
+      })
+    );
+    expect(getProfileAchievements(buildPlaces(50)).find((achievement) => achievement.id === "cartographer")).toEqual(
+      expect.objectContaining({
+        level: 1,
+        nextTarget: 50,
+        progressPercent: 100
+      })
+    );
+    expect(getProfileAchievements(buildPlaces(51)).find((achievement) => achievement.id === "cartographer")).toEqual(
+      expect.objectContaining({
+        level: 2,
+        nextTarget: 150,
+        progressPercent: 34
+      })
+    );
+    expect(getProfileAchievements(buildPlaces(150)).find((achievement) => achievement.id === "cartographer")).toEqual(
+      expect.objectContaining({
+        level: 2,
+        nextTarget: 150,
+        progressPercent: 100
+      })
+    );
+    expect(getProfileAchievements(buildPlaces(151)).find((achievement) => achievement.id === "cartographer")).toEqual(
+      expect.objectContaining({
+        level: 3,
+        nextTarget: 300,
+        progressPercent: 50
+      })
+    );
+    expect(getProfileAchievements(buildPlaces(300)).find((achievement) => achievement.id === "cartographer")).toEqual(
+      expect.objectContaining({
+        level: 3,
+        nextTarget: 300,
+        progressPercent: 100
+      })
+    );
+    expect(getProfileAchievements(buildPlaces(301)).find((achievement) => achievement.id === "cartographer")).toEqual(
+      expect.objectContaining({
+        level: 4,
+        nextTarget: null,
+        progressPercent: 100
       })
     );
   });
@@ -56,6 +111,41 @@ describe("profile achievements", () => {
     ]);
 
     expect(achievements.find((achievement) => achievement.id === "gourmet")?.count).toBe(2);
+  });
+
+  it("los logros tematicos mantienen los rangos base", () => {
+    const gourmetPlaces = Array.from({ length: 101 }, (_, index) => place({ id: String(index), name: `Restaurante ${index}` }));
+    const gourmet = getProfileAchievements(gourmetPlaces).find((achievement) => achievement.id === "gourmet");
+    const naturalist = getProfileAchievements([
+      ...Array.from({ length: 10 }, (_, index) => place({ id: `n-${index}`, name: `Parque ${index}` })),
+      place({ id: "n-11", name: "Mirador nuevo" })
+    ]).find((achievement) => achievement.id === "naturalist");
+    const athlete = getProfileAchievements([
+      ...Array.from({ length: 50 }, (_, index) => place({ id: `d-${index}`, name: `Gimnasio ${index}` })),
+      place({ id: "d-51", name: "Pista de tenis" })
+    ]).find((achievement) => achievement.id === "athlete");
+
+    expect(gourmet).toEqual(
+      expect.objectContaining({
+        level: 4,
+        nextTarget: null,
+        progressPercent: 100
+      })
+    );
+    expect(naturalist).toEqual(
+      expect.objectContaining({
+        level: 2,
+        nextTarget: 50,
+        progressPercent: 22
+      })
+    );
+    expect(athlete).toEqual(
+      expect.objectContaining({
+        level: 3,
+        nextTarget: 100,
+        progressPercent: 51
+      })
+    );
   });
 
   it("naturalista detecta naturaleza", () => {
@@ -89,7 +179,7 @@ describe("profile achievements", () => {
   });
 
   it("calcula progreso del ultimo nivel al cien por cien", () => {
-    const places = Array.from({ length: 101 }, (_, index) => place({ id: String(index), name: `Lugar ${index}` }));
+    const places = Array.from({ length: 301 }, (_, index) => place({ id: String(index), name: `Lugar ${index}` }));
     const cartographer = getProfileAchievements(places).find((achievement) => achievement.id === "cartographer");
 
     expect(cartographer).toEqual(

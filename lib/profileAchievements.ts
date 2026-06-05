@@ -15,6 +15,36 @@ export type ProfileAchievement = {
   progressPercent: number;
 };
 
+type AchievementRangeConfig = {
+  firstTarget: number;
+  secondTarget: number;
+  thirdTarget: number;
+  firstRangeLabel: string;
+  secondRangeLabel: string;
+  thirdRangeLabel: string;
+  maxRangeLabel: string;
+};
+
+const defaultRangeConfig: AchievementRangeConfig = {
+  firstTarget: 10,
+  secondTarget: 50,
+  thirdTarget: 100,
+  firstRangeLabel: "0-10",
+  secondRangeLabel: "11-50",
+  thirdRangeLabel: "51-100",
+  maxRangeLabel: "+100"
+};
+
+const cartographerRangeConfig: AchievementRangeConfig = {
+  firstTarget: 50,
+  secondTarget: 150,
+  thirdTarget: 300,
+  firstRangeLabel: "1-50",
+  secondRangeLabel: "51-150",
+  thirdRangeLabel: "151-300",
+  maxRangeLabel: "+300"
+};
+
 const gourmetKeywords = [
   "restaurante",
   "restaurant",
@@ -106,25 +136,25 @@ function matchesKeywords(place: ProfilePlaceItem, keywords: string[]): boolean {
   return keywords.some((keyword) => text.includes(normalizeText(keyword)));
 }
 
-export function getAchievementLevel(count: number): ProfileAchievementLevel {
-  if (count > 100) return 4;
-  if (count >= 51) return 3;
-  if (count >= 11) return 2;
+export function getAchievementLevel(count: number, rangeConfig: AchievementRangeConfig = defaultRangeConfig): ProfileAchievementLevel {
+  if (count > rangeConfig.thirdTarget) return 4;
+  if (count > rangeConfig.secondTarget) return 3;
+  if (count > rangeConfig.firstTarget) return 2;
   return 1;
 }
 
-function getAchievementProgress(count: number): Pick<ProfileAchievement, "currentRangeLabel" | "nextTarget" | "progressPercent"> {
-  const level = getAchievementLevel(count);
+function getAchievementProgress(count: number, rangeConfig: AchievementRangeConfig): Pick<ProfileAchievement, "currentRangeLabel" | "nextTarget" | "progressPercent"> {
+  const level = getAchievementLevel(count, rangeConfig);
   if (level === 4) {
     return {
-      currentRangeLabel: "+100",
+      currentRangeLabel: rangeConfig.maxRangeLabel,
       nextTarget: null,
       progressPercent: 100
     };
   }
 
-  const nextTarget = level === 1 ? 10 : level === 2 ? 50 : 100;
-  const currentRangeLabel = level === 1 ? "0-10" : level === 2 ? "11-50" : "51-100";
+  const nextTarget = level === 1 ? rangeConfig.firstTarget : level === 2 ? rangeConfig.secondTarget : rangeConfig.thirdTarget;
+  const currentRangeLabel = level === 1 ? rangeConfig.firstRangeLabel : level === 2 ? rangeConfig.secondRangeLabel : rangeConfig.thirdRangeLabel;
   return {
     currentRangeLabel,
     nextTarget,
@@ -132,12 +162,15 @@ function getAchievementProgress(count: number): Pick<ProfileAchievement, "curren
   };
 }
 
-function buildAchievement(input: Omit<ProfileAchievement, "level" | "currentRangeLabel" | "nextTarget" | "progressPercent">): ProfileAchievement {
-  const level = getAchievementLevel(input.count);
+function buildAchievement(
+  input: Omit<ProfileAchievement, "level" | "currentRangeLabel" | "nextTarget" | "progressPercent">,
+  rangeConfig: AchievementRangeConfig = defaultRangeConfig
+): ProfileAchievement {
+  const level = getAchievementLevel(input.count, rangeConfig);
   return {
     ...input,
     level,
-    ...getAchievementProgress(input.count)
+    ...getAchievementProgress(input.count, rangeConfig)
   };
 }
 
@@ -153,7 +186,7 @@ export function getProfileAchievements(places: ProfilePlaceItem[]): ProfileAchie
       description: "Cualquier lugar guardado",
       iconLetter: "C",
       count: places.length
-    }),
+    }, cartographerRangeConfig),
     buildAchievement({
       id: "gourmet",
       title: "Gourmet",

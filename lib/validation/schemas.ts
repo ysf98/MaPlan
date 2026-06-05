@@ -225,6 +225,13 @@ export const createPersonalPlaceSchema = z.object({
   longitude: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
 });
 
+export const saveExploredPlaceSchema = createPersonalPlaceSchema.extend({
+  destinationType: z
+    .string()
+    .refine((value): value is "personal" | "group" => value === "personal" || value === "group", "Destino invalido."),
+  destinationId: z.string().trim().min(1, "El destino es obligatorio.")
+});
+
 export const updatePlaceStatusSchema = z.object({
   groupId: uuidSchema,
   placeId: uuidSchema,
@@ -428,6 +435,7 @@ export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;
 export type CreatePersonalPlaceInput = z.infer<typeof createPersonalPlaceSchema>;
+export type SaveExploredPlaceInput = z.infer<typeof saveExploredPlaceSchema>;
 export type UpdatePlaceStatusInput = z.infer<typeof updatePlaceStatusSchema>;
 export type UpdatePlaceFavoriteInput = z.infer<typeof updatePlaceFavoriteSchema>;
 export type UpdatePersonalPlaceStatusInput = z.infer<typeof updatePersonalPlaceStatusSchema>;

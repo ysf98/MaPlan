@@ -11,7 +11,9 @@ export const ROUTES = {
   groups: "/groups",
   newGroup: "/groups/new",
   joinGroup: "/groups/join",
+  maps: "/maps",
   map: "/map",
+  explore: "/explore",
   profile: "/profile",
   profilePlaces: "/profile/places"
 } as const;

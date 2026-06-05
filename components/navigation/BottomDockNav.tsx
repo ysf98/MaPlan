@@ -7,7 +7,7 @@ import { ROUTES } from "@/utils/constants";
 
 const items = [
   { href: ROUTES.dashboard, label: "Dashboard", icon: "grid" },
-  { href: ROUTES.map, label: "Mapa", icon: "map" },
+  { href: ROUTES.maps, label: "Mapa", icon: "map" },
   { href: ROUTES.friends, label: "Amigos", icon: "users" },
   { href: ROUTES.profile, label: "Perfil", icon: "user" }
 ] as const;
@@ -92,9 +92,9 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
         })}
 
         <Link
-          aria-label="Guardar lugar"
+          aria-label="Explorar lugares"
           className="mx-auto grid h-14 w-14 -translate-y-5 place-items-center rounded-2xl bg-[rgb(var(--primary-strong))] text-white shadow-[0_12px_24px_rgba(var(--primary-strong)/0.35)] transition hover:bg-[rgb(var(--primary))]"
-          href={ROUTES.map}
+          href={ROUTES.explore}
         >
           <NavIcon name="pin" />
         </Link>

@@ -6,7 +6,7 @@ import { updateProfileAction, type UpdateProfileActionState } from "@/app/profil
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import type { ProfileAchievement, ProfileAchievementId } from "@/lib/profileAchievements";
+import type { ProfileAchievement, ProfileAchievementId, ProfileAchievementLevel } from "@/lib/profileAchievements";
 import { ROUTES } from "@/utils/constants";
 
 type ProfileViewProps = {
@@ -28,26 +28,185 @@ type ProfileViewProps = {
 
 const initialState: UpdateProfileActionState = { error: null, success: false };
 
-const achievementStyles: Record<ProfileAchievementId, { bg: string; text: string; bar: string }> = {
+type AchievementStyle = {
+  card: string;
+  icon: string;
+  title: string;
+  description: string;
+  badge: string;
+  track: string;
+  bar: string;
+  meta: string;
+};
+
+const achievementStyles: Record<ProfileAchievementId, Record<ProfileAchievementLevel, AchievementStyle>> = {
   cartographer: {
-    bg: "bg-rose-50",
-    text: "text-[#c6283a]",
-    bar: "bg-[#c6283a]"
+    1: {
+      card: "border border-rose-100 bg-rose-50/45",
+      icon: "text-rose-400",
+      title: "text-zinc-800",
+      description: "text-zinc-500",
+      badge: "bg-white/80 text-zinc-500",
+      track: "bg-white/80",
+      bar: "bg-rose-300",
+      meta: "text-zinc-500"
+    },
+    2: {
+      card: "border border-rose-100 bg-rose-50",
+      icon: "text-[#c6283a]",
+      title: "text-zinc-950",
+      description: "text-zinc-600",
+      badge: "bg-white/85 text-zinc-700",
+      track: "bg-white/85",
+      bar: "bg-[#c6283a]",
+      meta: "text-zinc-700"
+    },
+    3: {
+      card: "border border-rose-200 bg-rose-100 shadow-[0_12px_28px_rgba(198,40,58,0.12)]",
+      icon: "text-[#a91f31]",
+      title: "text-zinc-950",
+      description: "text-zinc-700",
+      badge: "bg-white text-[#a91f31]",
+      track: "bg-white/90",
+      bar: "bg-[#a91f31]",
+      meta: "text-zinc-800"
+    },
+    4: {
+      card: "border border-rose-300 bg-[radial-gradient(circle_at_18%_12%,rgba(255,255,255,0.45),rgba(255,255,255,0)_36%),linear-gradient(135deg,#3b0a12,#b52330_55%,#ff5a5f)] text-white shadow-[0_16px_36px_rgba(198,40,58,0.28)]",
+      icon: "text-white",
+      title: "text-white",
+      description: "text-white/80",
+      badge: "bg-white/95 text-[#9f1239]",
+      track: "bg-white/25",
+      bar: "bg-white",
+      meta: "text-white/90"
+    }
   },
   gourmet: {
-    bg: "bg-amber-50",
-    text: "text-amber-700",
-    bar: "bg-amber-500"
+    1: {
+      card: "border border-amber-100 bg-amber-50/45",
+      icon: "text-amber-400",
+      title: "text-zinc-800",
+      description: "text-zinc-500",
+      badge: "bg-white/80 text-zinc-500",
+      track: "bg-white/80",
+      bar: "bg-amber-300",
+      meta: "text-zinc-500"
+    },
+    2: {
+      card: "border border-amber-100 bg-amber-50",
+      icon: "text-amber-700",
+      title: "text-zinc-950",
+      description: "text-zinc-600",
+      badge: "bg-white/85 text-zinc-700",
+      track: "bg-white/85",
+      bar: "bg-amber-500",
+      meta: "text-zinc-700"
+    },
+    3: {
+      card: "border border-amber-200 bg-amber-100 shadow-[0_12px_28px_rgba(245,158,11,0.14)]",
+      icon: "text-amber-700",
+      title: "text-zinc-950",
+      description: "text-zinc-700",
+      badge: "bg-white text-amber-700",
+      track: "bg-white/90",
+      bar: "bg-amber-600",
+      meta: "text-zinc-800"
+    },
+    4: {
+      card: "border border-amber-300 bg-[radial-gradient(circle_at_18%_12%,rgba(255,255,255,0.48),rgba(255,255,255,0)_36%),linear-gradient(135deg,#78350f,#f59e0b_55%,#fde047)] text-white shadow-[0_16px_36px_rgba(245,158,11,0.3)]",
+      icon: "text-white",
+      title: "text-white",
+      description: "text-white/80",
+      badge: "bg-white/95 text-amber-700",
+      track: "bg-white/25",
+      bar: "bg-white",
+      meta: "text-white/90"
+    }
   },
   naturalist: {
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
-    bar: "bg-emerald-500"
+    1: {
+      card: "border border-emerald-100 bg-emerald-50/45",
+      icon: "text-emerald-400",
+      title: "text-zinc-800",
+      description: "text-zinc-500",
+      badge: "bg-white/80 text-zinc-500",
+      track: "bg-white/80",
+      bar: "bg-emerald-300",
+      meta: "text-zinc-500"
+    },
+    2: {
+      card: "border border-emerald-100 bg-emerald-50",
+      icon: "text-emerald-700",
+      title: "text-zinc-950",
+      description: "text-zinc-600",
+      badge: "bg-white/85 text-zinc-700",
+      track: "bg-white/85",
+      bar: "bg-emerald-500",
+      meta: "text-zinc-700"
+    },
+    3: {
+      card: "border border-emerald-200 bg-emerald-100 shadow-[0_12px_28px_rgba(16,185,129,0.14)]",
+      icon: "text-emerald-700",
+      title: "text-zinc-950",
+      description: "text-zinc-700",
+      badge: "bg-white text-emerald-700",
+      track: "bg-white/90",
+      bar: "bg-emerald-600",
+      meta: "text-zinc-800"
+    },
+    4: {
+      card: "border border-emerald-300 bg-[radial-gradient(circle_at_18%_12%,rgba(255,255,255,0.48),rgba(255,255,255,0)_36%),linear-gradient(135deg,#064e3b,#059669_55%,#34d399)] text-white shadow-[0_16px_36px_rgba(16,185,129,0.3)]",
+      icon: "text-white",
+      title: "text-white",
+      description: "text-white/80",
+      badge: "bg-white/95 text-emerald-700",
+      track: "bg-white/25",
+      bar: "bg-white",
+      meta: "text-white/90"
+    }
   },
   athlete: {
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-    bar: "bg-blue-500"
+    1: {
+      card: "border border-blue-100 bg-blue-50/45",
+      icon: "text-blue-400",
+      title: "text-zinc-800",
+      description: "text-zinc-500",
+      badge: "bg-white/80 text-zinc-500",
+      track: "bg-white/80",
+      bar: "bg-blue-300",
+      meta: "text-zinc-500"
+    },
+    2: {
+      card: "border border-blue-100 bg-blue-50",
+      icon: "text-blue-700",
+      title: "text-zinc-950",
+      description: "text-zinc-600",
+      badge: "bg-white/85 text-zinc-700",
+      track: "bg-white/85",
+      bar: "bg-blue-500",
+      meta: "text-zinc-700"
+    },
+    3: {
+      card: "border border-blue-200 bg-blue-100 shadow-[0_12px_28px_rgba(59,130,246,0.14)]",
+      icon: "text-blue-700",
+      title: "text-zinc-950",
+      description: "text-zinc-700",
+      badge: "bg-white text-blue-700",
+      track: "bg-white/90",
+      bar: "bg-blue-600",
+      meta: "text-zinc-800"
+    },
+    4: {
+      card: "border border-blue-300 bg-[radial-gradient(circle_at_18%_12%,rgba(255,255,255,0.48),rgba(255,255,255,0)_36%),linear-gradient(135deg,#172554,#2563eb_55%,#60a5fa)] text-white shadow-[0_16px_36px_rgba(59,130,246,0.3)]",
+      icon: "text-white",
+      title: "text-white",
+      description: "text-white/80",
+      badge: "bg-white/95 text-blue-700",
+      track: "bg-white/25",
+      bar: "bg-white",
+      meta: "text-white/90"
+    }
   }
 };
 
@@ -65,27 +224,26 @@ function StatCard({ href, label, value, valueClassName }: { href: string; label:
 }
 
 function AchievementCard({ achievement }: { achievement: ProfileAchievement }) {
-  const style = achievementStyles[achievement.id];
-  const isEmpty = achievement.count === 0;
+  const style = achievementStyles[achievement.id][achievement.level];
 
   return (
-    <article className={`rounded-2xl px-3 py-3 ${style.bg} ${isEmpty ? "opacity-60" : ""}`}>
+    <article className={`rounded-2xl px-3 py-3 transition ${style.card}`}>
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className={`text-xl font-bold leading-none ${style.text}`}>{achievement.iconLetter}</p>
-          <p className="mt-1 truncate text-sm font-bold text-zinc-900">{achievement.title}</p>
+          <p className={`text-xl font-bold leading-none ${style.icon}`}>{achievement.iconLetter}</p>
+          <p className={`mt-1 truncate text-sm font-bold ${style.title}`}>{achievement.title}</p>
         </div>
-        <span className="shrink-0 rounded-full bg-white/80 px-2 py-1 text-[10px] font-bold text-zinc-600">
+        <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${style.badge}`}>
           Nivel {achievement.level}
         </span>
       </div>
-      <p className="mt-2 truncate text-[11px] font-medium text-zinc-500">{achievement.description}</p>
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/80">
+      <p className={`mt-2 truncate text-[11px] font-medium ${style.description}`}>{achievement.description}</p>
+      <div className={`mt-3 h-1.5 overflow-hidden rounded-full ${style.track}`}>
         <div className={`h-full rounded-full ${style.bar}`} style={{ width: `${achievement.progressPercent}%` }} />
       </div>
-      <div className="mt-2 flex items-center justify-between gap-2 text-[11px] font-semibold text-zinc-600">
+      <div className={`mt-2 flex items-center justify-between gap-2 text-[11px] font-semibold ${style.meta}`}>
         <span>{achievement.count} lugares</span>
-        <span>{achievement.nextTarget ? `${achievement.count}/${achievement.nextTarget}` : "Maximo"}</span>
+        <span>{achievement.nextTarget ? `${achievement.count}/${achievement.nextTarget}` : "Máximo"}</span>
       </div>
     </article>
   );
