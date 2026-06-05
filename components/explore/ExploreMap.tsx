@@ -439,7 +439,7 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
       <div className="h-full w-full" data-lock-swipe ref={mapContainerRef} />
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_center,transparent_0%,rgba(244,244,245,0.12)_100%)]" />
 
-      <div className="pointer-events-auto absolute inset-x-0 top-0 z-30 border-b border-white/20 bg-zinc-700/45 pt-[env(safe-area-inset-top)] text-white shadow-[0_10px_28px_rgba(24,24,27,0.12)] backdrop-blur-xl">
+      <div className="pointer-events-auto absolute inset-x-0 top-0 z-30 border-b border-white/10 bg-zinc-700/24 pt-[env(safe-area-inset-top)] text-white shadow-[0_10px_24px_rgba(24,24,27,0.08)] backdrop-blur-xl">
         <div className="relative flex h-14 items-center px-3">
           <BackButton
             className="relative z-10 bg-transparent text-white hover:bg-white/12 focus-visible:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/45"
