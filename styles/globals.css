@@ -70,6 +70,12 @@ html {
   -webkit-backdrop-filter: blur(20px);
 }
 
+@media (max-width: 767px) {
+  .vc-glass {
+    background: rgb(var(--surface) / 0.62);
+  }
+}
+
 .route-transition-enter {
   animation-duration: 90ms;
   animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1);
