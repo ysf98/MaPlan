@@ -440,11 +440,14 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_center,transparent_0%,rgba(244,244,245,0.12)_100%)]" />
 
       <div className="pointer-events-auto absolute inset-x-0 top-0 z-30 border-b border-white/20 bg-zinc-700/45 pt-[env(safe-area-inset-top)] text-white shadow-[0_10px_28px_rgba(24,24,27,0.12)] backdrop-blur-xl">
-        <div className="flex h-14 items-center gap-2 px-3">
-          <div className="rounded-full bg-white/85 shadow-sm backdrop-blur">
-            <BackButton fallbackHref={ROUTES.maps} />
-          </div>
-          <p className="text-sm font-bold tracking-tight text-white">Explorar</p>
+        <div className="relative flex h-14 items-center px-3">
+          <BackButton
+            className="relative z-10 bg-transparent text-white hover:bg-white/12 focus-visible:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/45"
+            fallbackHref={ROUTES.maps}
+          />
+          <p className="pointer-events-none absolute inset-x-14 text-center text-sm font-bold tracking-tight text-white">
+            Explorar
+          </p>
         </div>
       </div>
 
@@ -463,7 +466,12 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
         </div>
       </div>
 
-      <UserLocationButton error={userLocation.error} isLocating={userLocation.isLocating} onClick={userLocation.requestLocation} />
+      <UserLocationButton
+        className={draftSelection ? "bottom-[calc(env(safe-area-inset-bottom)+17rem)] z-30 sm:bottom-4" : "z-30"}
+        error={userLocation.error}
+        isLocating={userLocation.isLocating}
+        onClick={userLocation.requestLocation}
+      />
 
       {isResolvingLocation ? (
         <div className="pointer-events-none absolute bottom-5 left-1/2 z-20 -translate-x-1/2">

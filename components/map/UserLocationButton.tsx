@@ -1,14 +1,20 @@
 "use client";
 
+import { cn } from "@/lib/cn";
+
 type UserLocationButtonProps = {
+  className?: string;
   error: string | null;
   isLocating: boolean;
   onClick: () => void;
 };
 
-export function UserLocationButton({ error, isLocating, onClick }: UserLocationButtonProps) {
+export function UserLocationButton({ className, error, isLocating, onClick }: UserLocationButtonProps) {
   return (
-    <div className="pointer-events-none absolute bottom-4 left-4 z-20 flex max-w-[240px] flex-col items-start gap-2" data-map-control="">
+    <div
+      className={cn("pointer-events-none absolute bottom-4 left-4 z-20 flex max-w-[240px] flex-col items-start gap-2", className)}
+      data-map-control=""
+    >
       <button
         aria-label="Mostrar mi ubicacion"
         className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-rose-100/80 bg-white/92 text-[#c6283a] shadow-[0_10px_24px_rgba(181,35,48,0.18)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-rose-50 active:translate-y-0 disabled:cursor-wait disabled:opacity-75"

@@ -60,7 +60,7 @@ export async function AppShell({ backHref, children, currentUser, fullBleed = fa
       <main className={fullBleed ? "w-full pb-0 pt-0" : "mx-auto w-full max-w-3xl px-[20px] pb-32 pt-6"}>
         <div className="w-full">{children}</div>
       </main>
-      <BottomDockNav isAuthenticated={Boolean(user)} />
+      {fullBleed ? null : <BottomDockNav isAuthenticated={Boolean(user)} />}
     </div>
   );
 }

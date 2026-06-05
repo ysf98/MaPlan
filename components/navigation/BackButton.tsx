@@ -1,18 +1,23 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/cn";
 
 type BackButtonProps = {
+  className?: string;
   fallbackHref: string;
 };
 
-export function BackButton({ fallbackHref }: BackButtonProps) {
+export function BackButton({ className, fallbackHref }: BackButtonProps) {
   const router = useRouter();
 
   return (
     <button
       aria-label="Volver"
-      className="grid h-10 w-10 place-items-center rounded-full text-[rgb(var(--primary-strong))] transition hover:bg-[rgb(var(--surface-soft))]"
+      className={cn(
+        "grid h-10 w-10 place-items-center rounded-full text-[rgb(var(--primary-strong))] transition hover:bg-[rgb(var(--surface-soft))]",
+        className
+      )}
       onClick={() => {
         if (window.history.length > 1) {
           router.back();
