@@ -12,6 +12,9 @@ MaPlan es una app social de mapas para guardar, organizar y compartir lugares co
 - Amigos y solicitudes de amistad.
 - Mapa de grupo con búsqueda, guardado y filtros.
 - Mapa personal con pestañas `Lugares` y `Mapa`.
+- Selector de mapas en `/maps` para acceder a mapas grupales o mapa personal.
+- Explorador principal en `/explore` para buscar lugares y guardarlos en distintos destinos.
+- Guardado multi-destino desde Explore: `Mapa personal` o grupos donde el usuario tiene permisos.
 - Lugares personales con estado `Pendiente`, `Visitado` y `Favorito`.
 - Vista global de listas en perfil: todos, favoritos, pendientes y visitados.
 - Perfil editable con contadores reales.
@@ -100,6 +103,8 @@ Si `pnpm` no está disponible en el entorno local, instala pnpm/Corepack antes d
 - `app/`: rutas App Router, layouts, route handlers y server actions.
 - `components/`: componentes UI y de feature.
 - `components/map/`: Mapbox, buscador, tarjetas de lugar, mapa personal y mapa de grupo.
+- `components/explore/`: mapa principal de exploración y guardado multi-destino.
+- `components/maps/`: selector de mapas grupales y mapa personal.
 - `components/groups/`: vistas, tabs, miembros, invitaciones y controles de grupo.
 - `components/profile/`: perfil, listas globales y logros.
 - `components/ui/`: primitivas visuales reutilizables.
@@ -107,6 +112,7 @@ Si `pnpm` no está disponible en el entorno local, instala pnpm/Corepack antes d
 - `lib/map/`: Google Places, geocoding, distancias, URLs de Google Maps y clasificación.
 - `lib/profilePlaces.ts`: agregación de lugares personales y de grupos para el perfil.
 - `lib/profileAchievements.ts`: cálculo de logros de explorador.
+- `lib/saveDestinations.ts`: destinos disponibles para guardar lugares desde Explore.
 - `lib/validation/`: schemas Zod.
 - `types/`: tipos compartidos, especialmente Supabase.
 - `supabase/`: SQL, schema y RLS.
@@ -128,7 +134,9 @@ Las rutas comunes viven en `utils/constants.ts` bajo `ROUTES`.
 - `/groups/new`
 - `/groups/join`
 - `/groups/[groupId]`
+- `/maps`
 - `/map`
+- `/explore`
 - `/profile`
 - `/profile/places`
 
@@ -162,6 +170,25 @@ Los lugares del mapa personal viven en `personal_places` e incluyen:
 - `is_favorite`: boolean
 - `provider`, `external_place_id`, `google_maps_url`
 - imagen, teléfono, coordenadas y categoría.
+
+### Selector de mapas y Explore
+
+La ruta `/maps` es el punto de entrada de la sección `Mapa` en la barra inferior. Muestra dos accesos:
+
+- `Mapas Grupales`: redirige a `/groups`.
+- `Mapa Personal`: redirige a `/map`.
+
+La ruta `/explore` es el mapa principal inmersivo. Permite buscar lugares con Google Places o tocar el mapa, seleccionar un sitio y guardarlo en:
+
+- `Mapa personal`;
+- grupos donde el usuario tiene permisos para guardar lugares.
+
+Los destinos se calculan con `lib/saveDestinations.ts`. La mutación se realiza mediante `app/explore/actions.ts`, reutilizando:
+
+- `createPersonalPlace` para `personal_places`;
+- `createPlace` para lugares de grupo.
+
+Aunque la UI solo muestra destinos permitidos, el backend vuelve a validar permisos y duplicados antes de guardar.
 
 ### Perfil, listas y logros
 
@@ -201,6 +228,8 @@ Rutas relevantes:
 
 Componentes relevantes:
 
+- `components/explore/ExploreMap.tsx`
+- `components/maps/MapsHubView.tsx`
 - `components/map/GroupMap.tsx`
 - `components/map/PersonalMap.tsx`
 - `components/map/MapSearchBox.tsx`
@@ -273,12 +302,15 @@ Playwright usa `PLAYWRIGHT_BASE_URL` si está definido; si no, arranca el dev se
 - La ubicación del navegador no funciona: usa HTTPS o `localhost`, y revisa permisos del navegador.
 - Imágenes externas raras: algunas fotos de Google pueden traer márgenes internos; las tarjetas intentan disimularlo con fondo desenfocado.
 - Mapbox gris o mal dimensionado en móvil: revisar `useMapboxResize.ts`.
+- Explore no debe mostrar la barra inferior: revisar `AppShell fullBleed` y `/explore`.
 - Avatares o perfiles no aparecen: revisar `profiles_full_name.sql` y políticas de `rls_friends.sql`.
 
 ## Estado actual del producto
 
 - Detalle de grupo con tabs `Lugares`, `Actividad` y `Mapa`.
 - Mapa personal alineado con el estilo de grupos.
+- Selector `/maps` para separar mapas grupales y mapa personal.
+- Explore fullscreen para buscar y guardar lugares en mapa personal o grupos permitidos.
 - Estados personales y de grupo para favoritos, pendientes y visitados.
 - Perfil con contadores agregados reales.
 - Listas globales en `/profile/places`.

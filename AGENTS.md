@@ -11,6 +11,8 @@ La app combina:
 - grupos de amigos;
 - mapa colaborativo de grupo;
 - mapa personal;
+- selector de mapas;
+- mapa principal Explore para búsqueda y guardado multi-destino;
 - búsqueda de lugares con Google Places;
 - visualización con Mapbox;
 - amigos, invitaciones y solicitudes;
@@ -98,6 +100,8 @@ Reglas:
 - `app/`: rutas App Router, layouts, route handlers y server actions.
 - `components/`: UI y features reutilizables.
 - `components/map/`: Mapbox, búsqueda, tarjetas, mapa personal y mapa de grupo.
+- `components/explore/`: mapa Explore fullscreen y guardado multi-destino.
+- `components/maps/`: selector entre mapas grupales y mapa personal.
 - `components/groups/`: vistas de grupo, tabs, miembros, invitaciones y permisos.
 - `components/profile/`: perfil, listas globales y logros.
 - `components/layout/`: shell y navegación.
@@ -106,6 +110,7 @@ Reglas:
 - `lib/map/`: Google Places, geocoding, URLs, distancia y clasificación.
 - `lib/profilePlaces.ts`: agregación de lugares del perfil.
 - `lib/profileAchievements.ts`: cálculo de logros.
+- `lib/saveDestinations.ts`: destinos disponibles para guardar lugares desde Explore.
 - `lib/supabase/`: clientes Supabase.
 - `lib/validation/`: schemas Zod.
 - `types/`: tipos compartidos y Supabase.
@@ -138,7 +143,9 @@ Rutas importantes:
 - `/groups/new`
 - `/groups/join`
 - `/groups/[groupId]`
+- `/maps`
 - `/map`
+- `/explore`
 - `/profile`
 - `/profile/places`
 
@@ -257,6 +264,24 @@ Incluyen:
 - `image_url`
 - coordenadas.
 
+### Selector de mapas y Explore
+
+`/maps` es la ruta del botón `Mapa` en la barra inferior. Es una vista simple con dos tarjetas:
+
+- `Mapas Grupales`: lleva a `/groups`.
+- `Mapa Personal`: lleva a `/map`.
+
+`/explore` es el mapa principal del botón central de la navegación. Es una vista fullscreen/inmersiva:
+
+- no muestra la barra inferior;
+- usa cabecera overlay con botón atrás;
+- tiene buscador Google Places;
+- permite tocar el mapa;
+- muestra una tarjeta de lugar;
+- permite guardar en `Mapa personal` o en grupos donde el usuario pueda crear lugares.
+
+La lista de destinos se calcula con `lib/saveDestinations.ts`. La server action vive en `app/explore/actions.ts` y reutiliza `createPersonalPlace` / `createPlace`. No confíes solo en destinos visibles en UI: el backend debe seguir validando permisos y duplicados.
+
 ### Perfil, listas y logros
 
 El perfil no debe usar métricas decorativas.
@@ -281,6 +306,8 @@ Mapbox renderiza el mapa, marcadores, `flyTo`, filtros, selección y tarjetas.
 
 Componentes:
 
+- `components/explore/ExploreMap.tsx`
+- `components/maps/MapsHubView.tsx`
 - `components/map/GroupMap.tsx`
 - `components/map/PersonalMap.tsx`
 - `components/map/MapPlaceCard.tsx`
@@ -321,6 +348,7 @@ Schemas importantes:
 - `joinGroupSchema`
 - `createPlaceSchema`
 - `createPersonalPlaceSchema`
+- `saveExploredPlaceSchema`
 - `updatePlaceStatusSchema`
 - `updatePlaceFavoriteSchema`
 - `updatePersonalPlaceStatusSchema`
@@ -341,6 +369,7 @@ Sigue `DESIGN.md` y la identidad **Vibrant Cartography**.
 - Reutiliza `Button`, `Card`, `Input`, `EmptyState`, `CategoryBadge`.
 - No añadas librerías UI pesadas sin petición explícita.
 - No cambies `MapPlaceCard` salvo necesidad clara.
+- Las vistas fullscreen de mapa pueden usar `AppShell fullBleed`; no debe ocultar navegación en páginas normales.
 
 ## Server actions
 
@@ -411,6 +440,8 @@ Añade tests cuando cambies lógica de dominio, permisos, validación, SQL o acc
 - Hardcodear rutas ya disponibles en `ROUTES`.
 - Crear métricas de perfil sin lógica real.
 - Romper la agregación de `/profile/places`.
+- Duplicar lógica de guardado entre Explore, mapa personal y grupos.
+- Mostrar destinos de guardado en Explore sin validar de nuevo en backend.
 - Cambiar `personal_places` o `group_place_user_states` sin actualizar tipos/tests.
 - Cambiar package manager sin aprobación.
 - Reescribir una pantalla completa para arreglar un detalle local.
@@ -422,6 +453,7 @@ MaPlan debe evolucionar hacia una app social de planificación:
 - grupos colaborativos;
 - lugares personales y compartidos;
 - mapa como experiencia central;
+- Explore como entrada rápida para guardar lugares en cualquier destino permitido;
 - listas globales útiles;
 - perfil con progreso real;
 - logros ligeros;
