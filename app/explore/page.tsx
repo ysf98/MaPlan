@@ -14,7 +14,7 @@ export default async function ExplorePage() {
   const destinations = await getPlaceSaveDestinationsForUser(user.id);
 
   return (
-    <AppShell backHref={ROUTES.maps} currentUser={user}>
+    <AppShell backHref={ROUTES.maps} currentUser={user} fullBleed>
       <ExploreMap destinations={destinations} />
     </AppShell>
   );

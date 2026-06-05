@@ -4,6 +4,7 @@ import { startTransition, useActionState, useCallback, useEffect, useMemo, useRe
 import mapboxgl from "mapbox-gl";
 import { saveExploredPlaceAction, type SaveExploredPlaceActionState } from "@/app/explore/actions";
 import { MapSearchBox } from "@/components/map/MapSearchBox";
+import { BackButton } from "@/components/navigation/BackButton";
 import { UserLocationButton } from "@/components/map/UserLocationButton";
 import { resizeMapboxAfterLayout, useMapboxResizeOnVisible } from "@/components/map/useMapboxResize";
 import { useUserLocationMarker } from "@/components/map/useUserLocationMarker";
@@ -19,6 +20,7 @@ import {
 import { getGooglePlaceDetails, getGooglePlaceNearby, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
 import { inferCategoryFromGoogleSignals } from "@/lib/map/placeClassification";
 import type { SaveDestination } from "@/lib/saveDestinations";
+import { ROUTES } from "@/utils/constants";
 
 const initialSaveState: SaveExploredPlaceActionState = {
   error: null,
@@ -433,11 +435,20 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
   }
 
   return (
-    <div className="relative h-[100svh] min-h-[100dvh] w-full overflow-hidden rounded-none border-0 bg-zinc-200/30 shadow-none sm:h-[620px] sm:min-h-0 sm:rounded-[30px] sm:border sm:border-zinc-300/60">
+    <div className="relative h-[100svh] min-h-[100dvh] w-full overflow-hidden rounded-none border-0 bg-zinc-200/30 shadow-none sm:mx-auto sm:my-6 sm:h-[620px] sm:min-h-0 sm:max-w-5xl sm:rounded-[30px] sm:border sm:border-zinc-300/60">
       <div className="h-full w-full" data-lock-swipe ref={mapContainerRef} />
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_center,transparent_0%,rgba(244,244,245,0.12)_100%)]" />
 
-      <div className="pointer-events-none absolute inset-x-4 top-[calc(env(safe-area-inset-top)+12px)] z-20">
+      <div className="pointer-events-auto absolute inset-x-0 top-0 z-30 border-b border-white/20 bg-zinc-700/45 pt-[env(safe-area-inset-top)] text-white shadow-[0_10px_28px_rgba(24,24,27,0.12)] backdrop-blur-xl">
+        <div className="flex h-14 items-center gap-2 px-3">
+          <div className="rounded-full bg-white/85 shadow-sm backdrop-blur">
+            <BackButton fallbackHref={ROUTES.maps} />
+          </div>
+          <p className="text-sm font-bold tracking-tight text-white">Explorar</p>
+        </div>
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-4 top-[calc(env(safe-area-inset-top)+76px)] z-20">
         <div
           className="pointer-events-auto min-w-0"
           onPointerDownCapture={(event) => event.stopPropagation()}
@@ -452,12 +463,6 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
         </div>
       </div>
 
-      <div className="pointer-events-none absolute left-4 top-[calc(env(safe-area-inset-top)+76px)] z-10 max-w-[calc(100%-2rem)]">
-        <div className="rounded-2xl border border-white/70 bg-white/88 px-3 py-2 text-xs font-semibold text-zinc-600 shadow-sm backdrop-blur">
-          Busca o toca el mapa para guardar en tu mapa personal o en un grupo.
-        </div>
-      </div>
-
       <UserLocationButton error={userLocation.error} isLocating={userLocation.isLocating} onClick={userLocation.requestLocation} />
 
       {isResolvingLocation ? (
@@ -469,7 +474,7 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
       ) : null}
 
       {resolveHint && !isResolvingLocation ? (
-        <div className="pointer-events-none absolute left-4 top-32 z-10">
+        <div className="pointer-events-none absolute left-4 top-[calc(env(safe-area-inset-top)+136px)] z-10">
           <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
             <p className="text-sm text-zinc-700">{resolveHint}</p>
           </Card>

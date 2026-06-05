@@ -11,6 +11,7 @@ type AppShellProps = {
   backHref?: string;
   children: ReactNode;
   currentUser?: Awaited<ReturnType<typeof getCurrentUser>>;
+  fullBleed?: boolean;
 };
 
 type AppShellProfileRow = {
@@ -19,12 +20,12 @@ type AppShellProfileRow = {
   avatar_url: string | null;
 };
 
-export async function AppShell({ backHref, children, currentUser }: AppShellProps) {
+export async function AppShell({ backHref, children, currentUser, fullBleed = false }: AppShellProps) {
   const user = currentUser === undefined ? await getCurrentUser() : currentUser;
   let pendingNotificationsCount = 0;
   let profile: AppShellProfileRow | null = null;
 
-  if (user) {
+  if (user && !fullBleed) {
     const supabase = await createSupabaseServerClient();
     const [notificationsCount, profileResult] = await Promise.all([
       getPendingNotificationsCountForUser(user.id),
@@ -46,17 +47,17 @@ export async function AppShell({ backHref, children, currentUser }: AppShellProp
 
   return (
     <div className="min-h-screen bg-[rgb(var(--bg))] text-[rgb(var(--text))]">
-      {user ? (
+      {!fullBleed && user ? (
         <DashboardHeader
           avatarUrl={profile?.avatar_url || null}
           backHref={backHref}
           displayName={displayName}
           hasNotifications={pendingNotificationsCount > 0}
         />
-      ) : (
+      ) : !fullBleed ? (
         <Navbar />
-      )}
-      <main className="mx-auto w-full max-w-3xl px-[20px] pb-32 pt-6">
+      ) : null}
+      <main className={fullBleed ? "w-full pb-0 pt-0" : "mx-auto w-full max-w-3xl px-[20px] pb-32 pt-6"}>
         <div className="w-full">{children}</div>
       </main>
       <BottomDockNav isAuthenticated={Boolean(user)} />
