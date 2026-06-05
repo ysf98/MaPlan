@@ -1,47 +1,57 @@
 # AGENTS.md
 
-This file gives Codex and other AI coding agents the essential context needed to work safely and consistently on **MaPlan**.
+Este archivo da a Codex y otros agentes de código el contexto necesario para trabajar de forma segura y consistente en **MaPlan**.
 
-## Project summary
+## Resumen del producto
 
-**MaPlan** is a social map app for friend groups. Users can create groups, invite or join friends, save recommended places, explore them on a map, and manage personal or group-based recommendations.
+**MaPlan** es una app social de mapas para guardar, organizar y compartir lugares con amigos.
 
-Core product idea:
+La app combina:
 
-- Friend groups share places to eat, visit, go out, or save for future plans.
-- The app combines a collaborative map, place search, group management, invitations, friends, and saved places.
-- The experience should feel modern, simple, mobile-friendly, and social.
+- grupos de amigos;
+- mapa colaborativo de grupo;
+- mapa personal;
+- búsqueda de lugares con Google Places;
+- visualización con Mapbox;
+- amigos, invitaciones y solicitudes;
+- perfil con listas globales;
+- logros de explorador;
+- estados personales por lugar: `Pendiente`, `Visitado` y `Favorito`.
 
-## Current stack
+El producto debe sentirse moderno, móvil, social y muy claro. La copy visible está mayoritariamente en español.
 
-Use the existing stack. Do not introduce major framework changes unless explicitly requested.
+## Stack actual
 
-- **Next.js App Router**
-- **React**
-- **TypeScript strict mode**
-- **Tailwind CSS**
-- **Supabase** for Auth, Postgres and RLS
-- **Mapbox GL** for the visual interactive map
-- **Google Places** through server-side API routes for place search and details
-- **Zod** for validation
-- **Vitest** for unit/library tests
-- **Playwright** for E2E tests
-- **pnpm** as package manager
+Usa el stack existente. No introduzcas cambios grandes de framework sin petición explícita.
 
-Package manager is pinned in `package.json`:
+- Next.js App Router
+- React
+- TypeScript strict
+- Tailwind CSS
+- Supabase Auth, Postgres y RLS
+- Mapbox GL
+- Google Places mediante API routes server-side
+- Zod
+- Vitest
+- Playwright
+- pnpm
+
+El package manager está fijado en `package.json`:
 
 ```json
 "packageManager": "pnpm@10.11.0"
 ```
 
-Prefer `pnpm` commands. If a local environment cannot resolve `pnpm`, explain the issue instead of silently changing package managers.
+Prefiere comandos `pnpm`. Si `pnpm` no está disponible, explícalo en vez de cambiar silenciosamente a otro package manager.
 
-## Important commands
+## Comandos importantes
 
 ```bash
 pnpm install
 pnpm dev
 pnpm build
+pnpm start
+pnpm lint
 pnpm test
 pnpm test:e2e
 pnpm test:e2e:ui
@@ -49,20 +59,23 @@ pnpm test:e2e:headed
 pnpm test:e2e:report
 ```
 
-Playwright uses `PLAYWRIGHT_BASE_URL` when provided. Otherwise it starts the local dev server with `pnpm dev`.
+Playwright usa `PLAYWRIGHT_BASE_URL` si está definido. Si no, arranca el dev server con `pnpm dev`.
 
-## Environment variables
+## Variables de entorno
 
-Expected local `.env` variables:
+Variables esperadas en `.env`:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_MAPBOX_TOKEN=
+NEXT_PUBLIC_MAPBOX_STYLE=
 GOOGLE_PLACES_API_KEY=
 ```
 
-Optional E2E variables:
+`NEXT_PUBLIC_MAPBOX_STYLE` es opcional.
+
+Variables E2E opcionales:
 
 ```bash
 E2E_EMAIL=
@@ -71,46 +84,48 @@ E2E_RUN_SIGNUP=1
 PLAYWRIGHT_BASE_URL=
 ```
 
-Security rules:
+Reglas:
 
-- Never commit `.env` files or secrets.
-- Keep `GOOGLE_PLACES_API_KEY` server-side only.
-- Do not rename it to `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY`.
-- `NEXT_PUBLIC_MAPBOX_TOKEN` is public by design and used client-side.
-- Supabase anon key is public, but RLS must protect the data.
+- Nunca commitear `.env` ni secretos.
+- Mantener `GOOGLE_PLACES_API_KEY` solo server-side.
+- No renombrarla a `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY`.
+- `NEXT_PUBLIC_MAPBOX_TOKEN` es pública por diseño.
+- La anon key de Supabase es pública, pero RLS debe proteger los datos.
+- No usar service role en cliente.
 
-## App structure and conventions
+## Estructura y convenciones
 
-Main directories:
+- `app/`: rutas App Router, layouts, route handlers y server actions.
+- `components/`: UI y features reutilizables.
+- `components/map/`: Mapbox, búsqueda, tarjetas, mapa personal y mapa de grupo.
+- `components/groups/`: vistas de grupo, tabs, miembros, invitaciones y permisos.
+- `components/profile/`: perfil, listas globales y logros.
+- `components/layout/`: shell y navegación.
+- `components/ui/`: primitivas visuales.
+- `lib/`: lógica de dominio, permisos, Supabase, validación y helpers.
+- `lib/map/`: Google Places, geocoding, URLs, distancia y clasificación.
+- `lib/profilePlaces.ts`: agregación de lugares del perfil.
+- `lib/profileAchievements.ts`: cálculo de logros.
+- `lib/supabase/`: clientes Supabase.
+- `lib/validation/`: schemas Zod.
+- `types/`: tipos compartidos y Supabase.
+- `supabase/`: SQL, schema y RLS.
+- `tests/`: Vitest.
+- `e2e/`: Playwright.
 
-- `app/` — Next.js App Router pages, layouts, route handlers, and server actions.
-- `components/` — reusable UI and feature components.
-- `components/map/` — map-specific UI such as `GroupMap`, search box and save draft cards.
-- `components/layout/` — shell/navigation layout.
-- `components/ui/` — reusable visual primitives such as buttons, cards, badges, empty states.
-- `lib/` — business logic, Supabase access, auth helpers, map helpers, permissions and validations.
-- `lib/supabase/` — Supabase client setup.
-- `lib/map/` — map/geocoding/Google Places/address/category utilities.
-- `lib/validation/` — Zod schemas.
-- `types/` — shared TypeScript types, especially Supabase types.
-- `supabase/` — SQL migrations and RLS policies.
-- `tests/` — Vitest tests.
-- `e2e/` — Playwright E2E specs.
-- `.github/workflows/` — CI.
+Usa el alias `@/*` configurado en `tsconfig.json`.
 
-Use the `@/*` path alias already configured in `tsconfig.json`.
+## Rutas
 
-## Routing
-
-Central route constants live in:
+Las constantes viven en:
 
 ```ts
 utils/constants.ts
 ```
 
-Use `ROUTES` instead of hardcoding common app routes when practical.
+Usa `ROUTES` cuando sea práctico.
 
-Current important routes include:
+Rutas importantes:
 
 - `/`
 - `/login`
@@ -118,242 +133,232 @@ Current important routes include:
 - `/dashboard`
 - `/friends`
 - `/invitations`
+- `/notifications`
 - `/groups`
 - `/groups/new`
 - `/groups/join`
+- `/groups/[groupId]`
 - `/map`
 - `/profile`
+- `/profile/places`
 
-## TypeScript rules
+## TypeScript
 
-The project uses strict TypeScript. Keep code strongly typed.
+El proyecto usa TypeScript estricto.
 
-Guidelines:
-
-- Avoid `any` unless there is a strong reason.
-- Prefer narrow domain types over loose objects.
-- Keep Supabase table/result types aligned with `types/supabase`.
-- Validate external/user input with Zod schemas before using it in server actions or DB writes.
-- Preserve `strict: true` compatibility.
+- Evita `any`.
+- Prefiere tipos de dominio concretos.
+- Mantén `types/supabase.ts` alineado con SQL.
+- Valida entradas externas con Zod.
+- No silencies errores de tipos con casts amplios.
 
 ## Server/client boundaries
 
-Follow Next.js App Router patterns:
+- Usa Server Components para carga protegida y data fetching.
+- Usa Client Components solo para estado, efectos, formularios, browser APIs, Mapbox o UI interactiva.
+- Server actions deben empezar con `"use server"`.
+- Componentes con hooks o Mapbox deben empezar con `"use client"`.
+- Mapbox vive en cliente.
+- Google Places se consulta solo desde API routes server-side.
 
-- Use Server Components by default for data fetching and protected page loading.
-- Use Client Components only when needed for state, effects, forms, browser APIs, Mapbox, or interactive UI.
-- Server actions should live near the route/domain they modify and should begin with `"use server"`.
-- Client Components that use hooks or browser-only libraries must begin with `"use client"`.
+## Autenticación
 
-Mapbox components are client-side because they use browser APIs.
+Supabase Auth es la fuente de identidad.
 
-## Authentication
+Patrones importantes:
 
-Supabase Auth is used.
+- Cliente server-side: `lib/supabase/server.ts`.
+- Para páginas protegidas usa `getCurrentUser`.
+- Para mutations usa `requireAuthenticatedUser`.
+- Las server actions deben autenticar, validar, comprobar permisos, mutar y revalidar.
 
-Important pattern:
+## Supabase, SQL y RLS
 
-- Server-side Supabase client is created in `lib/supabase/server.ts` with `createServerClient` from `@supabase/ssr`.
-- Server actions should require an authenticated user before mutating protected data.
-- Use existing helpers such as `getCurrentUser` and `requireAuthenticatedUser` instead of duplicating auth checks.
+Supabase es la fuente de verdad. No dependas solo de checks de UI.
 
-When adding protected features:
+Archivos SQL relevantes:
 
-1. Resolve the current user server-side.
-2. Validate the input with Zod.
-3. Check permissions/membership where relevant.
-4. Perform the DB operation.
-5. Revalidate affected paths.
-6. Return a clear state object for UI feedback.
-
-## Supabase and RLS
-
-Supabase is the source of truth for auth and data. RLS is important and must not be bypassed casually.
-
-Migration files currently include policies and schema changes such as:
-
-- `supabase/rls_groups.sql`
-- `supabase/rls_places.sql`
-- `supabase/places_links.sql`
-- `supabase/places_images.sql`
+- `supabase/profiles_full_name.sql`
 - `supabase/rls_friends.sql`
+- `supabase/groups_cover_image_url.sql`
+- `supabase/groups_privacy.sql`
+- `supabase/rls_groups.sql`
 - `supabase/rls_group_invitations.sql`
 - `supabase/rls_group_activity.sql`
+- `supabase/places_links.sql`
 - `supabase/places_external_provider.sql`
+- `supabase/places_city.sql`
+- `supabase/rls_places.sql`
+- `supabase/group_place_user_states.sql`
 - `supabase/rls_personal_places.sql`
-- `supabase/groups_privacy.sql`
-- `supabase/groups_cover_image_url.sql`
+- `supabase/places_images.sql`
+- `supabase/places_favorites.sql`
+- `supabase/places_phone_number.sql`
 
-When changing database behavior:
+Al cambiar base de datos:
 
-- Add or update SQL migration files under `supabase/`.
-- Keep RLS policies consistent with the intended permissions.
-- Do not assume client-side checks are enough.
-- Keep group membership and ownership rules enforced server-side and/or through RLS.
-- Update TypeScript Supabase types if schema changes require it.
+- Actualiza SQL en `supabase/`.
+- Mantén RLS coherente.
+- Actualiza `types/supabase.ts` si cambia schema.
+- Añade tests en `tests/security/` o `tests/lib/`.
+- No expongas datos de grupos ajenos.
+- No crees bypass con service role desde app code.
 
-## Core domain concepts
+## Conceptos de dominio
 
-### Groups
+### Grupos
 
-Groups are collaborative spaces where users save and manage places.
+Los grupos son espacios colaborativos.
 
-Expected behaviors:
+- `groups`: metadata, privacidad, owner real (`created_by`), join code.
+- `group_members`: membresía y rol.
+- Privacidad: `abierto` / `privado`.
+- Roles: `owner` / `member`.
+- El creador del grupo cuenta como owner aunque falte una fila legacy en `group_members`.
 
-- Users can create groups.
-- Users can belong to groups.
-- Owners/admins may have elevated permissions.
-- Join codes and invitations are part of the group flow.
-- Group edit and join policies must be respected.
+### Lugares de grupo
 
-### Places
+Los lugares compartidos viven en `places`.
 
-Places can be saved for groups or personally.
-
-Important place fields include:
+Campos importantes:
 
 - `name`
 - `address`
 - `city`
-- `notes`
-- `category`
+- `category_id`
 - `source`
 - `provider`
 - `external_place_id`
 - `google_maps_url`
 - `business_status`
+- `phone_number`
+- `image_url`
 - `latitude`
 - `longitude`
-- `status`
 
-Current status values:
+Los estados personales de lugares de grupo viven en `group_place_user_states`:
 
-- `pending`
-- `visited`
-- `favorite`
+- `status`: `pending` / `visited`
+- `is_favorite`: boolean
 
-Current source values:
+### Lugares personales
 
-- `manual`
-- `google_maps`
-- `tiktok`
-- `instagram`
-- `website`
+Los lugares del mapa personal viven en `personal_places`.
 
-Current provider values:
+Incluyen:
 
-- `manual`
-- `mapbox`
-- `google_places`
+- `status`: `pending` / `visited`
+- `is_favorite`: boolean
+- `category`
+- `provider`
+- `external_place_id`
+- `google_maps_url`
+- `phone_number`
+- `image_url`
+- coordenadas.
 
-Distinction:
+### Perfil, listas y logros
 
-- `source` = where the recommendation came from, such as manual, TikTok, Instagram, website or Google Maps link.
-- `provider` = technical provider used to resolve the POI, such as Google Places or Mapbox.
+El perfil no debe usar métricas decorativas.
 
-### Friends and invitations
+- Contadores agregados: usar `lib/profilePlaces.ts`.
+- Listas rápidas: enlazar a `/profile/places`.
+- Vista global: personales + grupos visibles + estados de usuario.
+- Logros: calcular desde `lib/profileAchievements.ts`.
 
-Friend requests, group invitations and join requests are separate social flows. Keep naming explicit so these flows do not get mixed.
+Tipos relevantes:
 
-## Map architecture
+- `ProfilePlaceItem`
+- `ProfilePlacesFilter`
+- `ProfileAchievement`
+- `ProfileAchievementLevel`
 
-Map architecture has two layers:
+## Arquitectura de mapa
 
-### Visual map layer
+### Capa visual
 
-- Mapbox is used for the actual map rendering and interaction.
-- Main component: `components/map/GroupMap.tsx`.
-- It handles markers, map clicks, `flyTo`, popups and draft selections.
+Mapbox renderiza el mapa, marcadores, `flyTo`, filtros, selección y tarjetas.
 
-### Place search layer
+Componentes:
 
-- Google Places is used for search/details through internal server API routes.
-- Server routes:
-  - `app/api/places/search/route.ts`
-  - `app/api/places/details/route.ts`
-- Client helper:
-  - `lib/map/googlePlaces.ts`
-- Search UI:
-  - `components/map/MapSearchBox.tsx`
+- `components/map/GroupMap.tsx`
+- `components/map/PersonalMap.tsx`
+- `components/map/MapPlaceCard.tsx`
+- `components/map/MapMobileTabs.tsx`
+- `components/map/UserLocationButton.tsx`
+- `components/map/useMapboxResize.ts`
 
-Flow:
+`useMapboxResize.ts` es importante para evitar mapas grises o mal dimensionados en móvil.
 
-1. User searches for a place.
-2. The client calls an internal API route.
-3. The server route calls Google Places using `GOOGLE_PLACES_API_KEY`.
-4. The user selects a result.
-5. Full details are retrieved.
-6. The map moves to the selected location.
-7. A draft save panel appears.
-8. User confirms and the place is saved in Supabase.
+### Capa de búsqueda
 
-Manual add and link/text quick search should reuse existing patterns where possible.
+Google Places se usa vía rutas internas:
 
-## Validation
+- `app/api/places/search/route.ts`
+- `app/api/places/details/route.ts`
+- `app/api/places/nearby/route.ts`
+- `app/api/places/photo/route.ts`
 
-Central Zod schemas live in:
+No uses Google Places directamente desde componentes cliente.
+
+Los enlaces de Google Maps deben construirse/normalizarse con:
+
+```ts
+lib/map/googleMapsUrl.ts
+```
+
+## Validación
+
+Schemas Zod:
 
 ```ts
 lib/validation/schemas.ts
 ```
 
-Use these schemas for server actions and route handlers. When adding new fields, update the relevant schema first, then update actions, UI forms, DB types and tests.
-
-Important schemas include:
+Schemas importantes:
 
 - `createGroupSchema`
 - `joinGroupSchema`
 - `createPlaceSchema`
 - `createPersonalPlaceSchema`
 - `updatePlaceStatusSchema`
-- `updatePlaceLocationSchema`
+- `updatePlaceFavoriteSchema`
+- `updatePersonalPlaceStatusSchema`
+- `updatePersonalPlaceFavoriteSchema`
+- `removeGroupMemberSchema`
 
-Validation messages are currently Spanish/user-facing. Keep user-facing copy in Spanish unless there is a deliberate product decision to change language.
+Mantén mensajes de validación en español.
 
-## UI and styling
+## UI y diseño
 
-Styling uses Tailwind CSS.
+Sigue `DESIGN.md` y la identidad **Vibrant Cartography**.
 
-UI direction:
+- Superficies cálidas.
+- Coral como acción principal (`#ff5a5f` / `#c6283a`).
+- Plus Jakarta Sans.
+- Mobile-first.
+- Tarjetas redondeadas y sombras suaves.
+- Reutiliza `Button`, `Card`, `Input`, `EmptyState`, `CategoryBadge`.
+- No añadas librerías UI pesadas sin petición explícita.
+- No cambies `MapPlaceCard` salvo necesidad clara.
 
-- Follow `DESIGN.md`, the **Vibrant Cartography System**, as the visual source of truth.
-- Use its warm `surface` backgrounds, coral actions (`#ff5a5f`) and `Plus Jakarta Sans` typography rather than introducing unrelated themes.
-- Modern, clean, social-app feel.
-- Mobile-first responsive layout.
-- Rounded cards and soft borders are common patterns.
-- Prefer reusable components from `components/ui/`.
-- Keep empty states, loading states and errors clear.
-- Avoid adding heavy UI libraries unless explicitly requested.
+## Server actions
 
-When improving visuals:
-
-- Prefer incremental polish over large rewrites.
-- Keep existing design language unless asked to redesign.
-- Reuse `Button`, `Card`, `CategoryBadge`, `EmptyState` and layout components.
-- Maintain accessibility: labels, focus states, keyboard navigation and readable contrast.
-
-## Server actions pattern
-
-Server actions usually follow this shape:
+Patrón recomendado:
 
 ```ts
-export type SomeActionState = {
-  error: string | null;
-  success: boolean;
-};
-
 export async function someAction(
   _previousState: SomeActionState,
   formData: FormData
 ): Promise<SomeActionState> {
   const user = await requireAuthenticatedUser("/fallback");
-  const parsedInput = someSchema.safeParse({...});
+  const parsedInput = schema.safeParse({...});
 
   if (!parsedInput.success) {
     return { error: getValidationErrorMessage(parsedInput.error), success: false };
   }
 
-  const result = await someDomainFunction({ userId: user.id, ...parsedInput.data });
+  const result = await domainFunction({ userId: user.id, ...parsedInput.data });
 
   if (result.error) {
     return { error: result.error, success: false };
@@ -364,131 +369,72 @@ export async function someAction(
 }
 ```
 
-Preserve this pattern for consistency.
+## Tests
 
-## Testing strategy
+Vitest:
 
-### Unit/library tests
+- Helpers puros: `tests/lib/`
+- Server actions: `tests/actions/`
+- Validación: `tests/validation/`
+- Seguridad/RLS: `tests/security/`
 
-Vitest tests live in `tests/`.
+Playwright:
 
-Existing examples include:
-
-- `tests/lib/addressParsing.test.ts`
-- `tests/lib/placeClassification.test.ts`
-- `tests/lib/failure-detection.test.ts`
-
-Add Vitest tests for pure logic such as:
-
-- address parsing
-- category inference
-- validation helpers
-- permission helpers
-- URL parsing
-- data transformation utilities
-
-### E2E tests
-
-Playwright specs live in `e2e/`.
-
-Existing base specs include:
-
-- `e2e/navigation.spec.ts`
 - `e2e/auth.spec.ts`
+- `e2e/navigation.spec.ts`
 - `e2e/groups.spec.ts`
 - `e2e/map.spec.ts`
+- `e2e/notifications.spec.ts`
 
-Use Playwright for critical user journeys:
+Añade tests cuando cambies lógica de dominio, permisos, validación, SQL o acciones.
 
-- landing/navigation
-- register/login/logout
-- group creation
-- joining/invitations
-- map rendering fallback behavior
-- adding places
-- saving/searching places
+## Reglas para agentes
 
-Authenticated E2E tests may require `E2E_EMAIL` and `E2E_PASSWORD`.
+1. Lee el código existente antes de editar.
+2. Haz cambios pequeños y enfocados.
+3. No reviertas cambios ajenos.
+4. No elimines checks de RLS/permisos.
+5. No expongas claves server-side.
+6. Usa `ROUTES` cuando sea práctico.
+7. Usa helpers existentes antes de duplicar lógica.
+8. Mantén copy visible en español.
+9. Mantén TypeScript estricto.
+10. Ejecuta `tsc --noEmit` y tests relevantes cuando cambies código.
+11. Si solo cambias documentación, no hace falta ejecutar tests.
+12. Explica claramente cualquier check que no se pueda ejecutar.
 
-## CI
+## Errores comunes a evitar
 
-GitHub Actions workflow:
+- Exponer `GOOGLE_PLACES_API_KEY`.
+- Llamar Google Places desde cliente.
+- Usar solo permisos de UI para proteger mutations.
+- Hardcodear rutas ya disponibles en `ROUTES`.
+- Crear métricas de perfil sin lógica real.
+- Romper la agregación de `/profile/places`.
+- Cambiar `personal_places` o `group_place_user_states` sin actualizar tipos/tests.
+- Cambiar package manager sin aprobación.
+- Reescribir una pantalla completa para arreglar un detalle local.
 
-```txt
-.github/workflows/ci.yml
-```
+## Dirección de producto
 
-Expected behavior:
+MaPlan debe evolucionar hacia una app social de planificación:
 
-- Run `pnpm test` on PRs and pushes to `main`.
-- Run Playwright E2E when required secrets are configured.
+- grupos colaborativos;
+- lugares personales y compartidos;
+- mapa como experiencia central;
+- listas globales útiles;
+- perfil con progreso real;
+- logros ligeros;
+- invitaciones y amigos claros;
+- permisos seguros con Supabase/RLS;
+- UI pulida y móvil.
 
-When adding tests, keep CI stable. Avoid tests that depend on real third-party APIs unless guarded, mocked, or clearly configured.
+Cada cambio debe hacer la app más útil sin volver la arquitectura más difícil de mantener.
 
-## Error handling and UX
+## Skills locales de Codex
 
-- Show user-friendly Spanish messages.
-- Do not expose internal stack traces or provider secrets.
-- For external providers such as Google Places or Mapbox, handle missing keys and failed requests gracefully.
-- For map unavailable states, show a useful fallback instead of blank UI.
-- Keep forms resilient to slow submissions and repeated clicks.
+Skills versionadas en `.codex/skills/`:
 
-## Coding rules for agents
-
-When making changes:
-
-1. First understand the existing feature and file structure.
-2. Prefer small, focused changes over broad rewrites.
-3. Preserve the current stack and conventions.
-4. Add or update tests when changing logic.
-5. Do not commit secrets.
-6. Do not remove RLS/security checks.
-7. Do not bypass validation.
-8. Keep copy mostly Spanish because current user-facing UI is Spanish.
-9. Use existing route constants, helpers, schemas and UI primitives when possible.
-10. Run relevant checks or explain clearly if they cannot be run in the current environment.
-
-## Common pitfalls to avoid
-
-- Do not expose `GOOGLE_PLACES_API_KEY` to the browser.
-- Do not use Google Places directly from Client Components.
-- Do not rely only on client-side permission checks.
-- Do not hardcode duplicated route strings where `ROUTES` exists.
-- Do not introduce `any` to silence TypeScript errors.
-- Do not change package manager from `pnpm` without explicit approval.
-- Do not rewrite the whole app to solve a local issue.
-- Do not add new DB columns without corresponding Supabase migration and type updates.
-- Do not make E2E tests depend on unavailable credentials by default.
-
-## Preferred implementation style
-
-- Domain logic belongs in `lib/`.
-- UI components belong in `components/`.
-- Pages should compose existing components and call domain functions.
-- Server actions should validate, authorize, mutate and revalidate.
-- API routes should keep provider keys server-side and return normalized data to the client.
-- Pure helpers should be testable without network access.
-
-## Product direction reminders
-
-MaPlan should evolve toward a polished social planning app:
-
-- collaborative friend groups
-- personal and group saved places
-- map-first discovery
-- fast place saving from search, links or manual input
-- clear invitations and friend flows
-- strong visual polish with good empty/loading states
-- safe Supabase/RLS-backed data model
-
-Every change should support that direction without making the codebase harder to maintain.
-
-## Project-local Codex skills
-
-Project-specific skill drafts live under `.codex/skills/`:
-
-- `maplan-rls-security` — use for Supabase SQL, RLS, privacy and permission work.
-- `maplan-vibrant-cartography-ui` — use for UI changes that must follow `DESIGN.md`.
-- `maplan-release-audit` — use before merges, deploys, SQL rollout or large branch reviews.
-
-These files are versioned with the project. If a Codex environment does not auto-discover project-local skills, copy or install the relevant skill folder into the agent's configured skills directory before relying on automatic triggering.
+- `maplan-rls-security`: usar para SQL, RLS, privacidad, permisos y tipos Supabase.
+- `maplan-vibrant-cartography-ui`: usar para cambios de UI, diseño, navegación, mapas, perfil y mobile.
+- `maplan-release-audit`: usar antes de merges, despliegues, rollout SQL o revisiones grandes.
