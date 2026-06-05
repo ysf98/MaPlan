@@ -84,6 +84,7 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
               )}
               href={item.href}
               key={item.href}
+              prefetch={false}
             >
               <NavIcon name={item.icon} />
               {item.label}
@@ -95,6 +96,7 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
           aria-label="Explorar lugares"
           className="mx-auto grid h-14 w-14 -translate-y-5 place-items-center rounded-2xl bg-[rgb(var(--primary-strong))] text-white shadow-[0_12px_24px_rgba(var(--primary-strong)/0.35)] transition hover:bg-[rgb(var(--primary))]"
           href={ROUTES.explore}
+          prefetch={false}
         >
           <NavIcon name="pin" />
         </Link>
@@ -109,6 +111,7 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
               )}
               href={item.href}
               key={item.href}
+              prefetch={false}
             >
               <NavIcon name={item.icon} />
               {item.label}

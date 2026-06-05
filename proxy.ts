@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/supabase";
 
-const PRIVATE_PATHS = ["/dashboard", "/friends", "/groups", "/invitations", "/map", "/notifications", "/profile"];
+const PRIVATE_PATHS = ["/dashboard", "/explore", "/friends", "/groups", "/invitations", "/map", "/maps", "/notifications", "/profile"];
 const AUTH_PATHS = ["/login", "/register"];
 
 function isPrivatePath(pathname: string) {
