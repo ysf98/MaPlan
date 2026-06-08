@@ -106,9 +106,7 @@ export function RegisterForm() {
         </label>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-zinc-400">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-current text-[15px] font-bold leading-none">
-              @
-            </span>
+            <span className="-translate-y-px text-xl font-semibold leading-none">@</span>
           </span>
           <input
             className="h-14 w-full rounded-xl border-2 border-transparent bg-zinc-100 pl-12 pr-4 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-[rgb(var(--vc-coral))] focus:bg-white focus:outline-none"

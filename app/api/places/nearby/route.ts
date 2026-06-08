@@ -4,7 +4,11 @@ import type { GooglePlaceFeature } from "@/lib/map/googlePlaces";
 import { selectNearbyPlaceCandidate, type NearbyFallbackReason, type NearbySelectionInput } from "@/lib/map/googlePlacesNearby";
 import { pickCityFromComponents, pickStreetFromComponents, splitAddressParts } from "@/lib/map/addressParsing";
 import { buildGoogleMapsUrl } from "@/lib/map/googleMapsUrl";
-import { googlePlacesNearbySchema } from "@/lib/validation/schemas";
+import {
+  googlePlacesNearbyRecommendationsSchema,
+  googlePlacesNearbySchema,
+  type GooglePlacesNearbyRecommendationsInput
+} from "@/lib/validation/schemas";
 
 type GoogleNearbyResult = {
   place_id?: string;
@@ -64,6 +68,10 @@ type NearbyPlaceResponse = {
   fallbackReason?: NearbyFallbackReason;
 };
 
+type NearbyRecommendationsResponse = {
+  results: Array<GooglePlaceFeature & { category: string | null }>;
+};
+
 type CandidateSourceRecord = {
   placeId: string;
   name: string;
@@ -75,6 +83,16 @@ type CandidateSourceRecord = {
 function buildPhotoProxyUrl(photoReference: string): string {
   return `/api/places/photo?photoReference=${encodeURIComponent(photoReference)}&maxWidth=800`;
 }
+
+const recommendationCategoryConfig: Record<
+  GooglePlacesNearbyRecommendationsInput["category"],
+  { keyword?: string; type?: string; categories: string[] }
+> = {
+  popular: { categories: ["Sitios cercanos"] },
+  food: { keyword: "restaurantes bares cafeterias comida", type: "restaurant", categories: ["Comida"] },
+  coffee: { keyword: "cafeterias cafe brunch", type: "cafe", categories: ["Cafeteria"] },
+  plans: { keyword: "planes parques museos turismo ocio", type: "tourist_attraction", categories: ["Planes"] }
+};
 
 function normalizeNearbyCandidate(result: GoogleNearbyResult): NearbySelectionInput | null {
   const placeId = (result.place_id || "").trim();
@@ -93,6 +111,50 @@ function normalizeNearbyCandidate(result: GoogleNearbyResult): NearbySelectionIn
     longitude,
     types: result.types || [],
     photoReference: result.photos?.[0]?.photo_reference || null
+  };
+}
+
+function normalizeRecommendationFromNearby(
+  result: GoogleNearbyResult,
+  categoryLabel: string
+): (GooglePlaceFeature & { category: string | null }) | null {
+  const placeId = (result.place_id || "").trim();
+  const name = (result.name || "").trim();
+  const latitude = result.geometry?.location?.lat;
+  const longitude = result.geometry?.location?.lng;
+
+  if (!placeId || !name || typeof latitude !== "number" || typeof longitude !== "number") {
+    return null;
+  }
+
+  const rawAddress = (result.formatted_address || result.vicinity || "").trim();
+  const parts = splitAddressParts(rawAddress);
+  const address = parts.street || rawAddress || "Sin direccion";
+  const city = parts.city || "";
+  const primaryType = result.types?.[0] || null;
+  const photoReference = result.photos?.[0]?.photo_reference || null;
+
+  return {
+    externalPlaceId: placeId,
+    provider: "google_places",
+    name,
+    address,
+    city,
+    latitude,
+    longitude,
+    googleMapsUrl: buildGoogleMapsUrl({
+      placeId,
+      name,
+      address,
+      city,
+      latitude,
+      longitude
+    }),
+    businessStatus: (result.business_status || "").trim() || null,
+    phoneNumber: null,
+    primaryType,
+    imageUrl: photoReference ? buildPhotoProxyUrl(photoReference) : null,
+    category: categoryLabel
   };
 }
 
@@ -314,6 +376,21 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
+  if (url.searchParams.get("purpose") === "recommendations") {
+    const parsedRecommendationsPayload = googlePlacesNearbyRecommendationsSchema.safeParse({
+      lat: url.searchParams.get("lat"),
+      lng: url.searchParams.get("lng"),
+      category: url.searchParams.get("category"),
+      radius: url.searchParams.get("radius")
+    });
+
+    if (!parsedRecommendationsPayload.success) {
+      return NextResponse.json({ error: "Payload invalido." }, { status: 400 });
+    }
+
+    return resolveNearbyRecommendations(parsedRecommendationsPayload.data, apiKey);
+  }
+
   const parsedPayload = googlePlacesNearbySchema.safeParse({
     lat: url.searchParams.get("lat"),
     lng: url.searchParams.get("lng"),
@@ -324,6 +401,54 @@ export async function GET(request: Request) {
   }
 
   return resolveNearbyFromCoordinates(parsedPayload.data.lat, parsedPayload.data.lng, parsedPayload.data.selectedName, apiKey);
+}
+
+async function resolveNearbyRecommendations(input: GooglePlacesNearbyRecommendationsInput, apiKey: string) {
+  const config = recommendationCategoryConfig[input.category];
+  const nearbyParams = new URLSearchParams({
+    location: `${input.lat},${input.lng}`,
+    radius: String(input.radius),
+    language: "es",
+    region: "es",
+    key: apiKey
+  });
+
+  if (config.keyword) {
+    nearbyParams.set("keyword", config.keyword);
+  }
+
+  if (config.type) {
+    nearbyParams.set("type", config.type);
+  }
+
+  const nearbyResponse = await fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?${nearbyParams.toString()}`, {
+    method: "GET",
+    cache: "no-store"
+  }).catch(() => null);
+
+  if (!nearbyResponse || !nearbyResponse.ok) {
+    return NextResponse.json({ results: [] } satisfies NearbyRecommendationsResponse);
+  }
+
+  const nearbyJson = (await nearbyResponse.json()) as GoogleNearbyResponse;
+  if (nearbyJson.status && nearbyJson.status !== "OK" && nearbyJson.status !== "ZERO_RESULTS") {
+    return NextResponse.json({ results: [] } satisfies NearbyRecommendationsResponse);
+  }
+
+  const seenPlaceIds = new Set<string>();
+  const categoryLabel = config.categories[0] || "Recomendado";
+  const results = (nearbyJson.results || [])
+    .map((result) => normalizeRecommendationFromNearby(result, categoryLabel))
+    .filter((result): result is GooglePlaceFeature & { category: string | null } => {
+      if (!result || seenPlaceIds.has(result.externalPlaceId)) {
+        return false;
+      }
+      seenPlaceIds.add(result.externalPlaceId);
+      return true;
+    })
+    .slice(0, 20);
+
+  return NextResponse.json({ results } satisfies NearbyRecommendationsResponse);
 }
 
 async function resolveNearbyFromCoordinates(lat: number, lng: number, selectedName: string | null, apiKey: string) {

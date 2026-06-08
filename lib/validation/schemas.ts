@@ -9,6 +9,7 @@ export const PLACE_STATUS_VALUES = ["pending", "visited"] as const;
 export const PLACE_SOURCE_VALUES = ["manual", "google_maps", "tiktok", "instagram", "website"] as const;
 export const PLACE_PROVIDER_VALUES = ["manual", "mapbox", "google_places"] as const;
 export const FRIEND_REQUEST_DECISION_VALUES = ["accepted", "rejected"] as const;
+export const GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES = ["popular", "food", "coffee", "plans"] as const;
 const uuidSchema = z.string().uuid("Identificador invalido.");
 
 export const createGroupSchema = z.object({
@@ -407,6 +408,21 @@ export const googlePlacesNearbySchema = z.object({
     .transform((value) => (value && value.length > 0 ? value : null))
 });
 
+export const googlePlacesNearbyRecommendationsSchema = z.object({
+  lat: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
+  lng: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida."),
+  category: z
+    .string()
+    .optional()
+    .transform((value) => value || "popular")
+    .refine(
+      (value): value is (typeof GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES)[number] =>
+        GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES.includes(value as never),
+      "Categoria invalida."
+    ),
+  radius: z.coerce.number().int().min(300, "Radio invalido.").max(5000, "Radio invalido.").optional().default(1800)
+});
+
 export const updateProfileSchema = z.object({
   fullName: z
     .string()
@@ -461,4 +477,5 @@ export type FriendSearchQueryInput = z.infer<typeof friendSearchQuerySchema>;
 export type GooglePlacesSearchInput = z.infer<typeof googlePlacesSearchSchema>;
 export type GooglePlaceDetailsInput = z.infer<typeof googlePlaceDetailsSchema>;
 export type GooglePlacesNearbyInput = z.infer<typeof googlePlacesNearbySchema>;
+export type GooglePlacesNearbyRecommendationsInput = z.infer<typeof googlePlacesNearbyRecommendationsSchema>;
 export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;

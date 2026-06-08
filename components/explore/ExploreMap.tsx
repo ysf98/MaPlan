@@ -17,7 +17,14 @@ import {
   resolvePlaceFromMapClick,
   type MapDraftPlace
 } from "@/lib/map/geocoding";
-import { getGooglePlaceDetails, getGooglePlaceNearby, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
+import {
+  getGooglePlaceDetails,
+  getGooglePlaceNearby,
+  getGooglePlaceRecommendations,
+  type GoogleNearbyRecommendation,
+  type GoogleNearbyRecommendationCategory,
+  type GooglePlaceSuggestion
+} from "@/lib/map/googlePlaces";
 import { inferCategoryFromGoogleSignals } from "@/lib/map/placeClassification";
 import type { SaveDestination } from "@/lib/saveDestinations";
 import { ROUTES } from "@/utils/constants";
@@ -31,6 +38,13 @@ type ExploreMapProps = {
   destinations: SaveDestination[];
 };
 
+const recommendationFilters: Array<{ value: GoogleNearbyRecommendationCategory; label: string }> = [
+  { value: "popular", label: "Recomendados" },
+  { value: "food", label: "Comer" },
+  { value: "coffee", label: "Cafe" },
+  { value: "plans", label: "Planes" }
+];
+
 function SpinnerIcon() {
   return (
     <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -38,6 +52,16 @@ function SpinnerIcon() {
       <path className="opacity-90" d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeLinecap="round" strokeWidth="3" />
     </svg>
   );
+}
+
+function createRecommendationMarkerElement(): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className =
+    "grid h-8 w-8 place-items-center rounded-full border-2 border-white bg-teal-500 text-white shadow-[0_10px_22px_rgba(13,148,136,0.35)] transition hover:scale-105";
+  button.innerHTML =
+    '<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z"/></svg>';
+  return button;
 }
 
 function ExploreSaveCard({
@@ -172,6 +196,8 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const selectedSearchMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const recommendationMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const recommendationsAbortRef = useRef<AbortController | null>(null);
   const draftCardRef = useRef<HTMLDivElement | null>(null);
   const skipNextMapClickRef = useRef(false);
   const pendingMapClickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -179,6 +205,11 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
   const [resolveHint, setResolveHint] = useState<string | null>(null);
   const [draftSelection, setDraftSelection] = useState<MapDraftPlace | null>(null);
+  const [activeRecommendationFilter, setActiveRecommendationFilter] = useState<GoogleNearbyRecommendationCategory | null>(null);
+  const [pendingRecommendationFilter, setPendingRecommendationFilter] = useState<GoogleNearbyRecommendationCategory | null>(null);
+  const [recommendations, setRecommendations] = useState<GoogleNearbyRecommendation[]>([]);
+  const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [searchCloseSignal, setSearchCloseSignal] = useState(0);
   const [saveState, saveFormAction, isSavePending] = useActionState(saveExploredPlaceAction, initialSaveState);
   const wasSavePendingRef = useRef(false);
@@ -319,6 +350,9 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
       }
       selectedSearchMarkerRef.current?.remove();
       selectedSearchMarkerRef.current = null;
+      recommendationMarkersRef.current.forEach((marker) => marker.remove());
+      recommendationMarkersRef.current = [];
+      recommendationsAbortRef.current?.abort();
       cleanupInitialResize();
       cleanupLoadResize?.();
       map.off("load", handleMapLoad);
@@ -326,6 +360,134 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
       mapRef.current = null;
     };
   }, [mapStyle, token]);
+
+  useEffect(() => {
+    return () => {
+      recommendationsAbortRef.current?.abort();
+      recommendationMarkersRef.current.forEach((marker) => marker.remove());
+      recommendationMarkersRef.current = [];
+    };
+  }, []);
+
+  const loadRecommendations = useCallback(
+    async (category: GoogleNearbyRecommendationCategory, location = userLocation.location) => {
+      if (!location) {
+        setPendingRecommendationFilter(category);
+        setRecommendationsError("Activa tu ubicacion para ver recomendaciones cerca.");
+        userLocation.requestLocation();
+        return;
+      }
+
+      recommendationsAbortRef.current?.abort();
+      const controller = new AbortController();
+      recommendationsAbortRef.current = controller;
+      setIsLoadingRecommendations(true);
+      setRecommendationsError(null);
+      setActiveRecommendationFilter(category);
+      setPendingRecommendationFilter(null);
+
+      try {
+        const results = await getGooglePlaceRecommendations({
+          lat: location.latitude,
+          lng: location.longitude,
+          category,
+          signal: controller.signal
+        });
+
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setRecommendations(results);
+        if (results.length === 0) {
+          setRecommendationsError("No encontramos recomendaciones cerca de ti.");
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setRecommendations([]);
+          setRecommendationsError("No se pudo cargar recomendaciones.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingRecommendations(false);
+        }
+      }
+    },
+    [userLocation]
+  );
+
+  useEffect(() => {
+    if (!pendingRecommendationFilter || !userLocation.location) {
+      return;
+    }
+
+    void loadRecommendations(pendingRecommendationFilter, userLocation.location);
+  }, [loadRecommendations, pendingRecommendationFilter, userLocation.location]);
+
+  const selectRecommendation = useCallback((place: GoogleNearbyRecommendation) => {
+    const nextDraft: MapDraftPlace = {
+      latitude: place.latitude,
+      longitude: place.longitude,
+      name: place.name,
+      address: place.address,
+      city: place.city,
+      category: inferCategoryFromGoogleSignals(place.primaryType, place.name) || place.category || "Otros",
+      provider: place.provider,
+      externalPlaceId: place.externalPlaceId,
+      googleMapsUrl: place.googleMapsUrl,
+      businessStatus: place.businessStatus,
+      phoneNumber: place.phoneNumber,
+      imageUrl: place.imageUrl
+    };
+
+    const map = mapRef.current;
+    if (!map) {
+      setDraftSelection(nextDraft);
+      return;
+    }
+
+    map.flyTo({
+      center: [place.longitude, place.latitude],
+      zoom: Math.max(map.getZoom(), 15),
+      essential: true
+    });
+    setDraftSelection(nextDraft);
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+
+    recommendationMarkersRef.current.forEach((marker) => marker.remove());
+    recommendationMarkersRef.current = recommendations.map((place) => {
+      const element = createRecommendationMarkerElement();
+      element.setAttribute("aria-label", `Ver ${place.name}`);
+      element.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        skipNextMapClickRef.current = true;
+        selectRecommendation(place);
+      });
+
+      return new mapboxgl.Marker({ element, anchor: "bottom" }).setLngLat([place.longitude, place.latitude]).addTo(map);
+    });
+
+    if (recommendations.length > 1) {
+      const bounds = new mapboxgl.LngLatBounds();
+      recommendations.forEach((place) => bounds.extend([place.longitude, place.latitude]));
+      map.fitBounds(bounds, { padding: 88, maxZoom: 15, duration: 700 });
+    } else if (recommendations.length === 1) {
+      const [place] = recommendations;
+      map.flyTo({ center: [place.longitude, place.latitude], zoom: 15, essential: true });
+    }
+
+    return () => {
+      recommendationMarkersRef.current.forEach((marker) => marker.remove());
+      recommendationMarkersRef.current = [];
+    };
+  }, [recommendations, selectRecommendation]);
 
   useEffect(() => {
     if (!draftSelection) {
@@ -464,6 +626,28 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
             onSelectResult={handleSelectSearchResult}
           />
         </div>
+        <div className="pointer-events-auto mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {recommendationFilters.map((filter) => {
+            const isActive = activeRecommendationFilter === filter.value;
+            const isLoading = isLoadingRecommendations && isActive;
+            return (
+              <button
+                className={
+                  isActive
+                    ? "inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-[#c6283a] px-4 text-xs font-bold text-white shadow-[0_8px_18px_rgba(198,40,58,0.22)]"
+                    : "inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-rose-100 bg-white/92 px-4 text-xs font-bold text-zinc-700 shadow-sm backdrop-blur transition hover:bg-rose-50"
+                }
+                disabled={isLoadingRecommendations}
+                key={filter.value}
+                onClick={() => void loadRecommendations(filter.value)}
+                type="button"
+              >
+                {isLoading ? <SpinnerIcon /> : null}
+                {filter.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <UserLocationButton
@@ -485,6 +669,14 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
         <div className="pointer-events-none absolute left-4 top-[calc(env(safe-area-inset-top)+136px)] z-10">
           <Card className="rounded-2xl border-zinc-100 bg-white/95 shadow-lg backdrop-blur">
             <p className="text-sm text-zinc-700">{resolveHint}</p>
+          </Card>
+        </div>
+      ) : null}
+
+      {recommendationsError && !draftSelection ? (
+        <div className="pointer-events-none absolute left-4 right-4 top-[calc(env(safe-area-inset-top)+174px)] z-10">
+          <Card className="rounded-2xl border-rose-100 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
+            <p className="text-sm font-medium text-zinc-700">{recommendationsError}</p>
           </Card>
         </div>
       ) : null}

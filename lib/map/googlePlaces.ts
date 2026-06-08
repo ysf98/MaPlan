@@ -38,6 +38,12 @@ export type GoogleNearbyPlaceResponse = {
   fallbackReason?: GoogleNearbyFallbackReason;
 };
 
+export type GoogleNearbyRecommendationCategory = "popular" | "food" | "coffee" | "plans";
+
+export type GoogleNearbyRecommendation = GooglePlaceFeature & {
+  category: string | null;
+};
+
 export function normalizeSearchQuery(query: string): string {
   const trimmed = query.trim();
   const normalized = trimmed
@@ -137,4 +143,32 @@ export async function getGooglePlaceNearby(params: {
     place: payload.place ?? null,
     fallbackReason: payload.fallbackReason
   };
+}
+
+export async function getGooglePlaceRecommendations(params: {
+  lat: number;
+  lng: number;
+  category: GoogleNearbyRecommendationCategory;
+  radius?: number;
+  signal?: AbortSignal;
+}): Promise<GoogleNearbyRecommendation[]> {
+  const query = new URLSearchParams({
+    purpose: "recommendations",
+    lat: String(params.lat),
+    lng: String(params.lng),
+    category: params.category,
+    radius: String(params.radius ?? 1800)
+  });
+
+  const response = await fetch(`/api/places/nearby?${query.toString()}`, {
+    method: "GET",
+    signal: params.signal
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const payload = (await response.json()) as { results?: GoogleNearbyRecommendation[] };
+  return payload.results || [];
 }

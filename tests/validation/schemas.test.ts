@@ -4,6 +4,7 @@ import {
   deleteAccountSchema,
   friendSearchQuerySchema,
   googlePlaceDetailsSchema,
+  googlePlacesNearbyRecommendationsSchema,
   googlePlacesNearbySchema,
   googlePlacesSearchSchema,
   inviteFriendToGroupSchema,
@@ -399,6 +400,37 @@ describe("api schemas", () => {
       googlePlacesNearbySchema.safeParse({
         lat: 140.4168,
         lng: -3.7038
+      }).success
+    ).toBe(false);
+  });
+
+  it("googlePlacesNearbyRecommendationsSchema validates category and radius", () => {
+    expect(
+      googlePlacesNearbyRecommendationsSchema.parse({
+        lat: 40.4168,
+        lng: -3.7038,
+        category: "food",
+        radius: 1800
+      })
+    ).toEqual({
+      lat: 40.4168,
+      lng: -3.7038,
+      category: "food",
+      radius: 1800
+    });
+
+    expect(
+      googlePlacesNearbyRecommendationsSchema.parse({
+        lat: 40.4168,
+        lng: -3.7038
+      }).category
+    ).toBe("popular");
+
+    expect(
+      googlePlacesNearbyRecommendationsSchema.safeParse({
+        lat: 40.4168,
+        lng: -3.7038,
+        category: "invalid"
       }).success
     ).toBe(false);
   });
