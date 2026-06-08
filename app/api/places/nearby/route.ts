@@ -116,12 +116,12 @@ const recommendationCategoryConfig: Record<GooglePlacesNearbyRecommendationsInpu
   popular: {
     categories: ["Recomendado"],
     excludedTypes: uninterestingPopularTypes,
-    keyword: "mejores valorados restaurantes cafeterias museos parques ocio",
-    minRating: 4.2,
-    minRatingsTotal: 25
+    keyword: "restaurantes cafeterias bares museos parques ocio popular",
+    minRating: 3.8,
+    minRatingsTotal: 5
   },
   food: { keyword: "restaurantes bares cafeterias comida", type: "restaurant", categories: ["Comida"] },
-  coffee: { keyword: "cafeterias cafe brunch", type: "cafe", categories: ["Cafeteria"] },
+  coffee: { keyword: "cafeteria cafe coffee brunch panaderia pasteleria heladeria", categories: ["Cafeteria"] },
   plans: { keyword: "planes parques museos turismo ocio", type: "tourist_attraction", categories: ["Planes"] },
   sports: {
     categories: ["Deporte"],
@@ -170,6 +170,14 @@ function getRecommendationScore(result: GoogleNearbyResult) {
   const reviewWeight = Math.min(Math.log10(Math.max(ratingsTotal, 1)) / 3, 1);
 
   return rating * 20 + reviewWeight * 30;
+}
+
+function getSortedRecommendationCandidates(results: GoogleNearbyResult[], config: RecommendationCategoryConfig) {
+  const relevantResults = results.filter((result) => hasAnyType(result, config.allowedTypes) && hasNoExcludedType(result, config.excludedTypes));
+  const strongResults = relevantResults.filter((result) => isStrongRecommendationCandidate(result, config));
+  const candidateResults = strongResults.length > 0 ? strongResults : relevantResults;
+
+  return candidateResults.sort((left, right) => getRecommendationScore(right) - getRecommendationScore(left));
 }
 
 function normalizeNearbyCandidate(result: GoogleNearbyResult): NearbySelectionInput | null {
@@ -483,41 +491,57 @@ export async function GET(request: Request) {
 
 async function resolveNearbyRecommendations(input: GooglePlacesNearbyRecommendationsInput, apiKey: string) {
   const config = recommendationCategoryConfig[input.category];
-  const nearbyParams = new URLSearchParams({
-    location: `${input.lat},${input.lng}`,
-    radius: String(input.radius),
-    language: "es",
-    region: "es",
-    key: apiKey
-  });
+  const buildNearbyParams = (includeHints: boolean) => {
+    const params = new URLSearchParams({
+      location: `${input.lat},${input.lng}`,
+      radius: String(input.radius),
+      language: "es",
+      region: "es",
+      key: apiKey
+    });
 
-  if (config.keyword) {
-    nearbyParams.set("keyword", config.keyword);
+    if (includeHints && config.keyword) {
+      params.set("keyword", config.keyword);
+    }
+
+    if (includeHints && config.type) {
+      params.set("type", config.type);
+    }
+
+    return params;
+  };
+
+  const fetchNearby = async (params: URLSearchParams) => {
+    const response = await fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?${params.toString()}`, {
+      method: "GET",
+      cache: "no-store"
+    }).catch(() => null);
+
+    if (!response || !response.ok) {
+      return null;
+    }
+
+    return (await response.json()) as GoogleNearbyResponse;
+  };
+
+  const nearbyParams = buildNearbyParams(true);
+  let nearbyJson = await fetchNearby(nearbyParams);
+
+  if ((!nearbyJson?.results || nearbyJson.results.length === 0) && input.category === "popular") {
+    nearbyJson = await fetchNearby(buildNearbyParams(false));
   }
 
-  if (config.type) {
-    nearbyParams.set("type", config.type);
-  }
-
-  const nearbyResponse = await fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?${nearbyParams.toString()}`, {
-    method: "GET",
-    cache: "no-store"
-  }).catch(() => null);
-
-  if (!nearbyResponse || !nearbyResponse.ok) {
+  if (!nearbyJson) {
     return NextResponse.json({ results: [] } satisfies NearbyRecommendationsResponse);
   }
 
-  const nearbyJson = (await nearbyResponse.json()) as GoogleNearbyResponse;
   if (nearbyJson.status && nearbyJson.status !== "OK" && nearbyJson.status !== "ZERO_RESULTS") {
     return NextResponse.json({ results: [] } satisfies NearbyRecommendationsResponse);
   }
 
   const seenPlaceIds = new Set<string>();
   const categoryLabel = config.categories[0] || "Recomendado";
-  const results = (nearbyJson.results || [])
-    .filter((result) => isStrongRecommendationCandidate(result, config))
-    .sort((left, right) => getRecommendationScore(right) - getRecommendationScore(left))
+  const results = getSortedRecommendationCandidates(nearbyJson.results || [], config)
     .map((result) => normalizeRecommendationFromNearby(result, categoryLabel))
     .filter((result): result is GooglePlaceFeature & { category: string | null } => {
       if (!result || seenPlaceIds.has(result.externalPlaceId)) {
