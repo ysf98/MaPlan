@@ -409,13 +409,13 @@ describe("api schemas", () => {
       googlePlacesNearbyRecommendationsSchema.parse({
         lat: 40.4168,
         lng: -3.7038,
-        category: "food",
+        category: "sports",
         radius: 1800
       })
     ).toEqual({
       lat: 40.4168,
       lng: -3.7038,
-      category: "food",
+      category: "sports",
       radius: 1800
     });
 

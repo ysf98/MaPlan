@@ -9,7 +9,7 @@ export const PLACE_STATUS_VALUES = ["pending", "visited"] as const;
 export const PLACE_SOURCE_VALUES = ["manual", "google_maps", "tiktok", "instagram", "website"] as const;
 export const PLACE_PROVIDER_VALUES = ["manual", "mapbox", "google_places"] as const;
 export const FRIEND_REQUEST_DECISION_VALUES = ["accepted", "rejected"] as const;
-export const GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES = ["popular", "food", "coffee", "plans"] as const;
+export const GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES = ["popular", "food", "coffee", "plans", "sports"] as const;
 const uuidSchema = z.string().uuid("Identificador invalido.");
 
 export const createGroupSchema = z.object({

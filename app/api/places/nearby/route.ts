@@ -18,7 +18,9 @@ type GoogleNearbyResult = {
   geometry?: { location?: { lat?: number; lng?: number } };
   business_status?: string;
   photos?: Array<{ photo_reference?: string }>;
+  rating?: number;
   types?: string[];
+  user_ratings_total?: number;
 };
 
 type GoogleNearbyResponse = {
@@ -84,15 +86,91 @@ function buildPhotoProxyUrl(photoReference: string): string {
   return `/api/places/photo?photoReference=${encodeURIComponent(photoReference)}&maxWidth=800`;
 }
 
-const recommendationCategoryConfig: Record<
-  GooglePlacesNearbyRecommendationsInput["category"],
-  { keyword?: string; type?: string; categories: string[] }
-> = {
-  popular: { categories: ["Sitios cercanos"] },
+type RecommendationCategoryConfig = {
+  allowedTypes?: string[];
+  categories: string[];
+  excludedTypes?: string[];
+  keyword?: string;
+  minRating?: number;
+  minRatingsTotal?: number;
+  type?: string;
+};
+
+const uninterestingPopularTypes = [
+  "atm",
+  "bank",
+  "car_dealer",
+  "car_repair",
+  "finance",
+  "gas_station",
+  "insurance_agency",
+  "lodging",
+  "parking",
+  "pharmacy",
+  "post_office",
+  "real_estate_agency",
+  "storage"
+];
+
+const recommendationCategoryConfig: Record<GooglePlacesNearbyRecommendationsInput["category"], RecommendationCategoryConfig> = {
+  popular: {
+    categories: ["Recomendado"],
+    excludedTypes: uninterestingPopularTypes,
+    keyword: "mejores valorados restaurantes cafeterias museos parques ocio",
+    minRating: 4.2,
+    minRatingsTotal: 25
+  },
   food: { keyword: "restaurantes bares cafeterias comida", type: "restaurant", categories: ["Comida"] },
   coffee: { keyword: "cafeterias cafe brunch", type: "cafe", categories: ["Cafeteria"] },
-  plans: { keyword: "planes parques museos turismo ocio", type: "tourist_attraction", categories: ["Planes"] }
+  plans: { keyword: "planes parques museos turismo ocio", type: "tourist_attraction", categories: ["Planes"] },
+  sports: {
+    categories: ["Deporte"],
+    keyword: "gimnasio fitness deporte futbol padel tenis piscina polideportivo estadio yoga crossfit"
+  }
 };
+
+function hasAnyType(result: GoogleNearbyResult, types: string[] | undefined) {
+  if (!types || types.length === 0) {
+    return true;
+  }
+
+  return (result.types || []).some((type) => types.includes(type));
+}
+
+function hasNoExcludedType(result: GoogleNearbyResult, types: string[] | undefined) {
+  if (!types || types.length === 0) {
+    return true;
+  }
+
+  return !(result.types || []).some((type) => types.includes(type));
+}
+
+function isStrongRecommendationCandidate(result: GoogleNearbyResult, config: RecommendationCategoryConfig) {
+  if (!hasAnyType(result, config.allowedTypes) || !hasNoExcludedType(result, config.excludedTypes)) {
+    return false;
+  }
+
+  const rating = typeof result.rating === "number" ? result.rating : 0;
+  const ratingsTotal = typeof result.user_ratings_total === "number" ? result.user_ratings_total : 0;
+
+  if (config.minRating && rating < config.minRating) {
+    return false;
+  }
+
+  if (config.minRatingsTotal && ratingsTotal < config.minRatingsTotal) {
+    return false;
+  }
+
+  return true;
+}
+
+function getRecommendationScore(result: GoogleNearbyResult) {
+  const rating = typeof result.rating === "number" ? result.rating : 0;
+  const ratingsTotal = typeof result.user_ratings_total === "number" ? result.user_ratings_total : 0;
+  const reviewWeight = Math.min(Math.log10(Math.max(ratingsTotal, 1)) / 3, 1);
+
+  return rating * 20 + reviewWeight * 30;
+}
 
 function normalizeNearbyCandidate(result: GoogleNearbyResult): NearbySelectionInput | null {
   const placeId = (result.place_id || "").trim();
@@ -438,6 +516,8 @@ async function resolveNearbyRecommendations(input: GooglePlacesNearbyRecommendat
   const seenPlaceIds = new Set<string>();
   const categoryLabel = config.categories[0] || "Recomendado";
   const results = (nearbyJson.results || [])
+    .filter((result) => isStrongRecommendationCandidate(result, config))
+    .sort((left, right) => getRecommendationScore(right) - getRecommendationScore(left))
     .map((result) => normalizeRecommendationFromNearby(result, categoryLabel))
     .filter((result): result is GooglePlaceFeature & { category: string | null } => {
       if (!result || seenPlaceIds.has(result.externalPlaceId)) {

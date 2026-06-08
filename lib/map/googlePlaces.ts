@@ -38,7 +38,7 @@ export type GoogleNearbyPlaceResponse = {
   fallbackReason?: GoogleNearbyFallbackReason;
 };
 
-export type GoogleNearbyRecommendationCategory = "popular" | "food" | "coffee" | "plans";
+export type GoogleNearbyRecommendationCategory = "popular" | "food" | "coffee" | "plans" | "sports";
 
 export type GoogleNearbyRecommendation = GooglePlaceFeature & {
   category: string | null;

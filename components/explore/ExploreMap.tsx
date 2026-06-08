@@ -42,7 +42,8 @@ const recommendationFilters: Array<{ value: GoogleNearbyRecommendationCategory; 
   { value: "popular", label: "Recomendados" },
   { value: "food", label: "Comer" },
   { value: "coffee", label: "Cafe" },
-  { value: "plans", label: "Planes" }
+  { value: "plans", label: "Planes" },
+  { value: "sports", label: "Deportes" }
 ];
 
 function SpinnerIcon() {
@@ -58,7 +59,7 @@ function createRecommendationMarkerElement(): HTMLButtonElement {
   const button = document.createElement("button");
   button.type = "button";
   button.className =
-    "grid h-8 w-8 place-items-center rounded-full border-2 border-white bg-teal-500 text-white shadow-[0_10px_22px_rgba(13,148,136,0.35)] transition hover:scale-105";
+    "grid h-8 w-8 place-items-center rounded-full border-2 border-white bg-teal-500 text-white shadow-[0_10px_22px_rgba(13,148,136,0.35)] transition-colors hover:bg-teal-600";
   button.innerHTML =
     '<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z"/></svg>';
   return button;
