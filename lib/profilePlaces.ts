@@ -17,6 +17,8 @@ export type ProfilePlaceItem = {
   category: string | null;
   imageUrl: string | null;
   googleMapsUrl: string | null;
+  rating: number | null;
+  userRatingsTotal: number | null;
   status: PlaceStatus;
   isFavorite: boolean;
   createdAt: string;
@@ -38,6 +40,8 @@ type PersonalPlaceRow = {
   external_place_id: string | null;
   google_maps_url: string | null;
   image_url: string | null;
+  rating?: number | null;
+  user_ratings_total?: number | null;
   status: string;
   is_favorite: boolean;
   created_at: string;
@@ -56,6 +60,8 @@ type GroupPlaceRow = {
   external_place_id: string | null;
   google_maps_url: string | null;
   image_url: string | null;
+  rating?: number | null;
+  user_ratings_total?: number | null;
   created_at: string;
   latitude?: number | null;
   longitude?: number | null;
@@ -113,6 +119,8 @@ export function buildProfilePlaceItems(input: {
       latitude: place.latitude,
       longitude: place.longitude
     }),
+    rating: place.rating ?? null,
+    userRatingsTotal: place.user_ratings_total ?? null,
     status: isPlaceStatus(place.status) ? place.status : "pending",
     isFavorite: Boolean(place.is_favorite),
     createdAt: place.created_at
@@ -144,6 +152,8 @@ export function buildProfilePlaceItems(input: {
           latitude: place.latitude,
           longitude: place.longitude
         }),
+        rating: place.rating ?? null,
+        userRatingsTotal: place.user_ratings_total ?? null,
         status: state && isPlaceStatus(state.status) ? state.status : "pending",
         isFavorite: Boolean(state?.is_favorite),
         createdAt: place.created_at
@@ -186,12 +196,12 @@ export async function getProfilePlacesForUser(userId: string, visibleGroups?: Gr
   const [personalPlacesResult, groupPlacesResult] = await Promise.all([
     supabase
       .from("personal_places")
-      .select("id, name, address, city, category, external_place_id, google_maps_url, image_url, status, is_favorite, created_at, latitude, longitude")
+      .select("id, name, address, city, category, external_place_id, google_maps_url, image_url, rating, user_ratings_total, status, is_favorite, created_at, latitude, longitude")
       .eq("user_id", userId),
     groupIds.length > 0
       ? supabase
           .from("places")
-          .select("id, group_id, name, address, city, category_id, external_place_id, google_maps_url, image_url, created_at, latitude, longitude")
+          .select("id, group_id, name, address, city, category_id, external_place_id, google_maps_url, image_url, rating, user_ratings_total, created_at, latitude, longitude")
           .in("group_id", groupIds)
       : Promise.resolve({ data: [], error: null })
   ]);

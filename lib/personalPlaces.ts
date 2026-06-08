@@ -16,6 +16,8 @@ export type PersonalPlace = {
   googleMapsUrl: string | null;
   businessStatus: string | null;
   phoneNumber: string | null;
+  rating: number | null;
+  userRatingsTotal: number | null;
   imageUrl?: string | null;
   status: PlaceStatus;
   isFavorite: boolean;
@@ -38,6 +40,8 @@ type CreatePersonalPlaceInput = {
   googleMapsUrl?: string | null;
   businessStatus?: string | null;
   phoneNumber?: string | null;
+  rating?: number | null;
+  userRatingsTotal?: number | null;
   imageUrl?: string | null;
   latitude: number;
   longitude: number;
@@ -83,7 +87,7 @@ export async function getPersonalPlacesForUser(userId: string): Promise<Personal
   const { data, error } = await supabase
     .from("personal_places")
     .select(
-      "id, user_id, name, address, city, notes, category, source, provider, external_place_id, google_maps_url, business_status, phone_number, image_url, status, is_favorite, latitude, longitude, created_at, updated_at"
+      "id, user_id, name, address, city, notes, category, source, provider, external_place_id, google_maps_url, business_status, phone_number, rating, user_ratings_total, image_url, status, is_favorite, latitude, longitude, created_at, updated_at"
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -113,6 +117,8 @@ export async function getPersonalPlacesForUser(userId: string): Promise<Personal
     }),
     businessStatus: item.business_status,
     phoneNumber: item.phone_number,
+    rating: item.rating,
+    userRatingsTotal: item.user_ratings_total,
     imageUrl: item.image_url,
     status: isPlaceStatus(item.status) ? item.status : "pending",
     isFavorite: Boolean(item.is_favorite),
@@ -182,6 +188,8 @@ export async function createPersonalPlace(input: CreatePersonalPlaceInput): Prom
     google_maps_url: input.googleMapsUrl?.trim() || null,
     business_status: input.businessStatus?.trim() || null,
     phone_number: input.phoneNumber?.trim() || null,
+    rating: input.rating ?? null,
+    user_ratings_total: input.userRatingsTotal ?? null,
     image_url: input.imageUrl?.trim() || null,
     status: "pending",
     is_favorite: false,

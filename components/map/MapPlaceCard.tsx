@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/Card";
 import { PlaceNameEditor } from "@/components/map/PlaceNameEditor";
+import { PlaceRatingBadge } from "@/components/places/PlaceRatingBadge";
 
 export type MapPlaceCardMode = "view" | "edit";
 export type MapPlaceCardVariant = "draft" | "saved";
@@ -15,6 +16,8 @@ export type MapPlaceCardPlace = {
   phoneNumber?: string | null;
   status?: "pending" | "visited";
   isFavorite?: boolean;
+  rating?: number | null;
+  userRatingsTotal?: number | null;
 };
 
 export type MapPlaceCardCapabilities = {
@@ -231,6 +234,12 @@ export function MapPlaceCard({
                 {place.address}
                 {place.city ? ` - ${place.city}` : ""}
               </p>
+              <PlaceRatingBadge
+                className={distanceLabel ? "mt-1" : "mt-1.5"}
+                compact
+                rating={place.rating}
+                userRatingsTotal={place.userRatingsTotal}
+              />
               {distanceLabel ? (
                 <p className="mt-1 inline-flex rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-[#c6283a]">
                   A {distanceLabel} de ti

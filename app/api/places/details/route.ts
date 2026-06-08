@@ -20,6 +20,8 @@ type GooglePlaceDetailsResult = {
   international_phone_number?: string;
   types?: string[];
   photos?: Array<{ photo_reference?: string }>;
+  rating?: number;
+  user_ratings_total?: number;
 };
 
 type GooglePlaceDetailsResponse = {
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
   const params = new URLSearchParams({
     place_id: externalPlaceId,
     language: "es",
-    fields: "place_id,name,formatted_address,address_components,geometry,business_status,formatted_phone_number,international_phone_number,types,photos",
+    fields: "place_id,name,formatted_address,address_components,geometry,business_status,formatted_phone_number,international_phone_number,types,photos,rating,user_ratings_total",
     key: apiKey
   });
   const response = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`, {
@@ -100,6 +102,8 @@ export async function POST(request: Request) {
     businessStatus: (result.business_status || "").trim() || null,
     phoneNumber: (result.international_phone_number || result.formatted_phone_number || "").trim() || null,
     primaryType: result.types?.[0] || null,
+    rating: typeof result.rating === "number" ? result.rating : null,
+    userRatingsTotal: typeof result.user_ratings_total === "number" ? result.user_ratings_total : null,
     imageUrl: result.photos?.[0]?.photo_reference
       ? `/api/places/photo?photoReference=${encodeURIComponent(result.photos[0].photo_reference)}&maxWidth=800`
       : null

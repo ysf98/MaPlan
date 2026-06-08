@@ -356,10 +356,12 @@ export type Database = {
           notes: string | null
           phone_number: string | null
           provider: string | null
+          rating: number | null
           source: string | null
           status: string
           updated_at: string
           user_id: string
+          user_ratings_total: number | null
         }
         Insert: {
           address?: string | null
@@ -378,10 +380,12 @@ export type Database = {
           notes?: string | null
           phone_number?: string | null
           provider?: string | null
+          rating?: number | null
           source?: string | null
           status?: string
           updated_at?: string
           user_id: string
+          user_ratings_total?: number | null
         }
         Update: {
           address?: string | null
@@ -400,10 +404,12 @@ export type Database = {
           notes?: string | null
           phone_number?: string | null
           provider?: string | null
+          rating?: number | null
           source?: string | null
           status?: string
           updated_at?: string
           user_id?: string
+          user_ratings_total?: number | null
         }
         Relationships: []
       }
@@ -428,9 +434,11 @@ export type Database = {
           original_url: string | null
           phone_number: string | null
           provider: string | null
+          rating: number | null
           source: string | null
           status: string
           updated_at: string
+          user_ratings_total: number | null
         }
         Insert: {
           address: string
@@ -452,9 +460,11 @@ export type Database = {
           original_url?: string | null
           phone_number?: string | null
           provider?: string | null
+          rating?: number | null
           source?: string | null
           status?: string
           updated_at?: string
+          user_ratings_total?: number | null
         }
         Update: {
           address?: string
@@ -476,9 +486,11 @@ export type Database = {
           original_url?: string | null
           phone_number?: string | null
           provider?: string | null
+          rating?: number | null
           source?: string | null
           status?: string
           updated_at?: string
+          user_ratings_total?: number | null
         }
         Relationships: [
           {

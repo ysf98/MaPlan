@@ -36,6 +36,8 @@ type GoogleTextSearchResult = {
   business_status?: string;
   photos?: Array<{ photo_reference?: string }>;
   types?: string[];
+  rating?: number;
+  user_ratings_total?: number;
 };
 
 type GoogleTextSearchResponse = {
@@ -58,6 +60,8 @@ type GooglePlaceDetailsResult = {
   international_phone_number?: string;
   types?: string[];
   photos?: Array<{ photo_reference?: string }>;
+  rating?: number;
+  user_ratings_total?: number;
 };
 
 type GooglePlaceDetailsResponse = {
@@ -80,6 +84,8 @@ type CandidateSourceRecord = {
   address: string;
   businessStatus: string | null;
   photoReference: string | null;
+  rating: number | null;
+  userRatingsTotal: number | null;
 };
 
 function buildPhotoProxyUrl(photoReference: string): string {
@@ -91,6 +97,7 @@ type RecommendationCategoryConfig = {
   categories: string[];
   excludedTypes?: string[];
   keyword?: string;
+  queries?: Array<{ keyword?: string; type?: string }>;
   minRating?: number;
   minRatingsTotal?: number;
   type?: string;
@@ -121,7 +128,18 @@ const recommendationCategoryConfig: Record<GooglePlacesNearbyRecommendationsInpu
     minRatingsTotal: 5
   },
   food: { keyword: "restaurantes bares cafeterias comida", type: "restaurant", categories: ["Comida"] },
-  coffee: { keyword: "cafeteria cafe coffee brunch panaderia pasteleria heladeria", categories: ["Cafeteria"] },
+  coffee: {
+    categories: ["Cafeteria"],
+    queries: [
+      { type: "cafe" },
+      { keyword: "cafeteria" },
+      { keyword: "cafe" },
+      { keyword: "coffee" },
+      { keyword: "brunch" },
+      { keyword: "panaderia pasteleria" },
+      { keyword: "heladeria" }
+    ]
+  },
   plans: { keyword: "planes parques museos turismo ocio", type: "tourist_attraction", categories: ["Planes"] },
   sports: {
     categories: ["Deporte"],
@@ -239,6 +257,8 @@ function normalizeRecommendationFromNearby(
     businessStatus: (result.business_status || "").trim() || null,
     phoneNumber: null,
     primaryType,
+    rating: typeof result.rating === "number" ? result.rating : null,
+    userRatingsTotal: typeof result.user_ratings_total === "number" ? result.user_ratings_total : null,
     imageUrl: photoReference ? buildPhotoProxyUrl(photoReference) : null,
     category: categoryLabel
   };
@@ -275,7 +295,9 @@ function normalizeRecordFromNearby(result: GoogleNearbyResult): CandidateSourceR
     name,
     address: (result.formatted_address || result.vicinity || "").trim(),
     businessStatus: (result.business_status || "").trim() || null,
-    photoReference: result.photos?.[0]?.photo_reference || null
+    photoReference: result.photos?.[0]?.photo_reference || null,
+    rating: typeof result.rating === "number" ? result.rating : null,
+    userRatingsTotal: typeof result.user_ratings_total === "number" ? result.user_ratings_total : null
   };
 }
 
@@ -290,7 +312,9 @@ function normalizeRecordFromTextSearch(result: GoogleTextSearchResult): Candidat
     name,
     address: (result.formatted_address || "").trim(),
     businessStatus: (result.business_status || "").trim() || null,
-    photoReference: result.photos?.[0]?.photo_reference || null
+    photoReference: result.photos?.[0]?.photo_reference || null,
+    rating: typeof result.rating === "number" ? result.rating : null,
+    userRatingsTotal: typeof result.user_ratings_total === "number" ? result.user_ratings_total : null
   };
 }
 
@@ -333,6 +357,8 @@ function normalizePlaceFromDetails(
     businessStatus: (details.business_status || "").trim() || null,
     phoneNumber: (details.international_phone_number || details.formatted_phone_number || "").trim() || null,
     primaryType: details.types?.[0] || selected.types[0] || null,
+    rating: typeof details.rating === "number" ? details.rating : null,
+    userRatingsTotal: typeof details.user_ratings_total === "number" ? details.user_ratings_total : null,
     imageUrl: photoReference ? buildPhotoProxyUrl(photoReference) : null
   };
 }
@@ -362,6 +388,8 @@ function normalizePlaceFromNearby(result: GoogleNearbyResult, selected: NearbySe
     businessStatus: (result.business_status || "").trim() || null,
     phoneNumber: null,
     primaryType: selected.types[0] || null,
+    rating: typeof result.rating === "number" ? result.rating : null,
+    userRatingsTotal: typeof result.user_ratings_total === "number" ? result.user_ratings_total : null,
     imageUrl: selected.photoReference ? buildPhotoProxyUrl(selected.photoReference) : null
   };
 }
@@ -391,6 +419,8 @@ function normalizePlaceFromRecord(record: CandidateSourceRecord, selected: Nearb
     businessStatus: record.businessStatus,
     phoneNumber: null,
     primaryType: selected.types[0] || null,
+    rating: record.rating,
+    userRatingsTotal: record.userRatingsTotal,
     imageUrl: (selected.photoReference || record.photoReference) ? buildPhotoProxyUrl(selected.photoReference || record.photoReference || "") : null
   };
 }
@@ -399,7 +429,7 @@ async function fetchGoogleDetails(placeId: string, apiKey: string): Promise<Goog
   const detailsParams = new URLSearchParams({
     place_id: placeId,
     language: "es",
-    fields: "place_id,name,formatted_address,address_components,geometry,business_status,formatted_phone_number,international_phone_number,types,photos",
+    fields: "place_id,name,formatted_address,address_components,geometry,business_status,formatted_phone_number,international_phone_number,types,photos,rating,user_ratings_total",
     key: apiKey
   });
 
@@ -491,7 +521,7 @@ export async function GET(request: Request) {
 
 async function resolveNearbyRecommendations(input: GooglePlacesNearbyRecommendationsInput, apiKey: string) {
   const config = recommendationCategoryConfig[input.category];
-  const buildNearbyParams = (includeHints: boolean) => {
+  const buildNearbyParams = (query: { keyword?: string; type?: string } | null) => {
     const params = new URLSearchParams({
       location: `${input.lat},${input.lng}`,
       radius: String(input.radius),
@@ -500,12 +530,12 @@ async function resolveNearbyRecommendations(input: GooglePlacesNearbyRecommendat
       key: apiKey
     });
 
-    if (includeHints && config.keyword) {
-      params.set("keyword", config.keyword);
+    if (query?.keyword) {
+      params.set("keyword", query.keyword);
     }
 
-    if (includeHints && config.type) {
-      params.set("type", config.type);
+    if (query?.type) {
+      params.set("type", query.type);
     }
 
     return params;
@@ -524,24 +554,25 @@ async function resolveNearbyRecommendations(input: GooglePlacesNearbyRecommendat
     return (await response.json()) as GoogleNearbyResponse;
   };
 
-  const nearbyParams = buildNearbyParams(true);
-  let nearbyJson = await fetchNearby(nearbyParams);
+  const queries = config.queries ?? [{ keyword: config.keyword, type: config.type }];
+  const nearbyResults: GoogleNearbyResult[] = [];
 
-  if ((!nearbyJson?.results || nearbyJson.results.length === 0) && input.category === "popular") {
-    nearbyJson = await fetchNearby(buildNearbyParams(false));
+  for (const query of queries) {
+    const nearbyJson = await fetchNearby(buildNearbyParams(query));
+    if (nearbyJson?.status && nearbyJson.status !== "OK" && nearbyJson.status !== "ZERO_RESULTS") {
+      continue;
+    }
+    nearbyResults.push(...(nearbyJson?.results || []));
   }
 
-  if (!nearbyJson) {
-    return NextResponse.json({ results: [] } satisfies NearbyRecommendationsResponse);
-  }
-
-  if (nearbyJson.status && nearbyJson.status !== "OK" && nearbyJson.status !== "ZERO_RESULTS") {
-    return NextResponse.json({ results: [] } satisfies NearbyRecommendationsResponse);
+  if (nearbyResults.length === 0 && input.category === "popular") {
+    const fallbackJson = await fetchNearby(buildNearbyParams(null));
+    nearbyResults.push(...(fallbackJson?.results || []));
   }
 
   const seenPlaceIds = new Set<string>();
   const categoryLabel = config.categories[0] || "Recomendado";
-  const results = getSortedRecommendationCandidates(nearbyJson.results || [], config)
+  const results = getSortedRecommendationCandidates(nearbyResults, config)
     .map((result) => normalizeRecommendationFromNearby(result, categoryLabel))
     .filter((result): result is GooglePlaceFeature & { category: string | null } => {
       if (!result || seenPlaceIds.has(result.externalPlaceId)) {

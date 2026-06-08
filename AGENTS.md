@@ -203,6 +203,7 @@ Archivos SQL relevantes:
 - `supabase/places_images.sql`
 - `supabase/places_favorites.sql`
 - `supabase/places_phone_number.sql`
+- `supabase/places_google_metadata.sql`
 
 Al cambiar base de datos:
 

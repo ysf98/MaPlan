@@ -14,6 +14,8 @@ export type GooglePlaceSuggestion = {
   imageUrl: string | null;
   phoneNumber: string | null;
   primaryType: string | null;
+  rating?: number | null;
+  userRatingsTotal?: number | null;
 };
 
 export type GooglePlaceFeature = {
@@ -29,6 +31,8 @@ export type GooglePlaceFeature = {
   imageUrl: string | null;
   phoneNumber: string | null;
   primaryType: string | null;
+  rating?: number | null;
+  userRatingsTotal?: number | null;
 };
 
 export type GoogleNearbyFallbackReason = "no_candidate" | "too_far" | "google_error";

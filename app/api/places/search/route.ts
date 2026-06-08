@@ -17,6 +17,8 @@ type GoogleTextSearchPlace = {
   geometry?: { location?: { lat?: number; lng?: number } };
   business_status?: string;
   types?: string[];
+  rating?: number;
+  user_ratings_total?: number;
 };
 
 type GoogleTextSearchResponse = {
@@ -105,7 +107,9 @@ export async function POST(request: Request) {
         businessStatus: (place.business_status || "").trim() || null,
         imageUrl: null,
         phoneNumber: null,
-        primaryType: place.types?.[0] || null
+        primaryType: place.types?.[0] || null,
+        rating: typeof place.rating === "number" ? place.rating : null,
+        userRatingsTotal: typeof place.user_ratings_total === "number" ? place.user_ratings_total : null
         } satisfies GooglePlaceSuggestion
       ];
     })

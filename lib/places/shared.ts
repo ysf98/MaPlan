@@ -28,6 +28,8 @@ export type GroupPlace = {
   googleMapsUrl: string | null;
   businessStatus: string | null;
   phoneNumber: string | null;
+  rating: number | null;
+  userRatingsTotal: number | null;
   imageUrl?: string | null;
   latitude: number | null;
   longitude: number | null;

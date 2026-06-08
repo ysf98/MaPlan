@@ -147,6 +147,31 @@ describe("createPlaceSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts Google rating metadata", () => {
+    const result = createPlaceSchema.parse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      name: "Lugar",
+      address: "Madrid",
+      rating: "4.6",
+      userRatingsTotal: "128"
+    });
+
+    expect(result.rating).toBe(4.6);
+    expect(result.userRatingsTotal).toBe(128);
+  });
+
+  it("rejects invalid Google rating metadata", () => {
+    const result = createPlaceSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      name: "Lugar",
+      address: "Madrid",
+      rating: "6",
+      userRatingsTotal: "-1"
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("createPersonalPlaceSchema", () => {
@@ -171,6 +196,20 @@ describe("createPersonalPlaceSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("accepts Google rating metadata for personal places", () => {
+    const result = createPersonalPlaceSchema.parse({
+      name: "Mi cafe",
+      address: "Madrid",
+      latitude: 40.4,
+      longitude: -3.7,
+      rating: "4.2",
+      userRatingsTotal: "54"
+    });
+
+    expect(result.rating).toBe(4.2);
+    expect(result.userRatingsTotal).toBe(54);
   });
 });
 

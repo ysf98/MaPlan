@@ -266,6 +266,8 @@ export function GroupMap({
             googleMapsUrl: nearby.place.googleMapsUrl,
             businessStatus: nearby.place.businessStatus,
             phoneNumber: nearby.place.phoneNumber,
+            rating: nearby.place.rating,
+            userRatingsTotal: nearby.place.userRatingsTotal,
             imageUrl: nearby.place.imageUrl
           });
           return;
@@ -526,6 +528,8 @@ export function GroupMap({
       googleMapsUrl: resolved.googleMapsUrl,
       businessStatus: resolved.businessStatus,
       phoneNumber: resolved.phoneNumber,
+      rating: resolved.rating,
+      userRatingsTotal: resolved.userRatingsTotal,
       imageUrl: resolved.imageUrl
     };
 
@@ -719,7 +723,9 @@ export function GroupMap({
                   imageUrl: internalSelectedPlace.imageUrl,
                   isFavorite: isSelectedFavorite,
                   name: internalSelectedPlace.name,
-                  phoneNumber: internalSelectedPlace.phoneNumber
+                  phoneNumber: internalSelectedPlace.phoneNumber,
+                  rating: internalSelectedPlace.rating,
+                  userRatingsTotal: internalSelectedPlace.userRatingsTotal
                 }}
                 distanceLabel={selectedPlaceDistanceLabel}
                 variant="saved"

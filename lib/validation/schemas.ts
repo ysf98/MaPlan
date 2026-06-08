@@ -11,6 +11,14 @@ export const PLACE_PROVIDER_VALUES = ["manual", "mapbox", "google_places"] as co
 export const FRIEND_REQUEST_DECISION_VALUES = ["accepted", "rejected"] as const;
 export const GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES = ["popular", "food", "coffee", "plans", "sports"] as const;
 const uuidSchema = z.string().uuid("Identificador invalido.");
+const nullableRatingSchema = z.preprocess(
+  (value) => (value === "" || value === null || value === undefined ? null : value),
+  z.coerce.number().min(0, "La puntuacion no es valida.").max(5, "La puntuacion no es valida.").nullable()
+);
+const nullableRatingsTotalSchema = z.preprocess(
+  (value) => (value === "" || value === null || value === undefined ? null : value),
+  z.coerce.number().int("El numero de resenas no es valido.").min(0, "El numero de resenas no es valido.").nullable()
+);
 
 export const createGroupSchema = z.object({
   name: z
@@ -137,6 +145,8 @@ export const createPlaceSchema = z.object({
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen invalida."),
+  rating: nullableRatingSchema.optional(),
+  userRatingsTotal: nullableRatingsTotalSchema.optional(),
   latitude: z
     .preprocess(
       (value) => (value === "" || value === null || value === undefined ? undefined : value),
@@ -222,6 +232,8 @@ export const createPersonalPlaceSchema = z.object({
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen invalida."),
+  rating: nullableRatingSchema.optional(),
+  userRatingsTotal: nullableRatingsTotalSchema.optional(),
   latitude: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
   longitude: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
 });

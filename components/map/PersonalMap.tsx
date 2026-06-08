@@ -227,6 +227,8 @@ export function PersonalMap({
             googleMapsUrl: nearby.place.googleMapsUrl,
             businessStatus: nearby.place.businessStatus,
             phoneNumber: nearby.place.phoneNumber,
+            rating: nearby.place.rating,
+            userRatingsTotal: nearby.place.userRatingsTotal,
             imageUrl: nearby.place.imageUrl
           });
           return;
@@ -463,6 +465,8 @@ export function PersonalMap({
       googleMapsUrl: resolved.googleMapsUrl,
       businessStatus: resolved.businessStatus,
       phoneNumber: resolved.phoneNumber,
+      rating: resolved.rating,
+      userRatingsTotal: resolved.userRatingsTotal,
       imageUrl: resolved.imageUrl
     };
 
@@ -665,6 +669,8 @@ export function PersonalMap({
                   isFavorite: isSelectedFavorite,
                   name: selectedPlace.name,
                   phoneNumber: selectedPlace.phoneNumber,
+                  rating: selectedPlace.rating,
+                  userRatingsTotal: selectedPlace.userRatingsTotal,
                   status: selectedPlaceStatus
                 }}
                 distanceLabel={selectedPlaceDistanceLabel}

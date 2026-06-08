@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import type { ReactNode } from "react";
+import { PlaceRatingBadge } from "@/components/places/PlaceRatingBadge";
 
 type BasePlaceItem = {
   id: string;
@@ -10,6 +11,8 @@ type BasePlaceItem = {
   imageUrl?: string | null;
   googleMapsUrl?: string | null;
   status?: "pending" | "visited";
+  rating?: number | null;
+  userRatingsTotal?: number | null;
 };
 
 type SimplePlacesListProps<TPlace extends BasePlaceItem> = {
@@ -138,6 +141,7 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
                       {place.address}
                       {place.city ? ` - ${place.city}` : ""}
                     </p>
+                    <PlaceRatingBadge className="mt-2" compact rating={place.rating} userRatingsTotal={place.userRatingsTotal} />
                   </div>
                 </div>
                 {renderFooter ? (

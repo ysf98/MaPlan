@@ -60,6 +60,8 @@ export function MapSaveDraftCard({
       <input name="googleMapsUrl" type="hidden" value={draft.googleMapsUrl || ""} />
       <input name="businessStatus" type="hidden" value={draft.businessStatus || ""} />
       <input name="phoneNumber" type="hidden" value={draft.phoneNumber || ""} />
+      <input name="rating" type="hidden" value={draft.rating ?? ""} />
+      <input name="userRatingsTotal" type="hidden" value={draft.userRatingsTotal ?? ""} />
       <input name="imageUrl" type="hidden" value={draft.imageUrl || ""} />
       <input name="category" type="hidden" value={draft.category || "Otros"} />
       <input name="address" type="hidden" value={address} />
@@ -93,7 +95,9 @@ export function MapSaveDraftCard({
           googleMapsUrl: draft.googleMapsUrl,
           imageUrl: draft.imageUrl,
           name,
-          phoneNumber: draft.phoneNumber
+          phoneNumber: draft.phoneNumber,
+          rating: draft.rating,
+          userRatingsTotal: draft.userRatingsTotal
         }}
         variant="draft"
       />

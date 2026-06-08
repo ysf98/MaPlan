@@ -35,6 +35,8 @@ export type MapDraftPlace = {
   businessStatus?: string | null;
   imageUrl?: string | null;
   phoneNumber?: string | null;
+  rating?: number | null;
+  userRatingsTotal?: number | null;
 };
 
 export function pickFirstNonEmpty(...values: Array<string | undefined>): string {

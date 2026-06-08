@@ -172,7 +172,7 @@ Los lugares del mapa personal viven en `personal_places` e incluyen:
 - `status`: `pending` / `visited`
 - `is_favorite`: boolean
 - `provider`, `external_place_id`, `google_maps_url`
-- imagen, teléfono, coordenadas y categoría.
+- imagen, teléfono, puntuación de Google Places si existe, coordenadas y categoría.
 
 ### Selector de mapas y Explore
 
@@ -262,6 +262,7 @@ Ejecutar en Supabase SQL Editor en este orden:
 14. `supabase/places_images.sql`
 15. `supabase/places_favorites.sql`
 16. `supabase/places_phone_number.sql`
+17. `supabase/places_google_metadata.sql`
 
 Notas:
 

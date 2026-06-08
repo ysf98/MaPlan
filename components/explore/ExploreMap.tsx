@@ -6,6 +6,7 @@ import { saveExploredPlaceAction, type SaveExploredPlaceActionState } from "@/ap
 import { MapSearchBox } from "@/components/map/MapSearchBox";
 import { BackButton } from "@/components/navigation/BackButton";
 import { UserLocationButton } from "@/components/map/UserLocationButton";
+import { PlaceRatingBadge } from "@/components/places/PlaceRatingBadge";
 import { resizeMapboxAfterLayout, useMapboxResizeOnVisible } from "@/components/map/useMapboxResize";
 import { useUserLocationMarker } from "@/components/map/useUserLocationMarker";
 import { Card } from "@/components/ui/Card";
@@ -122,6 +123,7 @@ function ExploreSaveCard({
             {draft.address}
             {draft.city ? ` - ${draft.city}` : ""}
           </p>
+          <PlaceRatingBadge className="mt-1.5" compact rating={draft.rating} userRatingsTotal={draft.userRatingsTotal} />
           {distanceLabel ? (
             <p className="mt-1 inline-flex rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-[#c6283a]">
               A {distanceLabel} de ti
@@ -149,6 +151,8 @@ function ExploreSaveCard({
         <input name="googleMapsUrl" type="hidden" value={draft.googleMapsUrl || ""} />
         <input name="businessStatus" type="hidden" value={draft.businessStatus || ""} />
         <input name="phoneNumber" type="hidden" value={draft.phoneNumber || ""} />
+        <input name="rating" type="hidden" value={draft.rating ?? ""} />
+        <input name="userRatingsTotal" type="hidden" value={draft.userRatingsTotal ?? ""} />
         <input name="imageUrl" type="hidden" value={draft.imageUrl || ""} />
         <input name="category" type="hidden" value={draft.category || "Otros"} />
         <input name="address" type="hidden" value={draft.address} />
@@ -291,6 +295,8 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
             googleMapsUrl: nearby.place.googleMapsUrl,
             businessStatus: nearby.place.businessStatus,
             phoneNumber: nearby.place.phoneNumber,
+            rating: nearby.place.rating,
+            userRatingsTotal: nearby.place.userRatingsTotal,
             imageUrl: nearby.place.imageUrl
           });
           return;
@@ -438,6 +444,8 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
       googleMapsUrl: place.googleMapsUrl,
       businessStatus: place.businessStatus,
       phoneNumber: place.phoneNumber,
+      rating: place.rating,
+      userRatingsTotal: place.userRatingsTotal,
       imageUrl: place.imageUrl
     };
 
@@ -537,6 +545,8 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
       googleMapsUrl: resolved.googleMapsUrl,
       businessStatus: resolved.businessStatus,
       phoneNumber: resolved.phoneNumber,
+      rating: resolved.rating,
+      userRatingsTotal: resolved.userRatingsTotal,
       imageUrl: resolved.imageUrl
     };
 

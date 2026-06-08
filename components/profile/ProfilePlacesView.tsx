@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PlaceRatingBadge } from "@/components/places/PlaceRatingBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PROFILE_PLACE_FILTERS, type ProfilePlaceItem, type ProfilePlacesFilter } from "@/lib/profilePlaces";
 import { ROUTES } from "@/utils/constants";
@@ -104,6 +105,7 @@ export function ProfilePlacesView({ activeFilter, places, totalCount }: ProfileP
                       {place.address}
                       {place.city ? ` - ${place.city}` : ""}
                     </p>
+                    <PlaceRatingBadge className="mt-2" compact rating={place.rating} userRatingsTotal={place.userRatingsTotal} />
                   </div>
 
                   <div className="flex items-center justify-between gap-3">

@@ -18,6 +18,8 @@ function place(input: Partial<ProfilePlaceItem> & { id: string; name: string }):
     imageUrl: null,
     isFavorite: false,
     name: input.name,
+    rating: input.rating ?? null,
+    userRatingsTotal: input.userRatingsTotal ?? null,
     source: input.source ?? "personal",
     status: "pending"
   };

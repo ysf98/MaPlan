@@ -41,6 +41,8 @@ export async function addPersonalPlaceAction(
     googleMapsUrl: String(formData.get("googleMapsUrl") || ""),
     businessStatus: String(formData.get("businessStatus") || ""),
     phoneNumber: String(formData.get("phoneNumber") || ""),
+    rating: formData.get("rating"),
+    userRatingsTotal: formData.get("userRatingsTotal"),
     imageUrl: String(formData.get("imageUrl") || ""),
     latitude: String(formData.get("latitude") || ""),
     longitude: String(formData.get("longitude") || "")

@@ -154,6 +154,8 @@ export async function addPlaceAction(
     googleMapsUrl: String(formData.get("googleMapsUrl") || ""),
     businessStatus: String(formData.get("businessStatus") || ""),
     phoneNumber: String(formData.get("phoneNumber") || ""),
+    rating: formData.get("rating"),
+    userRatingsTotal: formData.get("userRatingsTotal"),
     imageUrl: String(formData.get("imageUrl") || ""),
     latitude: formData.get("latitude"),
     longitude: formData.get("longitude")
@@ -182,6 +184,8 @@ export async function addPlaceAction(
     googleMapsUrl,
     businessStatus,
     phoneNumber,
+    rating,
+    userRatingsTotal,
     imageUrl,
     latitude,
     longitude
@@ -202,6 +206,8 @@ export async function addPlaceAction(
     googleMapsUrl: googleMapsUrl || null,
     businessStatus: businessStatus || null,
     phoneNumber: phoneNumber || null,
+    rating: rating ?? null,
+    userRatingsTotal: userRatingsTotal ?? null,
     imageUrl: imageUrl || null,
     latitude: typeof latitude === "number" ? latitude : null,
     longitude: typeof longitude === "number" ? longitude : null

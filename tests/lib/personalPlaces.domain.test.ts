@@ -38,7 +38,9 @@ describe("personal places domain", () => {
       name: "Cafe Central",
       address: "Madrid",
       latitude: 40.4,
-      longitude: -3.7
+      longitude: -3.7,
+      rating: 4.7,
+      userRatingsTotal: 321
     });
 
     expect(result).toEqual({ error: null });
@@ -46,7 +48,9 @@ describe("personal places domain", () => {
     expect(insertMock).toHaveBeenCalledWith(
       expect.objectContaining({
         status: "pending",
-        is_favorite: false
+        is_favorite: false,
+        rating: 4.7,
+        user_ratings_total: 321
       })
     );
   });
