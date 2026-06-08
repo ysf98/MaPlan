@@ -11,6 +11,15 @@ type LoginFormProps = {
   nextPath?: string;
 };
 
+function SpinnerIcon() {
+  return (
+    <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+      <path className="opacity-90" d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeLinecap="round" strokeWidth="3" />
+    </svg>
+  );
+}
+
 export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -55,6 +64,7 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
           </span>
           <input
             className="h-14 w-full rounded-xl border border-zinc-200 bg-white pl-12 pr-4 text-sm text-zinc-950 placeholder:text-zinc-400 shadow-[0_10px_24px_rgba(181,35,48,0.08)] focus:border-[rgb(var(--vc-coral))] focus:outline-none"
+            disabled={isLoading}
             id="login-email"
             name="email"
             placeholder="tu@correo.com"
@@ -77,6 +87,7 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
           </span>
           <input
             className="h-14 w-full rounded-xl border border-zinc-200 bg-white pl-12 pr-12 text-sm text-zinc-950 placeholder:text-zinc-400 shadow-[0_10px_24px_rgba(181,35,48,0.08)] focus:border-[rgb(var(--vc-coral))] focus:outline-none"
+            disabled={isLoading}
             id="login-password"
             name="password"
             placeholder="••••••••"
@@ -86,6 +97,7 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
           <button
             aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700"
+            disabled={isLoading}
             onClick={() => setShowPassword((value) => !value)}
             type="button"
           >
@@ -110,8 +122,9 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
         disabled={isLoading}
         type="submit"
       >
+        {isLoading ? <SpinnerIcon /> : null}
         {isLoading ? "Entrando..." : "Entrar"}
-        <span aria-hidden="true">→</span>
+        {!isLoading ? <span aria-hidden="true">→</span> : null}
       </button>
 
       <OAuthButtons nextPath={nextPath} />
