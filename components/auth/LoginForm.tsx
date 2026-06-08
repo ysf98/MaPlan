@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ROUTES } from "@/utils/constants";
 
@@ -113,28 +114,7 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
         <span aria-hidden="true">→</span>
       </button>
 
-      <div className="my-5 flex items-center gap-3">
-        <div className="h-px flex-1 bg-zinc-200" />
-        <span className="text-xs font-semibold text-zinc-500">o continua con</span>
-        <div className="h-px flex-1 bg-zinc-200" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          className="flex h-14 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white text-sm font-semibold text-zinc-800"
-          type="button"
-        >
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-zinc-900 text-[10px] font-bold text-white">G</span>
-          Google
-        </button>
-        <button
-          className="flex h-14 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white text-sm font-semibold text-zinc-800"
-          type="button"
-        >
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#1877f2] text-[10px] font-bold text-white">f</span>
-          Facebook
-        </button>
-      </div>
+      <OAuthButtons nextPath={nextPath} />
 
       <p className="pt-8 text-center text-sm text-zinc-600">
         No tienes cuenta?{" "}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createGroupSchema,
+  deleteAccountSchema,
   friendSearchQuerySchema,
   googlePlaceDetailsSchema,
   googlePlacesNearbySchema,
@@ -19,6 +20,13 @@ import {
   updatePlaceFavoriteSchema,
   updatePlaceStatusSchema
 } from "@/lib/validation/schemas";
+
+describe("deleteAccountSchema", () => {
+  it("exige confirmacion literal", () => {
+    expect(deleteAccountSchema.safeParse({ confirmation: "ELIMINAR" }).success).toBe(true);
+    expect(deleteAccountSchema.safeParse({ confirmation: "eliminar" }).success).toBe(false);
+  });
+});
 
 describe("createGroupSchema", () => {
   it("accepts valid payload", () => {

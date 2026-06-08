@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { getPasswordRequirementChecks, PASSWORD_REQUIREMENTS, validatePassword } from "@/lib/auth/passwordPolicy";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ROUTES } from "@/utils/constants";
@@ -202,6 +203,8 @@ export function RegisterForm() {
         {isLoading ? "Creando..." : "Registrarse"}
         <span aria-hidden="true">→</span>
       </button>
+
+      <OAuthButtons />
 
       <p className="pt-1 text-center text-sm text-zinc-600">
         Ya tienes cuenta?{" "}

@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { updateProfileAction, type UpdateProfileActionState } from "@/app/profile/actions";
+import {
+  deleteAccountAction,
+  updateProfileAction,
+  type DeleteAccountActionState,
+  type UpdateProfileActionState
+} from "@/app/profile/actions";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -27,6 +32,7 @@ type ProfileViewProps = {
 };
 
 const initialState: UpdateProfileActionState = { error: null, success: false };
+const deleteAccountInitialState: DeleteAccountActionState = { error: null, success: false };
 
 type AchievementStyle = {
   card: string;
@@ -252,10 +258,16 @@ function AchievementCard({ achievement }: { achievement: ProfileAchievement }) {
 export function ProfileView({ achievements, initialAvatarUrl, initialFullName, handle, quickLists, stats }: ProfileViewProps) {
   const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
   const [avatarValue, setAvatarValue] = useState(initialAvatarUrl || "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialAvatarUrl);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [state, formAction, isPending] = useActionState(updateProfileAction, initialState);
+  const [deleteAccountState, deleteAccountFormAction, isDeleteAccountPending] = useActionState(
+    deleteAccountAction,
+    deleteAccountInitialState
+  );
 
   useEffect(() => {
     if (state.success) {
@@ -375,8 +387,20 @@ export function ProfileView({ achievements, initialAvatarUrl, initialFullName, h
 
       <Card className="rounded-3xl">
         <p className="text-sm text-zinc-500">Sesion</p>
-        <div className="mt-2">
+        <div className="mt-2 space-y-3">
           <SignOutButton />
+          <Button
+            fullWidth
+            onClick={() => {
+              setDeleteConfirmation("");
+              setIsDeleteAccountOpen(true);
+            }}
+            size="lg"
+            type="button"
+            variant="danger"
+          >
+            Eliminar cuenta
+          </Button>
         </div>
       </Card>
 
@@ -445,6 +469,71 @@ export function ProfileView({ achievements, initialAvatarUrl, initialFullName, h
               </Button>
               <Button disabled={isPending} size="sm" type="submit">
                 {isPending ? "Guardando..." : "Guardar"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      {isDeleteAccountOpen ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-zinc-950/45 p-4">
+          <form
+            action={deleteAccountFormAction}
+            className="w-full max-w-md space-y-4 rounded-2xl border border-rose-100 bg-white p-5 shadow-[0_18px_45px_rgba(24,24,27,0.14)]"
+          >
+            <div className="relative flex items-center justify-center">
+              <button
+                aria-label="Cerrar"
+                className="absolute left-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800"
+                disabled={isDeleteAccountPending}
+                onClick={() => setIsDeleteAccountOpen(false)}
+                type="button"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+              <h3 className="text-lg font-bold text-zinc-950">Eliminar cuenta</h3>
+            </div>
+
+            <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-4">
+              <p className="text-sm font-semibold text-rose-700">Esta accion es irreversible.</p>
+              <p className="mt-1 text-sm leading-6 text-zinc-600">
+                Tu perfil se anonimizara y se cerrara la sesion. Los grupos, lugares y actividad compartida se conservaran para no romper el historial.
+              </p>
+            </div>
+
+            <label className="block space-y-2">
+              <span className="text-xs font-semibold text-zinc-700">Escribe ELIMINAR para confirmar</span>
+              <input
+                autoComplete="off"
+                className="h-11 w-full rounded-xl border border-zinc-200 px-3 text-sm font-semibold text-zinc-900 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                name="confirmation"
+                onChange={(event) => setDeleteConfirmation(event.target.value)}
+                value={deleteConfirmation}
+              />
+            </label>
+
+            {deleteAccountState.error ? <p className="text-sm text-rose-600">{deleteAccountState.error}</p> : null}
+
+            <div className="flex justify-end gap-2">
+              <Button
+                disabled={isDeleteAccountPending}
+                onClick={() => setIsDeleteAccountOpen(false)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Cancelar
+              </Button>
+              <Button
+                disabled={isDeleteAccountPending || deleteConfirmation !== "ELIMINAR"}
+                size="sm"
+                type="submit"
+                variant="danger"
+              >
+                {isDeleteAccountPending ? "Eliminando..." : "Eliminar cuenta"}
               </Button>
             </div>
           </form>

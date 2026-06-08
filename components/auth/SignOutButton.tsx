@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/Button";
 
 export function SignOutButton() {
   return (
-    <form action="/auth/signout" method="post">
-      <Button size="sm" type="submit" variant="ghost">
+    <form action="/auth/signout" className="w-full" method="post">
+      <Button fullWidth size="lg" type="submit" variant="secondary">
         Cerrar sesion
       </Button>
     </form>

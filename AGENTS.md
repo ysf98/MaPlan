@@ -70,6 +70,7 @@ Variables esperadas en `.env`:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_MAPBOX_TOKEN=
 NEXT_PUBLIC_MAPBOX_STYLE=
 GOOGLE_PLACES_API_KEY=
@@ -91,6 +92,7 @@ Reglas:
 - Nunca commitear `.env` ni secretos.
 - Mantener `GOOGLE_PLACES_API_KEY` solo server-side.
 - No renombrarla a `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY`.
+- Mantener `SUPABASE_SERVICE_ROLE_KEY` solo server-side; no exponerla con prefijo `NEXT_PUBLIC_`.
 - `NEXT_PUBLIC_MAPBOX_TOKEN` es pública por diseño.
 - La anon key de Supabase es pública, pero RLS debe proteger los datos.
 - No usar service role en cliente.

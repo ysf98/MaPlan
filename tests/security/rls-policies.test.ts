@@ -41,9 +41,11 @@ describe("RLS policies baseline", () => {
 
   it("creates profile data server-side during sign-up", () => {
     const sql = readFileSync(resolve(process.cwd(), "supabase/profiles_full_name.sql"), "utf8");
+    expect(sql).toContain("create or replace function public.generate_profile_username");
     expect(sql).toContain("create or replace function public.handle_new_user_profile");
     expect(sql).toContain("after insert on auth.users");
     expect(sql).toContain("new.raw_user_meta_data ->> 'username'");
+    expect(sql).toContain("'user_' || substring(replace(p_user_id::text, '-', '') from 1 for 8)");
   });
 
   it("includes atomic RPC for invitation acceptance with membership insert", () => {

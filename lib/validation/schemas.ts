@@ -431,6 +431,13 @@ export const updateProfileSchema = z.object({
     )
 });
 
+export const deleteAccountSchema = z.object({
+  confirmation: z
+    .string()
+    .trim()
+    .refine((value) => value === "ELIMINAR", "Escribe ELIMINAR para confirmar.")
+});
+
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>;
 export type CreatePlaceInput = z.infer<typeof createPlaceSchema>;
@@ -454,3 +461,4 @@ export type FriendSearchQueryInput = z.infer<typeof friendSearchQuerySchema>;
 export type GooglePlacesSearchInput = z.infer<typeof googlePlacesSearchSchema>;
 export type GooglePlaceDetailsInput = z.infer<typeof googlePlaceDetailsSchema>;
 export type GooglePlacesNearbyInput = z.infer<typeof googlePlacesNearbySchema>;
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
