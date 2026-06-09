@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSafeInternalPath } from "@/lib/navigation/safeRedirect";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ROUTES } from "@/utils/constants";
-
-function getSafeNextPath(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return ROUTES.dashboard;
-  }
-
-  return value;
-}
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const nextPath = getSafeNextPath(requestUrl.searchParams.get("next"));
+  const nextPath = getSafeInternalPath(requestUrl.searchParams.get("next"), ROUTES.dashboard);
   const origin = requestUrl.origin;
 
   if (!code) {

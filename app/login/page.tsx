@@ -1,5 +1,6 @@
 ﻿import { LoginForm } from "@/components/auth/LoginForm";
 import { MaplanMinimalIcon } from "@/components/branding/MaplanMinimalIcon";
+import { getSafeInternalPath } from "@/lib/navigation/safeRedirect";
 import { APP_NAME, ROUTES } from "@/utils/constants";
 
 type LoginPageProps = {
@@ -9,7 +10,7 @@ type LoginPageProps = {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const resolvedSearchParams = (await searchParams) || {};
   const nextParam = resolvedSearchParams.next;
-  const nextPath = typeof nextParam === "string" && nextParam.startsWith("/") ? nextParam : ROUTES.dashboard;
+  const nextPath = getSafeInternalPath(typeof nextParam === "string" ? nextParam : null, ROUTES.dashboard);
 
   return (
     <div className="relative min-h-screen min-h-[100svh] w-full overflow-hidden bg-[#fff8f7] text-zinc-900">

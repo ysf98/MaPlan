@@ -8,6 +8,7 @@ import {
   stripPostalCodes
 } from "@/lib/map/addressParsing";
 import { buildGoogleMapsUrl } from "@/lib/map/googleMapsUrl";
+import { checkRateLimit, rateLimitExceededResponse } from "@/lib/security/rateLimit";
 import { googlePlacesSearchSchema } from "@/lib/validation/schemas";
 
 type GoogleTextSearchPlace = {
@@ -30,6 +31,11 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+
+  const rateLimit = checkRateLimit({ key: `places:search:${user.id}`, limit: 30, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit);
   }
 
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Provider } from "@supabase/supabase-js";
+import { getSafeInternalPath } from "@/lib/navigation/safeRedirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ROUTES } from "@/utils/constants";
 
@@ -21,10 +22,6 @@ const providers: OAuthProvider[] = [
   }
 ];
 
-function getSafeNextPath(nextPath: string) {
-  return nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : ROUTES.dashboard;
-}
-
 export function OAuthButtons({ nextPath = ROUTES.dashboard }: OAuthButtonsProps) {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider["id"] | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -34,7 +31,7 @@ export function OAuthButtons({ nextPath = ROUTES.dashboard }: OAuthButtonsProps)
     setLoadingProvider(provider);
 
     const callbackUrl = new URL("/auth/callback", window.location.origin);
-    callbackUrl.searchParams.set("next", getSafeNextPath(nextPath));
+    callbackUrl.searchParams.set("next", getSafeInternalPath(nextPath, ROUTES.dashboard));
 
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithOAuth({

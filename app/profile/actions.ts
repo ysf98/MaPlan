@@ -139,6 +139,24 @@ export async function deleteAccountAction(
   }
 
   const supabase = await createSupabaseServerClient();
+  const { data: existingProfile, error: profileLookupError } = await supabase.from("profiles").select("id").eq("id", user.id).maybeSingle();
+
+  if (profileLookupError) {
+    return { error: profileLookupError.message, success: false };
+  }
+
+  if (!existingProfile) {
+    return { error: "No se encontro el perfil.", success: false };
+  }
+
+  let adminSupabase: ReturnType<typeof createSupabaseAdminClient>;
+
+  try {
+    adminSupabase = createSupabaseAdminClient();
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "No se pudo preparar el borrado de la cuenta.", success: false };
+  }
+
   const deletedUsername = `deleted_${user.id.replace(/-/g, "").slice(0, 24)}`;
   const { data, error } = await supabase
     .from("profiles")
@@ -158,14 +176,6 @@ export async function deleteAccountAction(
 
   if (!data) {
     return { error: "No se encontro el perfil.", success: false };
-  }
-
-  let adminSupabase: ReturnType<typeof createSupabaseAdminClient>;
-
-  try {
-    adminSupabase = createSupabaseAdminClient();
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "No se pudo preparar el borrado de la cuenta.", success: false };
   }
 
   const cleanupError = await deleteAccountData(adminSupabase, user.id);

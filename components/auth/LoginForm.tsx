@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
+import { getSafeInternalPath } from "@/lib/navigation/safeRedirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ROUTES } from "@/utils/constants";
 
@@ -22,6 +23,7 @@ function SpinnerIcon() {
 
 export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
   const router = useRouter();
+  const safeNextPath = getSafeInternalPath(nextPath, ROUTES.dashboard);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -45,7 +47,7 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
       return;
     }
 
-    router.replace(nextPath);
+    router.replace(safeNextPath);
     router.refresh();
   }
 
@@ -127,7 +129,7 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
         {!isLoading ? <span aria-hidden="true">→</span> : null}
       </button>
 
-      <OAuthButtons nextPath={nextPath} />
+      <OAuthButtons nextPath={safeNextPath} />
 
       <p className="pt-8 text-center text-sm text-zinc-600">
         No tienes cuenta?{" "}

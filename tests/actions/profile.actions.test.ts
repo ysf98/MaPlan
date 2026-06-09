@@ -11,6 +11,9 @@ const {
   eqMock,
   fromMock,
   maybeSingleMock,
+  profileLookupEqMock,
+  profileLookupMaybeSingleMock,
+  profileLookupSelectMock,
   redirectMock,
   requireAuthenticatedUserMock,
   revalidatePathMock,
@@ -28,6 +31,9 @@ const {
   eqMock: vi.fn(),
   fromMock: vi.fn(),
   maybeSingleMock: vi.fn(),
+  profileLookupEqMock: vi.fn(),
+  profileLookupMaybeSingleMock: vi.fn(),
+  profileLookupSelectMock: vi.fn(),
   redirectMock: vi.fn(),
   requireAuthenticatedUserMock: vi.fn(),
   revalidatePathMock: vi.fn(),
@@ -73,11 +79,14 @@ describe("profile server actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireAuthenticatedUserMock.mockResolvedValue({ id: "user-1" });
+    profileLookupMaybeSingleMock.mockResolvedValue({ data: { id: "user-1" }, error: null });
+    profileLookupEqMock.mockReturnValue({ maybeSingle: profileLookupMaybeSingleMock });
+    profileLookupSelectMock.mockReturnValue({ eq: profileLookupEqMock });
     maybeSingleMock.mockResolvedValue({ data: { id: "user-1" }, error: null });
     selectMock.mockReturnValue({ maybeSingle: maybeSingleMock });
     eqMock.mockReturnValue({ select: selectMock });
     updateMock.mockReturnValue({ eq: eqMock });
-    fromMock.mockReturnValue({ update: updateMock });
+    fromMock.mockReturnValue({ select: profileLookupSelectMock, update: updateMock });
     adminEqMock.mockResolvedValue({ error: null });
     adminOrMock.mockResolvedValue({ error: null });
     adminDeleteMock.mockReturnValue({ eq: adminEqMock, or: adminOrMock });
@@ -144,11 +153,12 @@ describe("profile server actions", () => {
   });
 
   it("devuelve error claro si no encuentra el perfil", async () => {
-    maybeSingleMock.mockResolvedValue({ data: null, error: null });
+    profileLookupMaybeSingleMock.mockResolvedValue({ data: null, error: null });
 
     const result = await profileActions.deleteAccountAction({ error: null, success: false }, buildFormData("ELIMINAR"));
 
     expect(result).toEqual({ error: "No se encontro el perfil.", success: false });
+    expect(updateMock).not.toHaveBeenCalled();
     expect(createSupabaseAdminClientMock).not.toHaveBeenCalled();
     expect(adminDeleteUserMock).not.toHaveBeenCalled();
     expect(signOutMock).not.toHaveBeenCalled();
@@ -162,6 +172,7 @@ describe("profile server actions", () => {
     const result = await profileActions.deleteAccountAction({ error: null, success: false }, buildFormData("ELIMINAR"));
 
     expect(result).toEqual({ error: "Falta configurar SUPABASE_SERVICE_ROLE_KEY en el servidor.", success: false });
+    expect(updateMock).not.toHaveBeenCalled();
     expect(signOutMock).not.toHaveBeenCalled();
     expect(redirectMock).not.toHaveBeenCalled();
   });

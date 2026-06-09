@@ -4,6 +4,7 @@ import type { GooglePlaceFeature } from "@/lib/map/googlePlaces";
 import { selectNearbyPlaceCandidate, type NearbyFallbackReason, type NearbySelectionInput } from "@/lib/map/googlePlacesNearby";
 import { pickCityFromComponents, pickStreetFromComponents, splitAddressParts } from "@/lib/map/addressParsing";
 import { buildGoogleMapsUrl } from "@/lib/map/googleMapsUrl";
+import { checkRateLimit, rateLimitExceededResponse } from "@/lib/security/rateLimit";
 import {
   googlePlacesNearbyRecommendationsSchema,
   googlePlacesNearbySchema,
@@ -466,6 +467,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
 
+  const rateLimit = checkRateLimit({ key: `places:nearby:${user.id}`, limit: 40, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit);
+  }
+
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "GOOGLE_PLACES_API_KEY no configurada." }, { status: 500 });
@@ -484,6 +490,11 @@ export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+
+  const rateLimit = checkRateLimit({ key: `places:nearby:${user.id}`, limit: 40, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit);
   }
 
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;

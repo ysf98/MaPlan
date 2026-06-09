@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
+import { checkRateLimit, rateLimitExceededResponse } from "@/lib/security/rateLimit";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+
+  const rateLimit = checkRateLimit({ key: `places:photo:${user.id}`, limit: 120, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit);
   }
 
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;

@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import type { GooglePlaceFeature } from "@/lib/map/googlePlaces";
 import { pickCityFromComponents, pickStreetFromComponents, splitAddressParts } from "@/lib/map/addressParsing";
 import { buildGoogleMapsUrl } from "@/lib/map/googleMapsUrl";
+import { checkRateLimit, rateLimitExceededResponse } from "@/lib/security/rateLimit";
 import { googlePlaceDetailsSchema } from "@/lib/validation/schemas";
 
 type GooglePlaceDetailsResult = {
@@ -33,6 +34,11 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+
+  const rateLimit = checkRateLimit({ key: `places:details:${user.id}`, limit: 60, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit);
   }
 
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;

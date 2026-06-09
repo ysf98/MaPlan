@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { searchUsers } from "@/lib/friends";
+import { checkRateLimit, rateLimitExceededResponse } from "@/lib/security/rateLimit";
 import { friendSearchQuerySchema } from "@/lib/validation/schemas";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+
+  const rateLimit = checkRateLimit({ key: `friends:search:${user.id}`, limit: 60, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit);
   }
 
   const url = new URL(request.url);
