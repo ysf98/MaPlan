@@ -153,6 +153,7 @@ alter table public.group_plan_votes enable row level security;
 
 drop policy if exists group_plans_select_group_member on public.group_plans;
 drop policy if exists group_plans_insert_editor_only on public.group_plans;
+drop policy if exists group_plans_update_creator_only on public.group_plans;
 drop policy if exists group_plans_delete_creator_only on public.group_plans;
 
 drop policy if exists group_plan_places_select_group_member on public.group_plan_places;
@@ -177,6 +178,17 @@ for insert to authenticated
 with check (
   created_by = auth.uid()
   and public.can_edit_group_shared_content(group_id, auth.uid())
+);
+
+create policy group_plans_update_creator_only
+on public.group_plans
+for update to authenticated
+using (
+  created_by = auth.uid()
+)
+with check (
+  created_by = auth.uid()
+  and public.can_access_group(group_id, auth.uid())
 );
 
 create policy group_plans_delete_creator_only

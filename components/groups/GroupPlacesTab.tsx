@@ -9,7 +9,6 @@ import {
 } from "@/app/groups/[groupId]/actions";
 import { PlacePlanDialog } from "@/components/groups/PlacePlanDialog";
 import { SimplePlacesList } from "@/components/map/SimplePlacesList";
-import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { GroupPlanItem } from "@/lib/groupPlans";
 import type { GroupPlace } from "@/lib/places/shared";
@@ -20,7 +19,6 @@ type GroupPlacesTabProps = {
   canEditPlaces: boolean;
   plans: GroupPlanItem[];
   selectedPlaceId: string | null;
-  onSelectPlace: (placeId: string | null) => void;
   onViewInMap: (placeId: string) => void;
 };
 
@@ -33,7 +31,6 @@ export function GroupPlacesTab({
   canEditPlaces,
   plans,
   selectedPlaceId,
-  onSelectPlace,
   onViewInMap
 }: GroupPlacesTabProps) {
   const [statusState, statusFormAction, isUpdatingStatus] = useActionState(updatePlaceStatusAction, statusInitialState);
@@ -96,49 +93,7 @@ export function GroupPlacesTab({
     <div>
       <SimplePlacesList
         cardDataAttribute="data-group-place-card"
-        onTogglePlace={(placeId) => onSelectPlace(selectedPlaceId === placeId ? null : placeId)}
         places={places}
-        renderActions={(place) => (
-          <div className="space-y-3">
-            <div className="rounded-[20px] bg-[#fff8f7] p-4">
-              <p className="text-sm font-semibold text-zinc-950">Detalle del lugar</p>
-              <p className="mt-1 text-sm leading-6 text-zinc-600">
-                {place.address}
-                {place.city ? `, ${place.city}` : ""}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  onClick={() => onViewInMap(place.id)}
-                  size="sm"
-                  type="button"
-                >
-                  Ver en mapa
-                </Button>
-                {place.googleMapsUrl ? (
-                  <a
-                    className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-100 bg-white px-3 text-sm font-semibold text-zinc-700 transition hover:border-rose-200 hover:text-[#c6283a]"
-                    href={place.googleMapsUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    Abrir Maps
-                  </a>
-                ) : null}
-                {place.phoneNumber ? (
-                  <a
-                    className="inline-flex h-10 items-center justify-center rounded-2xl border border-rose-100 bg-white px-3 text-sm font-semibold text-zinc-700 transition hover:border-rose-200 hover:text-[#c6283a]"
-                    href={`tel:${place.phoneNumber}`}
-                  >
-                    Llamar
-                  </a>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        )}
-        renderFooter={(place) => (
-          <PlacePlanDialog canManagePlans={canEditPlaces} compact groupId={groupId} placeId={place.id} plans={plans} />
-        )}
         renderHeaderAccessory={(place) => (
           <button
             className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full border border-rose-100 bg-rose-50 px-3 text-xs font-semibold text-[#c6283a] transition hover:-translate-y-0.5 hover:bg-rose-100 active:translate-y-0"
@@ -157,6 +112,11 @@ export function GroupPlacesTab({
             </svg>
           </button>
         )}
+        renderMetaAccessory={
+          canEditPlaces
+            ? (place) => <PlacePlanDialog canManagePlans compact groupId={groupId} placeId={place.id} plans={plans} />
+            : undefined
+        }
         renderImageOverlay={(place) => {
           const displayed = displayedById[place.id];
           const sendStatus = (status: GroupPlace["status"]) => {

@@ -230,7 +230,6 @@ export function GroupDetailView({
               <GroupPlacesTab
                 canEditPlaces={group.canEditPlaces}
                 groupId={groupId}
-                onSelectPlace={setSelectedPlaceId}
                 plans={plans}
                 onViewInMap={(placeId) => {
                   setSelectedPlaceId(placeId);

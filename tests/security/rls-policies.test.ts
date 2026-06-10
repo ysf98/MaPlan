@@ -102,7 +102,8 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("check (vote in ('attending', 'not_attending'))");
     expect(sql).toContain("create policy group_plans_select_group_member");
     expect(sql).toContain("create policy group_plan_places_insert_editor_only");
+    expect(sql).toContain("create policy group_plans_update_creator_only");
     expect(sql).toContain("create policy group_plan_votes_update_self_member");
-    expect(sql).toContain("gp.planned_date is null or gp.planned_date >= now()");
+    expect(sql).toContain("gp.planned_date is null or gp.planned_date::date >= now()::date");
   });
 });

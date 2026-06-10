@@ -20,6 +20,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import type { GroupPlanItem } from "@/lib/groupPlans";
+import { canPlanAcceptNewPlaces } from "@/lib/groupPlansShared";
 
 type GroupPlansTabProps = {
   groupId: string;
@@ -296,6 +297,7 @@ function RestaurantIcon() {
 export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNavigateToPlaces }: GroupPlansTabProps) {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<"all" | "upcoming" | "past" | "draft">("all");
+  const [displayPlans, setDisplayPlans] = useState<GroupPlanItem[]>(plans);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -315,9 +317,13 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
     updatePlanDateInitialState
   );
 
+  useEffect(() => {
+    setDisplayPlans(plans);
+  }, [plans]);
+
   const sortedPlans = useMemo(
     () =>
-      [...plans].sort((a, b) => {
+      [...displayPlans].sort((a, b) => {
         const aTime = a.plannedDate ? new Date(a.plannedDate).getTime() : Number.MAX_SAFE_INTEGER;
         const bTime = b.plannedDate ? new Date(b.plannedDate).getTime() : Number.MAX_SAFE_INTEGER;
         if (aTime !== bTime) {
@@ -325,7 +331,7 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
         }
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }),
-    [plans]
+    [displayPlans]
   );
 
   const selectedPlan = useMemo(
@@ -381,6 +387,9 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
       return;
     }
 
+    if (planToDelete) {
+      setDisplayPlans((current) => current.filter((plan) => plan.id !== planToDelete.id));
+    }
     setPlanToDelete(null);
     setMenuPlanId(null);
     if (selectedPlanId === planToDelete?.id) {
@@ -401,11 +410,25 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
       return;
     }
 
+    if (planToEditDate) {
+      const normalizedDate = editedPlannedDate ? `${editedPlannedDate}T00:00:00.000Z` : null;
+      setDisplayPlans((current) =>
+        current.map((plan) =>
+          plan.id === planToEditDate.id
+            ? {
+                ...plan,
+                plannedDate: normalizedDate,
+                acceptsNewPlaces: canPlanAcceptNewPlaces(normalizedDate)
+              }
+            : plan
+        )
+      );
+    }
     router.refresh();
     setPlanToEditDate(null);
     setEditedPlannedDate("");
     setMenuPlanId(null);
-  }, [router, updatePlanDateState.success]);
+  }, [editedPlannedDate, planToEditDate, router, updatePlanDateState.success]);
 
   const planDetailError = removePlaceState.error ?? deleteState.error ?? voteState.error;
 

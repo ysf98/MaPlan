@@ -1,6 +1,9 @@
 import { canEditPlaces, isGroupMember } from "@/lib/groupPermissions";
+import { canPlanAcceptNewPlaces, normalizePlanDateInput } from "@/lib/groupPlansShared";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GroupPlanVote } from "@/types/supabase";
+
+export { canPlanAcceptNewPlaces } from "@/lib/groupPlansShared";
 
 type CreateGroupPlanInput = {
   userId: string;
@@ -116,47 +119,6 @@ function isGroupPlanVote(value: string): value is GroupPlanVote {
 function normalizeOptionalText(value: string | null | undefined): string | null {
   const trimmed = value?.trim() ?? "";
   return trimmed.length > 0 ? trimmed : null;
-}
-
-function extractPlanDatePart(value: string | null | undefined): string | null {
-  const trimmed = value?.trim() ?? "";
-  if (!trimmed) {
-    return null;
-  }
-
-  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
-  if (match) {
-    return match[1];
-  }
-
-  const parsed = new Date(trimmed);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  const year = parsed.getUTCFullYear();
-  const month = String(parsed.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(parsed.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function normalizePlanDateInput(value: string | null | undefined): string | null {
-  const datePart = extractPlanDatePart(value);
-  if (!datePart) {
-    return null;
-  }
-
-  return `${datePart}T00:00:00.000Z`;
-}
-
-export function canPlanAcceptNewPlaces(plannedDate: string | null | undefined, now = new Date()): boolean {
-  const datePart = extractPlanDatePart(plannedDate);
-  if (!datePart) {
-    return true;
-  }
-
-  const today = now.toISOString().slice(0, 10);
-  return datePart >= today;
 }
 
 async function getPlanForGroup(groupId: string, planId: string): Promise<GroupPlanRow | null> {
@@ -471,16 +433,23 @@ export async function updateGroupPlanDate(input: UpdateGroupPlanDateInput): Prom
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("group_plans")
     .update({
       planned_date: normalizePlanDateInput(input.plannedDate),
       updated_at: new Date().toISOString()
     })
-    .eq("id", input.planId);
+    .eq("id", input.planId)
+    .eq("group_id", input.groupId)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     return { error: error.message };
+  }
+
+  if (!data) {
+    return { error: "No se pudo actualizar la fecha del plan." };
   }
 
   return { error: null };

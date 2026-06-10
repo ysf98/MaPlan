@@ -25,6 +25,7 @@ type SimplePlacesListProps<TPlace extends BasePlaceItem> = {
   renderFooter?: (place: TPlace) => ReactNode;
   renderHeaderAccessory?: (place: TPlace) => ReactNode;
   renderImageOverlay?: (place: TPlace) => ReactNode;
+  renderMetaAccessory?: (place: TPlace) => ReactNode;
 };
 
 export function SimplePlacesList<TPlace extends BasePlaceItem>({
@@ -36,7 +37,8 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
   renderActions,
   renderFooter,
   renderHeaderAccessory,
-  renderImageOverlay
+  renderImageOverlay,
+  renderMetaAccessory
 }: SimplePlacesListProps<TPlace>) {
   function statusLabel(status: BasePlaceItem["status"]): string | null {
     if (status === "visited") return "Visitado";
@@ -141,7 +143,20 @@ export function SimplePlacesList<TPlace extends BasePlaceItem>({
                       {place.address}
                       {place.city ? ` - ${place.city}` : ""}
                     </p>
-                    <PlaceRatingBadge className="mt-2" compact rating={place.rating} userRatingsTotal={place.userRatingsTotal} />
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <PlaceRatingBadge compact rating={place.rating} userRatingsTotal={place.userRatingsTotal} />
+                      {renderMetaAccessory ? (
+                        <div
+                          data-card-control=""
+                          data-lock-swipe=""
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => event.stopPropagation()}
+                          onPointerDown={(event) => event.stopPropagation()}
+                        >
+                          {renderMetaAccessory(place)}
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
                 {renderFooter ? (
