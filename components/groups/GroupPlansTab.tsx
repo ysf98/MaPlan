@@ -2,12 +2,10 @@
 
 import { startTransition, useActionState, useEffect, useMemo, useState } from "react";
 import {
-  addPlaceToGroupPlanAction,
   createGroupPlanAction,
   deleteGroupPlanAction,
   removeGroupPlanPlaceAction,
   voteGroupPlanAction,
-  type AddPlaceToGroupPlanActionState,
   type CreateGroupPlanActionState,
   type DeleteGroupPlanActionState,
   type RemoveGroupPlanPlaceActionState,
@@ -18,20 +16,18 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import type { GroupPlanItem } from "@/lib/groupPlans";
-import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupPlansTabProps = {
   groupId: string;
   groupName: string;
   plans: GroupPlanItem[];
-  places: GroupPlace[];
   canCreatePlans: boolean;
+  onNavigateToPlaces: () => void;
 };
 
 const createInitialState: CreateGroupPlanActionState = { error: null, success: false };
 const voteInitialState: VoteGroupPlanActionState = { error: null, success: false };
 const deleteInitialState: DeleteGroupPlanActionState = { error: null, success: false };
-const addPlaceInitialState: AddPlaceToGroupPlanActionState = { error: null, success: false };
 const removePlaceInitialState: RemoveGroupPlanPlaceActionState = { error: null, success: false };
 
 function formatPlanDate(date: string | null): string {
@@ -79,22 +75,6 @@ function shortDate(date: string | null): string {
     day: "numeric",
     month: "short"
   }).format(parsed);
-}
-
-function buildPlanPlaceDateTime(planDate: string | null, timeValue: string): string {
-  if (!planDate || !timeValue) {
-    return "";
-  }
-
-  const parsedDate = new Date(planDate);
-  if (Number.isNaN(parsedDate.getTime())) {
-    return "";
-  }
-
-  const year = parsedDate.getFullYear();
-  const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
-  const day = String(parsedDate.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}T${timeValue}`;
 }
 
 function voteSummary(plan: GroupPlanItem): string {
@@ -197,22 +177,17 @@ function TrashIcon() {
   );
 }
 
-export function GroupPlansTab({ groupId, groupName, plans, places, canCreatePlans }: GroupPlansTabProps) {
+export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNavigateToPlaces }: GroupPlansTabProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [plannedDate, setPlannedDate] = useState("");
   const [planToDelete, setPlanToDelete] = useState<GroupPlanItem | null>(null);
-  const [isAddPlaceOpen, setIsAddPlaceOpen] = useState(false);
-  const [selectedGroupPlaceId, setSelectedGroupPlaceId] = useState("");
-  const [placeTime, setPlaceTime] = useState("");
-  const [placeNote, setPlaceNote] = useState("");
   const [planPlaceToDeleteId, setPlanPlaceToDeleteId] = useState<string | null>(null);
   const [createState, createAction, isCreating] = useActionState(createGroupPlanAction, createInitialState);
   const [voteState, voteAction, isVoting] = useActionState(voteGroupPlanAction, voteInitialState);
   const [deleteState, deleteAction, isDeleting] = useActionState(deleteGroupPlanAction, deleteInitialState);
-  const [addPlaceState, addPlaceAction, isAddingPlace] = useActionState(addPlaceToGroupPlanAction, addPlaceInitialState);
   const [removePlaceState, removePlaceAction, isRemovingPlace] = useActionState(removeGroupPlanPlaceAction, removePlaceInitialState);
 
   const sortedPlans = useMemo(
@@ -232,15 +207,6 @@ export function GroupPlansTab({ groupId, groupName, plans, places, canCreatePlan
     () => sortedPlans.find((plan) => plan.id === selectedPlanId) ?? null,
     [selectedPlanId, sortedPlans]
   );
-
-  const availablePlacesForSelectedPlan = useMemo(() => {
-    if (!selectedPlan) {
-      return [];
-    }
-
-    const usedPlaceIds = new Set(selectedPlan.places.map((place) => place.placeId));
-    return places.filter((place) => !usedPlaceIds.has(place.id));
-  }, [places, selectedPlan]);
 
   useEffect(() => {
     if (!createState.success) {
@@ -265,23 +231,14 @@ export function GroupPlansTab({ groupId, groupName, plans, places, canCreatePlan
   }, [deleteState.success, planToDelete?.id, selectedPlanId]);
 
   useEffect(() => {
-    if (!addPlaceState.success) {
-      return;
-    }
-
-    setIsAddPlaceOpen(false);
-    setSelectedGroupPlaceId("");
-    setPlaceTime("");
-    setPlaceNote("");
-  }, [addPlaceState.success]);
-
-  useEffect(() => {
     if (!removePlaceState.success) {
       return;
     }
 
     setPlanPlaceToDeleteId(null);
   }, [removePlaceState.success]);
+
+  const planDetailError = removePlaceState.error ?? deleteState.error ?? voteState.error;
 
   if (selectedPlan) {
     return (
@@ -382,7 +339,7 @@ export function GroupPlansTab({ groupId, groupName, plans, places, canCreatePlan
                   <div className="absolute left-[-1.65rem] top-6 h-4 w-4 rounded-full border-2 border-rose-200 bg-[#fff8f7]" />
                   <button
                     className="flex h-16 w-full items-center justify-center gap-2 rounded-[24px] border-2 border-dashed border-rose-200 bg-transparent text-sm font-semibold text-zinc-600 transition hover:border-[#ff5a5f] hover:text-[#c6283a]"
-                    onClick={() => setIsAddPlaceOpen(true)}
+                    onClick={onNavigateToPlaces}
                     type="button"
                   >
                     <PlusIcon />
@@ -462,8 +419,9 @@ export function GroupPlansTab({ groupId, groupName, plans, places, canCreatePlan
                 </button>
               </div>
             </div>
-            {voteState.error ? <p className="mt-3 text-sm text-rose-600">{voteState.error}</p> : null}
           </div>
+
+          {planDetailError ? <p className="mt-4 text-sm text-rose-600">{planDetailError}</p> : null}
 
           <div className="pt-8">
             <Button className="h-14 rounded-[22px] text-base" fullWidth type="button">
@@ -513,84 +471,6 @@ export function GroupPlansTab({ groupId, groupName, plans, places, canCreatePlan
           title="Eliminar lugar"
         />
 
-        {deleteState.error ? <p className="mt-3 text-sm text-rose-600">{deleteState.error}</p> : null}
-        {removePlaceState.error ? <p className="mt-3 text-sm text-rose-600">{removePlaceState.error}</p> : null}
-
-        {isAddPlaceOpen ? (
-          <div className="fixed inset-0 z-[120] flex items-end justify-center bg-zinc-950/45 p-4 sm:items-center" onClick={() => setIsAddPlaceOpen(false)}>
-            <div
-              className="w-full max-w-lg rounded-[28px] border border-rose-100 bg-[#fff8f7] p-5 shadow-[0_18px_45px_rgba(24,24,27,0.22)]"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-bold text-zinc-950">Anadir lugar al plan</h3>
-                  <p className="mt-1 text-sm text-zinc-600">Selecciona un lugar ya guardado del grupo y, si quieres, anade hora y nota.</p>
-                </div>
-                <button
-                  aria-label="Cerrar"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-rose-100 bg-white text-zinc-500"
-                  onClick={() => setIsAddPlaceOpen(false)}
-                  type="button"
-                >
-                  <CloseIcon />
-                </button>
-              </div>
-
-              <div className="mt-5 space-y-4">
-                <label className="block space-y-2">
-                  <span className="text-sm font-semibold text-zinc-700">Lugar del grupo</span>
-                  <select
-                    className="h-12 w-full rounded-2xl border border-transparent bg-white px-4 text-sm text-zinc-900 outline-none focus:border-[#ff5a5f]"
-                    onChange={(event) => setSelectedGroupPlaceId(event.target.value)}
-                    value={selectedGroupPlaceId}
-                  >
-                    <option value="">Selecciona un lugar</option>
-                    {availablePlacesForSelectedPlan.map((place) => (
-                      <option key={place.id} value={place.id}>
-                        {place.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <Input label="Hora del lugar" onChange={(event) => setPlaceTime(event.target.value)} type="time" value={placeTime} />
-                <label className="block space-y-2">
-                  <span className="text-sm font-semibold text-zinc-700">Nota breve</span>
-                  <textarea
-                    className="min-h-[96px] w-full rounded-2xl border border-transparent bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-[#ff5a5f]"
-                    maxLength={280}
-                    onChange={(event) => setPlaceNote(event.target.value)}
-                    placeholder="Por ejemplo: quedar aqui primero"
-                    value={placeNote}
-                  />
-                </label>
-                {addPlaceState.error ? <p className="text-sm text-rose-600">{addPlaceState.error}</p> : null}
-                <div className="flex justify-end gap-2">
-                  <Button onClick={() => setIsAddPlaceOpen(false)} size="sm" type="button" variant="ghost">
-                    Cancelar
-                  </Button>
-                  <Button
-                    disabled={!selectedGroupPlaceId || isAddingPlace || availablePlacesForSelectedPlan.length === 0}
-                    onClick={() => {
-                      const payload = new FormData();
-                      payload.set("groupId", groupId);
-                      payload.set("planId", selectedPlan.id);
-                      payload.set("placeId", selectedGroupPlaceId);
-                      payload.set("plannedAt", buildPlanPlaceDateTime(selectedPlan.plannedDate, placeTime));
-                      payload.set("note", placeNote);
-                      startTransition(() => addPlaceAction(payload));
-                    }}
-                    size="sm"
-                    type="button"
-                  >
-                    {isAddingPlace ? "Guardando..." : "Anadir al plan"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
       </div>
     );
   }

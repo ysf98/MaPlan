@@ -142,6 +142,8 @@ export function GroupMap({
     () => placesWithCoordinates.find((place) => place.id === effectiveSelectedPlaceId) ?? null,
     [placesWithCoordinates, effectiveSelectedPlaceId]
   );
+  const shouldRenderSelectedPlaceOverlay = isMapVisible && Boolean(internalSelectedPlace);
+  const shouldRenderDraftOverlay = isMapVisible && Boolean(draftSelection);
   const selectedPlaceDistanceLabel = useMemo(() => {
     if (!userLocation.location || !internalSelectedPlace || !hasValidCoordinates(internalSelectedPlace)) {
       return null;
@@ -662,7 +664,7 @@ export function GroupMap({
           </div>
         ) : null}
 
-        {internalSelectedPlace ? (
+        {shouldRenderSelectedPlaceOverlay && internalSelectedPlace ? (
           <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-30 sm:bottom-4">
             <div className="pointer-events-auto" ref={selectedPlaceCardRef}>
               <MapPlaceCard
@@ -745,7 +747,7 @@ export function GroupMap({
             </div>
           </div>
         ) : null}
-        {draftSelection ? (
+        {shouldRenderDraftOverlay && draftSelection ? (
           <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-40 sm:bottom-4">
             <div className="pointer-events-auto" ref={draftCardMobileRef}>
               <MapSaveDraftCard
@@ -770,7 +772,7 @@ export function GroupMap({
         ) : null}
       </div>
 
-      {draftSelection ? <div className="hidden" ref={draftCardDesktopRef} /> : null}
+      {shouldRenderDraftOverlay ? <div className="hidden" ref={draftCardDesktopRef} /> : null}
     </div>
   );
 }

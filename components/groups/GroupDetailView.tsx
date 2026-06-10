@@ -261,8 +261,8 @@ export function GroupDetailView({
                 canCreatePlans={group.canEditPlaces}
                 groupId={groupId}
                 groupName={group.name}
+                onNavigateToPlaces={() => setCurrentTab("lugares")}
                 plans={plans}
-                places={places}
               />
             </div>
           </div>
