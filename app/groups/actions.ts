@@ -217,7 +217,7 @@ export async function joinGroupAction(
     return { error: null, success: true, groupId: group.id, mode: "requested" };
   }
 
-  let existingMembershipResult = await supabase
+  const existingMembershipResult = await supabase
     .from("group_members")
     .select("id")
     .eq("group_id", group.id)
@@ -236,7 +236,7 @@ export async function joinGroupAction(
       user_id: user.id,
       role: "member" as const
     };
-    let insertMembershipResult = await supabase.from("group_members").insert(insertPayload);
+    const insertMembershipResult = await supabase.from("group_members").insert(insertPayload);
 
     const { error: insertMembershipError } = insertMembershipResult;
 

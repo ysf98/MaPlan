@@ -20,7 +20,13 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import type { GroupPlanItem } from "@/lib/groupPlans";
-import { canPlanAcceptNewPlaces } from "@/lib/groupPlansShared";
+import {
+  canPlanAcceptNewPlaces,
+  formatPlanDateSpanish,
+  getTodayPlanDatePart,
+  isPlanDateOnOrAfter,
+  normalizePlanDateInput
+} from "@/lib/groupPlansShared";
 
 type GroupPlansTabProps = {
   groupId: string;
@@ -67,15 +73,12 @@ function getPlanCalendarDate(date: string | null): Date | null {
 }
 
 function formatPlanDate(date: string | null): string {
-  const parsed = getPlanCalendarDate(date);
-  if (!parsed) {
+  const formattedDate = formatPlanDateSpanish(date);
+  if (!formattedDate) {
     return date ? "Fecha por confirmar" : "Sin fecha cerrada";
   }
 
-  return new Intl.DateTimeFormat("es-ES", {
-    dateStyle: "full",
-    timeZone: "UTC"
-  }).format(parsed);
+  return formattedDate;
 }
 
 function formatPlanTime(date: string | null): string | null {
@@ -95,42 +98,39 @@ function formatPlanTime(date: string | null): string | null {
 }
 
 function shortDate(date: string | null): string {
-  const parsed = getPlanCalendarDate(date);
-  if (!parsed) {
-    return "Sin fecha";
-  }
-
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "numeric",
-    month: "short",
-    timeZone: "UTC"
-  }).format(parsed);
+  return formatPlanDateSpanish(date) ?? "Sin fecha";
 }
 
 function getPlanTimestamp(date: string | null): number | null {
   return getPlanCalendarDate(date)?.getTime() ?? null;
 }
 
-function formatDayNumber(date: string | null): string {
-  const timestamp = getPlanTimestamp(date);
-  if (timestamp === null) {
-    return "--";
-  }
-
-  return new Intl.DateTimeFormat("es-ES", { day: "2-digit" }).format(new Date(timestamp));
-}
-
-function formatMonthShort(date: string | null): string {
-  const timestamp = getPlanTimestamp(date);
-  if (timestamp === null) {
+function formatDayMonth(date: string | null): string {
+  const datePart = extractPlanDatePart(date);
+  if (!datePart) {
     return "TBD";
   }
 
-  return new Intl.DateTimeFormat("es-ES", { month: "short" }).format(new Date(timestamp)).replace(".", "").toUpperCase();
+  const [, month, day] = datePart.split("-");
+  return `${day}/${month}`;
+}
+
+function formatYearShort(date: string | null): string {
+  const datePart = extractPlanDatePart(date);
+  if (!datePart) {
+    return "";
+  }
+
+  return datePart.split("-")[0] ?? "";
 }
 
 function toDateTimeLocalValue(date: string | null): string {
-  return extractPlanDatePart(date) ?? "";
+  return formatPlanDateSpanish(date) ?? "";
+}
+
+function isOptionalPlanDateAllowed(value: string, minDatePart: string): boolean {
+  const trimmed = value.trim();
+  return trimmed.length === 0 || isPlanDateOnOrAfter(trimmed, minDatePart);
 }
 
 function planLocationLabel(plan: GroupPlanItem): string {
@@ -303,6 +303,8 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [plannedDate, setPlannedDate] = useState("");
+  const [minPlanDate] = useState(() => getTodayPlanDatePart());
+  const [nowTimestamp, setNowTimestamp] = useState<number | null>(null);
   const [menuPlanId, setMenuPlanId] = useState<string | null>(null);
   const [planToDelete, setPlanToDelete] = useState<GroupPlanItem | null>(null);
   const [planToEditDate, setPlanToEditDate] = useState<GroupPlanItem | null>(null);
@@ -338,15 +340,15 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
     () => sortedPlans.find((plan) => plan.id === selectedPlanId) ?? null,
     [selectedPlanId, sortedPlans]
   );
-  const nowTimestamp = Date.now();
   const categorizedPlans = useMemo(() => {
+    const currentTimestamp = nowTimestamp ?? 0;
     const upcoming = sortedPlans.filter((plan) => {
       const timestamp = getPlanTimestamp(plan.plannedDate);
-      return timestamp !== null && timestamp >= nowTimestamp;
+      return timestamp !== null && timestamp >= currentTimestamp;
     });
     const past = sortedPlans.filter((plan) => {
       const timestamp = getPlanTimestamp(plan.plannedDate);
-      return timestamp !== null && timestamp < nowTimestamp;
+      return timestamp !== null && timestamp < currentTimestamp;
     });
     const drafts = sortedPlans.filter((plan) => getPlanTimestamp(plan.plannedDate) === null);
 
@@ -370,6 +372,10 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
       filtered
     };
   }, [activeFilter, nowTimestamp, sortedPlans]);
+
+  useEffect(() => {
+    setNowTimestamp(Date.now());
+  }, []);
 
   useEffect(() => {
     if (!createState.success) {
@@ -411,7 +417,7 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
     }
 
     if (planToEditDate) {
-      const normalizedDate = editedPlannedDate ? `${editedPlannedDate}T00:00:00.000Z` : null;
+      const normalizedDate = normalizePlanDateInput(editedPlannedDate);
       setDisplayPlans((current) =>
         current.map((plan) =>
           plan.id === planToEditDate.id
@@ -431,6 +437,8 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
   }, [editedPlannedDate, planToEditDate, router, updatePlanDateState.success]);
 
   const planDetailError = removePlaceState.error ?? deleteState.error ?? voteState.error;
+  const isCreatePlanDateAllowed = isOptionalPlanDateAllowed(plannedDate, minPlanDate);
+  const isEditedPlanDateAllowed = isOptionalPlanDateAllowed(editedPlannedDate, minPlanDate);
 
   function openEditDate(plan: GroupPlanItem) {
     setPlanToEditDate(plan);
@@ -770,10 +778,15 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
             <Input label="Nombre del plan" onChange={(event) => setTitle(event.target.value)} value={title} />
             <Input
               label="Fecha del plan"
+              hint="Formato dia/mes/ano. Tiene que ser hoy o una fecha futura."
+              inputMode="numeric"
               onChange={(event) => setPlannedDate(event.target.value)}
-              type="date"
+              placeholder="dd/mm/aaaa"
               value={plannedDate}
             />
+            {!isCreatePlanDateAllowed ? (
+              <p className="text-sm text-rose-600">La fecha del plan no puede ser anterior a hoy.</p>
+            ) : null}
             <label className="block space-y-2">
               <span className="text-sm font-semibold text-zinc-700">Descripcion</span>
               <textarea
@@ -790,7 +803,7 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
                 Cancelar
               </Button>
               <Button
-                disabled={!title.trim() || isCreating}
+                disabled={!title.trim() || !isCreatePlanDateAllowed || isCreating}
                 onClick={() => {
                   const payload = new FormData();
                   payload.set("groupId", groupId);
@@ -845,9 +858,9 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
                       <div className="rounded-[28px] border border-rose-100/60 bg-white p-4 shadow-[0_10px_32px_rgba(181,35,48,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_38px_rgba(181,35,48,0.12)]">
                         <div className="flex items-start justify-between gap-3">
                           <button className="flex min-w-0 flex-1 gap-3 text-left" onClick={() => setSelectedPlanId(plan.id)} type="button">
-                            <div className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl ${accent.box}`}>
-                              <span className="text-xl font-bold leading-none">{formatDayNumber(plan.plannedDate)}</span>
-                              <span className="text-[10px] font-bold uppercase tracking-[0.12em]">{formatMonthShort(plan.plannedDate)}</span>
+                            <div className={`flex h-14 w-16 shrink-0 flex-col items-center justify-center rounded-2xl ${accent.box}`}>
+                              <span className="text-[15px] font-bold leading-none">{formatDayMonth(plan.plannedDate)}</span>
+                              <span className="mt-1 text-[10px] font-bold leading-none">{formatYearShort(plan.plannedDate)}</span>
                             </div>
                             <div className="min-w-0">
                               <p className="truncate text-[22px] font-bold leading-7 text-zinc-950">{plan.title}</p>
@@ -1032,17 +1045,22 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
             <div className="mt-5 space-y-4">
               <Input
                 label="Nueva fecha"
+                hint="Formato dia/mes/ano. Tiene que ser hoy o una fecha futura."
+                inputMode="numeric"
                 onChange={(event) => setEditedPlannedDate(event.target.value)}
-                type="date"
+                placeholder="dd/mm/aaaa"
                 value={editedPlannedDate}
               />
+              {!isEditedPlanDateAllowed ? (
+                <p className="text-sm text-rose-600">La fecha del plan no puede ser anterior a hoy.</p>
+              ) : null}
               {updatePlanDateState.error ? <p className="text-sm text-rose-600">{updatePlanDateState.error}</p> : null}
               <div className="flex justify-end gap-2">
                 <Button onClick={() => setPlanToEditDate(null)} type="button" variant="ghost">
                   Cancelar
                 </Button>
                 <Button
-                  disabled={isUpdatingPlanDate}
+                  disabled={!isEditedPlanDateAllowed || isUpdatingPlanDate}
                   onClick={() => {
                     const payload = new FormData();
                     payload.set("groupId", groupId);

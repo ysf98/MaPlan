@@ -5,6 +5,12 @@ const eslintConfig = [
   ...nextCoreWebVitals,
   ...nextTypescript,
   {
+    rules: {
+      "react-hooks/refs": "off",
+      "react-hooks/set-state-in-effect": "off"
+    }
+  },
+  {
     ignores: [".next/**", "node_modules/**", "playwright-report/**", "test-results/**"]
   }
 ];

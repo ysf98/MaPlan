@@ -4,6 +4,7 @@ import {
   GROUP_JOIN_REQUEST_STATUS_VALUES,
   GROUP_PRIVACY_VALUES
 } from "@/lib/groups/policies";
+import { extractPlanDatePart, isPlanDateTodayOrFuture } from "@/lib/groupPlansShared";
 
 export const PLACE_STATUS_VALUES = ["pending", "visited"] as const;
 export const PLACE_SOURCE_VALUES = ["manual", "google_maps", "tiktok", "instagram", "website"] as const;
@@ -18,6 +19,13 @@ const nullableDateTimeSchema = z
   .optional()
   .transform((value) => (value && value.length > 0 ? value : null))
   .refine((value) => value === null || !Number.isNaN(new Date(value).getTime()), "Fecha invalida.");
+const nullablePlanDateSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value && value.length > 0 ? value : null))
+  .refine((value) => value === null || extractPlanDatePart(value) !== null, "Fecha invalida.")
+  .refine((value) => value === null || isPlanDateTodayOrFuture(value), "La fecha del plan no puede ser anterior a hoy.");
 const nullableRatingSchema = z.preprocess(
   (value) => (value === "" || value === null || value === undefined ? null : value),
   z.coerce.number().min(0, "La puntuacion no es valida.").max(5, "La puntuacion no es valida.").nullable()
@@ -340,7 +348,7 @@ export const createGroupPlanSchema = z.object({
     .max(500, "La descripcion no puede superar 500 caracteres.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
-  plannedDate: nullableDateTimeSchema,
+  plannedDate: nullablePlanDateSchema,
   initialPlaceId: z
     .string()
     .trim()
@@ -385,7 +393,7 @@ export const deleteGroupPlanSchema = z.object({
 export const updateGroupPlanDateSchema = z.object({
   groupId: uuidSchema,
   planId: uuidSchema,
-  plannedDate: nullableDateTimeSchema
+  plannedDate: nullablePlanDateSchema
 });
 
 export const removeGroupPlanPlaceSchema = z.object({

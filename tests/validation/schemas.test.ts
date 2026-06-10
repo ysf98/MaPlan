@@ -79,10 +79,20 @@ describe("group plan schemas", () => {
       groupId: "11111111-1111-4111-8111-111111111111",
       title: "Cena del viernes",
       description: "Tapas",
-      plannedDate: "2026-06-20T21:00",
+      plannedDate: "2099-06-20",
       initialPlaceId: "22222222-2222-4222-8222-222222222222",
-      initialPlacePlannedAt: "2026-06-20T21:30",
+      initialPlacePlannedAt: "2099-06-20T21:30",
       initialPlaceNote: "Reservar terraza"
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("createGroupPlanSchema accepts Spanish plan dates", () => {
+    const result = createGroupPlanSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      title: "Cena del viernes",
+      plannedDate: "20/06/2099"
     });
 
     expect(result.success).toBe(true);
@@ -98,12 +108,32 @@ describe("group plan schemas", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects impossible Spanish planned dates in plans", () => {
+    const result = createGroupPlanSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      title: "Plan raro",
+      plannedDate: "31/02/2099"
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects past planned dates in plans", () => {
+    const result = createGroupPlanSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      title: "Plan pasado",
+      plannedDate: "2000-01-01"
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("addPlaceToGroupPlanSchema validates ids and note", () => {
     const result = addPlaceToGroupPlanSchema.safeParse({
       groupId: "11111111-1111-4111-8111-111111111111",
       planId: "22222222-2222-4222-8222-222222222222",
       placeId: "33333333-3333-4333-8333-333333333333",
-      plannedAt: "2026-06-21T18:30",
+      plannedAt: "2099-06-21T18:30",
       note: "Quedar primero aqui"
     });
 
@@ -142,9 +172,19 @@ describe("group plan schemas", () => {
       updateGroupPlanDateSchema.safeParse({
         groupId: "11111111-1111-4111-8111-111111111111",
         planId: "22222222-2222-4222-8222-222222222222",
-        plannedDate: "2026-07-10T21:00"
+        plannedDate: "2099-07-10"
       }).success
     ).toBe(true);
+  });
+
+  it("updateGroupPlanDateSchema rejects past plan dates", () => {
+    expect(
+      updateGroupPlanDateSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        plannedDate: "2000-01-01"
+      }).success
+    ).toBe(false);
   });
 });
 

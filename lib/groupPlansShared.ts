@@ -1,12 +1,38 @@
+const PLAN_DATE_TIME_ZONE = "Europe/Madrid";
+
+function toValidDatePart(year: string, month: string, day: string): string | null {
+  const normalizedYear = year.padStart(4, "0");
+  const normalizedMonth = month.padStart(2, "0");
+  const normalizedDay = day.padStart(2, "0");
+  const parsed = new Date(`${normalizedYear}-${normalizedMonth}-${normalizedDay}T00:00:00.000Z`);
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getUTCFullYear() !== Number(normalizedYear) ||
+    parsed.getUTCMonth() + 1 !== Number(normalizedMonth) ||
+    parsed.getUTCDate() !== Number(normalizedDay)
+  ) {
+    return null;
+  }
+
+  return `${normalizedYear}-${normalizedMonth}-${normalizedDay}`;
+}
+
 export function extractPlanDatePart(value: string | null | undefined): string | null {
   const trimmed = value?.trim() ?? "";
   if (!trimmed) {
     return null;
   }
 
+  const spanishMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (spanishMatch) {
+    return toValidDatePart(spanishMatch[3], spanishMatch[2], spanishMatch[1]);
+  }
+
   const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
   if (match) {
-    return match[1];
+    const [year, month, day] = match[1].split("-");
+    return toValidDatePart(year, month, day);
   }
 
   const parsed = new Date(trimmed);
@@ -18,6 +44,48 @@ export function extractPlanDatePart(value: string | null | undefined): string | 
   const month = String(parsed.getUTCMonth() + 1).padStart(2, "0");
   const day = String(parsed.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+export function getTodayPlanDatePart(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: PLAN_DATE_TIME_ZONE,
+    year: "numeric"
+  }).formatToParts(now);
+
+  const day = parts.find((part) => part.type === "day")?.value ?? "01";
+  const month = parts.find((part) => part.type === "month")?.value ?? "01";
+  const year = parts.find((part) => part.type === "year")?.value ?? "1970";
+
+  return `${year}-${month}-${day}`;
+}
+
+export function formatPlanDateSpanish(value: string | null | undefined): string | null {
+  const datePart = extractPlanDatePart(value);
+  if (!datePart) {
+    return null;
+  }
+
+  const [year, month, day] = datePart.split("-");
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return `${day}/${month}/${year}`;
+}
+
+export function isPlanDateTodayOrFuture(value: string | null | undefined, now = new Date()): boolean {
+  return isPlanDateOnOrAfter(value, getTodayPlanDatePart(now));
+}
+
+export function isPlanDateOnOrAfter(value: string | null | undefined, minDatePart: string): boolean {
+  const datePart = extractPlanDatePart(value);
+  if (!datePart) {
+    return false;
+  }
+
+  return datePart >= minDatePart;
 }
 
 export function normalizePlanDateInput(value: string | null | undefined): string | null {
@@ -40,6 +108,5 @@ export function canPlanAcceptNewPlaces(plannedDate: string | null | undefined, n
     return false;
   }
 
-  const today = now.toISOString().slice(0, 10);
-  return datePart >= today;
+  return isPlanDateTodayOrFuture(datePart, now);
 }

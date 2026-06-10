@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { GroupPlanItem } from "@/lib/groupPlans";
+import { extractPlanDatePart, getTodayPlanDatePart, isPlanDateOnOrAfter } from "@/lib/groupPlansShared";
 import type { MapDraftPlace } from "@/lib/map/geocoding";
 
 type DraftPlacePlanDialogProps = {
@@ -30,6 +31,7 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [plannedDate, setPlannedDate] = useState("");
+  const [minPlanDate] = useState(() => getTodayPlanDatePart());
   const [createState, createAction, isCreating] = useActionState(createGroupPlanFromDraftAction, createInitialState);
   const [addState, addAction, isAdding] = useActionState(addDraftPlaceToGroupPlanAction, addInitialState);
 
@@ -44,12 +46,17 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
       return "";
     }
 
-    const datePartMatch = planDate.match(/^(\d{4}-\d{2}-\d{2})/);
-    if (!datePartMatch) {
+    const datePart = extractPlanDatePart(planDate);
+    if (!datePart) {
       return "";
     }
 
-    return `${datePartMatch[1]}T${timeValue}`;
+    return `${datePart}T${timeValue}`;
+  }
+
+  function isOptionalPlanDateAllowed(value: string): boolean {
+    const trimmed = value.trim();
+    return trimmed.length === 0 || isPlanDateOnOrAfter(trimmed, minPlanDate);
   }
 
   function appendDraftFields(payload: FormData) {
@@ -90,6 +97,8 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
   if (!canManagePlans) {
     return null;
   }
+
+  const isCreatePlanDateAllowed = isOptionalPlanDateAllowed(plannedDate);
 
   return (
     <>
@@ -183,7 +192,17 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
             ) : (
               <div className="mt-5 space-y-4">
                 <Input label="Nombre del plan" onChange={(event) => setTitle(event.target.value)} value={title} />
-                <Input label="Fecha del plan" onChange={(event) => setPlannedDate(event.target.value)} type="date" value={plannedDate} />
+                <Input
+                  label="Fecha del plan"
+                  hint="Formato dia/mes/ano. Tiene que ser hoy o una fecha futura."
+                  inputMode="numeric"
+                  onChange={(event) => setPlannedDate(event.target.value)}
+                  placeholder="dd/mm/aaaa"
+                  value={plannedDate}
+                />
+                {!isCreatePlanDateAllowed ? (
+                  <p className="text-sm text-rose-600">La fecha del plan no puede ser anterior a hoy.</p>
+                ) : null}
                 <label className="block space-y-2">
                   <span className="text-sm font-semibold text-zinc-700">Descripcion</span>
                   <textarea
@@ -216,14 +235,14 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
                     Cancelar
                   </Button>
                   <Button
-                    disabled={!title.trim() || isCreating}
+                    disabled={!title.trim() || !isCreatePlanDateAllowed || isCreating}
                     onClick={() => {
                       const payload = new FormData();
                       appendDraftFields(payload);
                       payload.set("title", title);
                       payload.set("description", description);
                       payload.set("plannedDate", plannedDate);
-                      payload.set("initialPlacePlannedAt", placeTime);
+                      payload.set("initialPlacePlannedAt", buildPlanPlaceDateTime(plannedDate, placeTime));
                       payload.set("initialPlaceNote", placeNote);
                       startTransition(() => createAction(payload));
                     }}

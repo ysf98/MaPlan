@@ -177,6 +177,7 @@ on public.group_plans
 for insert to authenticated
 with check (
   created_by = auth.uid()
+  and (planned_date is null or planned_date::date >= timezone('Europe/Madrid', now())::date)
   and public.can_edit_group_shared_content(group_id, auth.uid())
 );
 
@@ -188,6 +189,7 @@ using (
 )
 with check (
   created_by = auth.uid()
+  and (planned_date is null or planned_date::date >= timezone('Europe/Madrid', now())::date)
   and public.can_access_group(group_id, auth.uid())
 );
 
@@ -221,7 +223,7 @@ with check (
     join public.places p on p.id = group_plan_places.place_id
     where gp.id = group_plan_places.plan_id
       and p.group_id = gp.group_id
-      and (gp.planned_date is null or gp.planned_date::date >= now()::date)
+      and (gp.planned_date is null or gp.planned_date::date >= timezone('Europe/Madrid', now())::date)
       and public.can_edit_group_shared_content(gp.group_id, auth.uid())
   )
 );

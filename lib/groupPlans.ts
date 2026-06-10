@@ -1,5 +1,5 @@
 import { canEditPlaces, isGroupMember } from "@/lib/groupPermissions";
-import { canPlanAcceptNewPlaces, normalizePlanDateInput } from "@/lib/groupPlansShared";
+import { canPlanAcceptNewPlaces, extractPlanDatePart, isPlanDateTodayOrFuture, normalizePlanDateInput } from "@/lib/groupPlansShared";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GroupPlanVote } from "@/types/supabase";
 
@@ -305,6 +305,16 @@ export async function createGroupPlan(input: CreateGroupPlanInput): Promise<{ er
     return { error: "El nombre del plan es obligatorio.", planId: null };
   }
 
+  if (input.plannedDate) {
+    if (!extractPlanDatePart(input.plannedDate)) {
+      return { error: "Fecha invalida.", planId: null };
+    }
+
+    if (!isPlanDateTodayOrFuture(input.plannedDate)) {
+      return { error: "La fecha del plan no puede ser anterior a hoy.", planId: null };
+    }
+  }
+
   if (input.initialPlaceId) {
     const placeExists = await validatePlaceBelongsToGroup(input.groupId, input.initialPlaceId);
     if (!placeExists) {
@@ -426,9 +436,12 @@ export async function updateGroupPlanDate(input: UpdateGroupPlanDateInput): Prom
   }
 
   if (input.plannedDate) {
-    const parsedDate = new Date(input.plannedDate);
-    if (Number.isNaN(parsedDate.getTime())) {
+    if (!extractPlanDatePart(input.plannedDate)) {
       return { error: "Fecha invalida." };
+    }
+
+    if (!isPlanDateTodayOrFuture(input.plannedDate)) {
+      return { error: "La fecha del plan no puede ser anterior a hoy." };
     }
   }
 
