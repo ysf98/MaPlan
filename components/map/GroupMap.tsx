@@ -9,8 +9,10 @@ import type {
   UpdatePlaceFavoriteActionState,
   UpdatePlaceNameActionState
 } from "@/app/groups/[groupId]/actions";
+import { PlacePlanDialog } from "@/components/groups/PlacePlanDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/ui/Card";
+import type { GroupPlanItem } from "@/lib/groupPlans";
 import { hasValidCoordinates, type GroupPlace } from "@/lib/places/shared";
 import {
   buildDraftFromRenderedFeature,
@@ -34,6 +36,7 @@ import type { GroupDetailTab } from "@/lib/groups/tabs";
 type GroupMapProps = {
   groupId: string;
   canEdit: boolean;
+  plans: GroupPlanItem[];
   places: GroupPlace[];
   selectedPlaceId?: string | null;
   onSelectPlace?: (placeId: string | null) => void;
@@ -88,6 +91,7 @@ function placeMatchesMapFilter(place: GroupPlace, filter: PlaceMapFilter): boole
 export function GroupMap({
   groupId,
   canEdit,
+  plans,
   places,
   selectedPlaceId = null,
   onSelectPlace,
@@ -716,6 +720,14 @@ export function GroupMap({
                     favoritePlaceFormAction(payload);
                   });
                 }}
+                extraContent={
+                  <PlacePlanDialog
+                    canManagePlans={canEdit}
+                    groupId={groupId}
+                    placeId={internalSelectedPlace.id}
+                    plans={plans}
+                  />
+                }
                 place={{
                   address: internalSelectedPlace.address,
                   city: internalSelectedPlace.city,
@@ -741,6 +753,7 @@ export function GroupMap({
                 distanceLabel={draftDistanceLabel}
                 draft={draftSelection}
                 formAction={addPlaceFormAction}
+                plans={plans}
                 scopeIdName="groupId"
                 scopeIdValue={groupId}
                 isPending={isAddPlacePending}

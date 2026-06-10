@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  addPlaceToGroupPlanSchema,
+  createGroupPlanSchema,
   createGroupSchema,
   deleteAccountSchema,
+  deleteGroupPlanSchema,
   friendSearchQuerySchema,
   googlePlaceDetailsSchema,
   googlePlacesNearbyRecommendationsSchema,
@@ -15,6 +18,7 @@ import {
   respondFriendRequestSchema,
   reviewJoinRequestSchema,
   sendFriendRequestSchema,
+  voteGroupPlanSchema,
   updatePersonalPlaceFavoriteSchema,
   updatePersonalPlaceStatusSchema,
   updatePlaceLocationSchema,
@@ -65,6 +69,71 @@ describe("createGroupSchema", () => {
     });
 
     expect(result.privacy).toBe("abierto");
+  });
+});
+
+describe("group plan schemas", () => {
+  it("createGroupPlanSchema accepts optional initial place fields", () => {
+    const result = createGroupPlanSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      title: "Cena del viernes",
+      description: "Tapas",
+      plannedDate: "2026-06-20T21:00",
+      initialPlaceId: "22222222-2222-4222-8222-222222222222",
+      initialPlacePlannedAt: "2026-06-20T21:30",
+      initialPlaceNote: "Reservar terraza"
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid planned dates in plans", () => {
+    const result = createGroupPlanSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      title: "Plan raro",
+      plannedDate: "no-fecha"
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("addPlaceToGroupPlanSchema validates ids and note", () => {
+    const result = addPlaceToGroupPlanSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      planId: "22222222-2222-4222-8222-222222222222",
+      placeId: "33333333-3333-4333-8333-333333333333",
+      plannedAt: "2026-06-21T18:30",
+      note: "Quedar primero aqui"
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("voteGroupPlanSchema accepts only supported votes", () => {
+    expect(
+      voteGroupPlanSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        vote: "attending"
+      }).success
+    ).toBe(true);
+
+    expect(
+      voteGroupPlanSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        vote: "maybe"
+      }).success
+    ).toBe(false);
+  });
+
+  it("deleteGroupPlanSchema validates ids", () => {
+    expect(
+      deleteGroupPlanSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222"
+      }).success
+    ).toBe(true);
   });
 });
 

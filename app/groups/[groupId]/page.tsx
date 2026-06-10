@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { getGroupActivityFeedForUser } from "@/lib/groupActivity";
 import { getFriends } from "@/lib/friends";
+import { getGroupPlansForUser } from "@/lib/groupPlans";
 import { getInvitableFriendsForGroup } from "@/lib/groupInvitations";
 import {
   getGroupDetailForUser,
@@ -41,9 +42,10 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
     notFound();
   }
 
-  const [places, membersPreviewResult, allMembers, invitableFriends, friends, activityFeed, pendingJoinRequests, reviewedJoinRequests] =
+  const [places, plans, membersPreviewResult, allMembers, invitableFriends, friends, activityFeed, pendingJoinRequests, reviewedJoinRequests] =
     await Promise.all([
       getGroupPlacesForUser(user.id, groupId),
+      getGroupPlansForUser(user.id, groupId),
       getGroupMembersPreviewForUser(user.id, groupId),
       getGroupMembersForUser(user.id, groupId),
       group.canInviteMembers ? getInvitableFriendsForGroup(user.id, groupId) : Promise.resolve([]),
@@ -68,6 +70,7 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
         invitableFriends={invitableFriends}
         membersPreview={membersPreviewResult.members}
         pendingJoinRequests={pendingJoinRequests}
+        plans={plans}
         places={places}
         reviewedJoinRequests={reviewedJoinRequests}
         totalFriendsCount={friends.length}

@@ -7,9 +7,11 @@ import { GroupDetailTabs } from "@/components/groups/GroupDetailTabs";
 import { GroupMapTab } from "@/components/groups/GroupMapTab";
 import { GroupOverviewHeader } from "@/components/groups/GroupOverviewHeader";
 import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
+import { GroupPlansTab } from "@/components/groups/GroupPlansTab";
 import { GroupPlacesTab } from "@/components/groups/GroupPlacesTab";
 import { cn } from "@/lib/cn";
 import type { GroupActivityFeedItem } from "@/lib/groupActivity";
+import type { GroupPlanItem } from "@/lib/groupPlans";
 import type { GroupDetailTab } from "@/lib/groups/tabs";
 import type { GroupDetail, GroupJoinRequestItem, GroupMemberPreview } from "@/lib/groups/types";
 import type { GroupPlace } from "@/lib/places/shared";
@@ -29,6 +31,7 @@ type GroupDetailViewProps = {
   activityEvents: GroupActivityFeedItem[];
   pendingJoinRequests: GroupJoinRequestItem[];
   reviewedJoinRequests: GroupJoinRequestItem[];
+  plans: GroupPlanItem[];
 };
 
 export function GroupDetailView({
@@ -45,9 +48,10 @@ export function GroupDetailView({
   activeTab,
   activityEvents,
   pendingJoinRequests,
-  reviewedJoinRequests
+  reviewedJoinRequests,
+  plans
 }: GroupDetailViewProps) {
-  const tabs = useMemo(() => ["lugares", "actividad", "mapa"] as const, []);
+  const tabs = useMemo(() => ["lugares", "actividad", "mapa", "planes"] as const, []);
   const [currentTab, setCurrentTab] = useState<GroupDetailTab>(activeTab);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
@@ -227,6 +231,7 @@ export function GroupDetailView({
                 canEditPlaces={group.canEditPlaces}
                 groupId={groupId}
                 onSelectPlace={setSelectedPlaceId}
+                plans={plans}
                 onViewInMap={(placeId) => {
                   setSelectedPlaceId(placeId);
                   setCurrentTab("mapa");
@@ -246,8 +251,18 @@ export function GroupDetailView({
                 isImmersive={currentTab === "mapa"}
                 onTabChange={setCurrentTab}
                 onSelectPlace={setSelectedPlaceId}
+                plans={plans}
                 places={places}
                 selectedPlaceId={selectedPlaceId}
+              />
+            </div>
+            <div className={cn("w-full shrink-0 px-1.5", currentTab === "mapa" && "max-sm:hidden")} ref={(node) => { tabPanelRefs.current[3] = node; }}>
+              <GroupPlansTab
+                canCreatePlans={group.canEditPlaces}
+                groupId={groupId}
+                groupName={group.name}
+                plans={plans}
+                places={places}
               />
             </div>
           </div>

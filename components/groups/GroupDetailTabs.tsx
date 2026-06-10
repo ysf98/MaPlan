@@ -10,7 +10,8 @@ type GroupDetailTabsProps = {
 const tabs: Array<{ key: GroupDetailTab; label: string }> = [
   { key: "lugares", label: "Lugares" },
   { key: "actividad", label: "Actividad" },
-  { key: "mapa", label: "Mapa" }
+  { key: "mapa", label: "Mapa" },
+  { key: "planes", label: "Planes" }
 ];
 
 export function GroupDetailTabs({ activeTab, onTabChange }: GroupDetailTabsProps) {

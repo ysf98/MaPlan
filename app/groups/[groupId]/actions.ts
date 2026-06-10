@@ -3,18 +3,24 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
+import { addPlaceToGroupPlan, createGroupPlan, deleteGroupPlan, removePlaceFromGroupPlan, voteGroupPlan } from "@/lib/groupPlans";
 import { createPlace, deletePlace, updatePlaceFavorite, updatePlaceLocation, updatePlaceName, updatePlaceStatus } from "@/lib/places";
 import {
+  addPlaceToGroupPlanSchema,
+  createGroupPlanSchema,
+  deleteGroupPlanSchema,
   createPlaceSchema,
   removeGroupMemberSchema,
+  removeGroupPlanPlaceSchema,
   reviewJoinRequestSchema,
   updateGroupDetailsSchema,
   updateGroupSettingsSchema,
   updatePlaceFavoriteSchema,
   updatePlaceLocationSchema,
-  updatePlaceStatusSchema
+  updatePlaceStatusSchema,
+  voteGroupPlanSchema
 } from "@/lib/validation/schemas";
-import type { Database, PlaceStatus } from "@/types/supabase";
+import type { Database, GroupPlanVote, PlaceStatus } from "@/types/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canChangeGroupPrivacy, canEditGroupDetails, canReviewJoinRequests, isGroupOwner } from "@/lib/groupPermissions";
 
@@ -68,6 +74,41 @@ export type UpdateGroupDetailsActionState = {
 };
 
 export type DeletePlaceActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type CreateGroupPlanActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type AddPlaceToGroupPlanActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type VoteGroupPlanActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type DeleteGroupPlanActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type CreateGroupPlanFromDraftActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type AddDraftPlaceToGroupPlanActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type RemoveGroupPlanPlaceActionState = {
   error: string | null;
   success: boolean;
 };
@@ -130,17 +171,50 @@ const DELETE_PLACE_INITIAL_STATE: DeletePlaceActionState = {
   error: null,
   success: false
 };
+
+const CREATE_GROUP_PLAN_INITIAL_STATE: CreateGroupPlanActionState = {
+  error: null,
+  success: false
+};
+
+const ADD_PLACE_TO_GROUP_PLAN_INITIAL_STATE: AddPlaceToGroupPlanActionState = {
+  error: null,
+  success: false
+};
+
+const VOTE_GROUP_PLAN_INITIAL_STATE: VoteGroupPlanActionState = {
+  error: null,
+  success: false
+};
+
+const DELETE_GROUP_PLAN_INITIAL_STATE: DeleteGroupPlanActionState = {
+  error: null,
+  success: false
+};
+
+const CREATE_GROUP_PLAN_FROM_DRAFT_INITIAL_STATE: CreateGroupPlanFromDraftActionState = {
+  error: null,
+  success: false
+};
+
+const ADD_DRAFT_PLACE_TO_GROUP_PLAN_INITIAL_STATE: AddDraftPlaceToGroupPlanActionState = {
+  error: null,
+  success: false
+};
+
+const REMOVE_GROUP_PLAN_PLACE_INITIAL_STATE: RemoveGroupPlanPlaceActionState = {
+  error: null,
+  success: false
+};
+
 const REMOVE_GROUP_MEMBER_INITIAL_STATE: RemoveGroupMemberActionState = {
   error: null,
   success: false
 };
 type GroupJoinRequestUpdate = Database["public"]["Tables"]["group_join_requests"]["Update"];
 
-export async function addPlaceAction(
-  _previousState: AddPlaceActionState = ADD_PLACE_INITIAL_STATE,
-  formData: FormData
-): Promise<AddPlaceActionState> {
-  const parsedInput = createPlaceSchema.safeParse({
+function parsePlaceDraftFormData(formData: FormData) {
+  return createPlaceSchema.safeParse({
     groupId: String(formData.get("groupId") || ""),
     name: String(formData.get("name") || ""),
     address: String(formData.get("address") || ""),
@@ -160,6 +234,50 @@ export async function addPlaceAction(
     latitude: formData.get("latitude"),
     longitude: formData.get("longitude")
   });
+}
+
+async function createOrReuseDraftPlaceForGroup(
+  userId: string,
+  placeData: ReturnType<typeof createPlaceSchema.parse>
+): Promise<{ error: string | null; placeId: string | null }> {
+  const result = await createPlace({
+    userId,
+    groupId: placeData.groupId,
+    name: placeData.name,
+    address: placeData.address,
+    city: placeData.city || null,
+    notes: placeData.notes || null,
+    category: placeData.category || null,
+    originalUrl: placeData.originalUrl || null,
+    source: placeData.source || null,
+    provider: placeData.provider || null,
+    externalPlaceId: placeData.externalPlaceId || null,
+    googleMapsUrl: placeData.googleMapsUrl || null,
+    businessStatus: placeData.businessStatus || null,
+    phoneNumber: placeData.phoneNumber || null,
+    rating: placeData.rating ?? null,
+    userRatingsTotal: placeData.userRatingsTotal ?? null,
+    imageUrl: placeData.imageUrl || null,
+    latitude: typeof placeData.latitude === "number" ? placeData.latitude : null,
+    longitude: typeof placeData.longitude === "number" ? placeData.longitude : null
+  });
+
+  if (result.error && !result.duplicate) {
+    return { error: result.error, placeId: null };
+  }
+
+  if (!result.placeId) {
+    return { error: result.error ?? "No se pudo preparar el lugar para el plan.", placeId: null };
+  }
+
+  return { error: null, placeId: result.placeId };
+}
+
+export async function addPlaceAction(
+  _previousState: AddPlaceActionState = ADD_PLACE_INITIAL_STATE,
+  formData: FormData
+): Promise<AddPlaceActionState> {
+  const parsedInput = parsePlaceDraftFormData(formData);
 
   if (!parsedInput.success) {
     return {
@@ -218,6 +336,98 @@ export async function addPlaceAction(
   }
 
   revalidatePath(`/groups/${groupId}`);
+  return { error: null, success: true };
+}
+
+export async function createGroupPlanFromDraftAction(
+  _previousState: CreateGroupPlanFromDraftActionState = CREATE_GROUP_PLAN_FROM_DRAFT_INITIAL_STATE,
+  formData: FormData
+): Promise<CreateGroupPlanFromDraftActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+  const parsedPlace = parsePlaceDraftFormData(formData);
+  const parsedPlan = createGroupPlanSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    title: String(formData.get("title") || ""),
+    description: String(formData.get("description") || ""),
+    plannedDate: String(formData.get("plannedDate") || ""),
+    initialPlaceId: "",
+    initialPlacePlannedAt: String(formData.get("initialPlacePlannedAt") || ""),
+    initialPlaceNote: String(formData.get("initialPlaceNote") || "")
+  });
+
+  if (!parsedPlace.success) {
+    return { error: getValidationErrorMessage(parsedPlace.error), success: false };
+  }
+
+  if (!parsedPlan.success) {
+    return { error: getValidationErrorMessage(parsedPlan.error), success: false };
+  }
+
+  const placeResult = await createOrReuseDraftPlaceForGroup(user.id, parsedPlace.data);
+  if (placeResult.error || !placeResult.placeId) {
+    return { error: placeResult.error, success: false };
+  }
+
+  const planResult = await createGroupPlan({
+    userId: user.id,
+    groupId: parsedPlan.data.groupId,
+    title: parsedPlan.data.title,
+    description: parsedPlan.data.description,
+    plannedDate: parsedPlan.data.plannedDate,
+    initialPlaceId: placeResult.placeId,
+    initialPlacePlannedAt: parsedPlan.data.initialPlacePlannedAt,
+    initialPlaceNote: parsedPlan.data.initialPlaceNote
+  });
+
+  if (planResult.error) {
+    return { error: planResult.error, success: false };
+  }
+
+  revalidatePath(`/groups/${parsedPlan.data.groupId}`);
+  return { error: null, success: true };
+}
+
+export async function addDraftPlaceToGroupPlanAction(
+  _previousState: AddDraftPlaceToGroupPlanActionState = ADD_DRAFT_PLACE_TO_GROUP_PLAN_INITIAL_STATE,
+  formData: FormData
+): Promise<AddDraftPlaceToGroupPlanActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+  const parsedPlace = parsePlaceDraftFormData(formData);
+  const parsedPlan = addPlaceToGroupPlanSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    planId: String(formData.get("planId") || ""),
+    placeId: "11111111-1111-4111-8111-111111111111",
+    plannedAt: String(formData.get("plannedAt") || ""),
+    note: String(formData.get("note") || "")
+  });
+
+  if (!parsedPlace.success) {
+    return { error: getValidationErrorMessage(parsedPlace.error), success: false };
+  }
+
+  if (!parsedPlan.success) {
+    return { error: getValidationErrorMessage(parsedPlan.error), success: false };
+  }
+
+  const placeResult = await createOrReuseDraftPlaceForGroup(user.id, parsedPlace.data);
+  if (placeResult.error || !placeResult.placeId) {
+    return { error: placeResult.error, success: false };
+  }
+
+  const result = await addPlaceToGroupPlan({
+    userId: user.id,
+    groupId: parsedPlan.data.groupId,
+    planId: parsedPlan.data.planId,
+    placeId: placeResult.placeId,
+    plannedAt: parsedPlan.data.plannedAt,
+    note: parsedPlan.data.note
+  });
+
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath(`/groups/${parsedPlan.data.groupId}`);
   return { error: null, success: true };
 }
 
@@ -353,6 +563,171 @@ export async function deletePlaceAction(
 
   revalidatePath(`/groups/${groupId}`);
   revalidatePath("/dashboard");
+  return { error: null, success: true };
+}
+
+export async function createGroupPlanAction(
+  _previousState: CreateGroupPlanActionState = CREATE_GROUP_PLAN_INITIAL_STATE,
+  formData: FormData
+): Promise<CreateGroupPlanActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const parsedInput = createGroupPlanSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    title: String(formData.get("title") || ""),
+    description: String(formData.get("description") || ""),
+    plannedDate: String(formData.get("plannedDate") || ""),
+    initialPlaceId: String(formData.get("initialPlaceId") || ""),
+    initialPlacePlannedAt: String(formData.get("initialPlacePlannedAt") || ""),
+    initialPlaceNote: String(formData.get("initialPlaceNote") || "")
+  });
+
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
+  }
+
+  const result = await createGroupPlan({
+    userId: user.id,
+    groupId: parsedInput.data.groupId,
+    title: parsedInput.data.title,
+    description: parsedInput.data.description,
+    plannedDate: parsedInput.data.plannedDate,
+    initialPlaceId: parsedInput.data.initialPlaceId,
+    initialPlacePlannedAt: parsedInput.data.initialPlacePlannedAt,
+    initialPlaceNote: parsedInput.data.initialPlaceNote
+  });
+
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath(`/groups/${parsedInput.data.groupId}`);
+  return { error: null, success: true };
+}
+
+export async function addPlaceToGroupPlanAction(
+  _previousState: AddPlaceToGroupPlanActionState = ADD_PLACE_TO_GROUP_PLAN_INITIAL_STATE,
+  formData: FormData
+): Promise<AddPlaceToGroupPlanActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const parsedInput = addPlaceToGroupPlanSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    planId: String(formData.get("planId") || ""),
+    placeId: String(formData.get("placeId") || ""),
+    plannedAt: String(formData.get("plannedAt") || ""),
+    note: String(formData.get("note") || "")
+  });
+
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
+  }
+
+  const result = await addPlaceToGroupPlan({
+    userId: user.id,
+    groupId: parsedInput.data.groupId,
+    planId: parsedInput.data.planId,
+    placeId: parsedInput.data.placeId,
+    plannedAt: parsedInput.data.plannedAt,
+    note: parsedInput.data.note
+  });
+
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath(`/groups/${parsedInput.data.groupId}`);
+  return { error: null, success: true };
+}
+
+export async function voteGroupPlanAction(
+  _previousState: VoteGroupPlanActionState = VOTE_GROUP_PLAN_INITIAL_STATE,
+  formData: FormData
+): Promise<VoteGroupPlanActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const parsedInput = voteGroupPlanSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    planId: String(formData.get("planId") || ""),
+    vote: String(formData.get("vote") || "")
+  });
+
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
+  }
+
+  const result = await voteGroupPlan({
+    userId: user.id,
+    groupId: parsedInput.data.groupId,
+    planId: parsedInput.data.planId,
+    vote: parsedInput.data.vote as GroupPlanVote
+  });
+
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath(`/groups/${parsedInput.data.groupId}`);
+  return { error: null, success: true };
+}
+
+export async function deleteGroupPlanAction(
+  _previousState: DeleteGroupPlanActionState = DELETE_GROUP_PLAN_INITIAL_STATE,
+  formData: FormData
+): Promise<DeleteGroupPlanActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const parsedInput = deleteGroupPlanSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    planId: String(formData.get("planId") || "")
+  });
+
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
+  }
+
+  const result = await deleteGroupPlan({
+    userId: user.id,
+    groupId: parsedInput.data.groupId,
+    planId: parsedInput.data.planId
+  });
+
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath(`/groups/${parsedInput.data.groupId}`);
+  return { error: null, success: true };
+}
+
+export async function removeGroupPlanPlaceAction(
+  _previousState: RemoveGroupPlanPlaceActionState = REMOVE_GROUP_PLAN_PLACE_INITIAL_STATE,
+  formData: FormData
+): Promise<RemoveGroupPlanPlaceActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const parsedInput = removeGroupPlanPlaceSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    planId: String(formData.get("planId") || ""),
+    planPlaceId: String(formData.get("planPlaceId") || "")
+  });
+
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
+  }
+
+  const result = await removePlaceFromGroupPlan({
+    userId: user.id,
+    groupId: parsedInput.data.groupId,
+    planId: parsedInput.data.planId,
+    planPlaceId: parsedInput.data.planPlaceId
+  });
+
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath(`/groups/${parsedInput.data.groupId}`);
   return { error: null, success: true };
 }
 

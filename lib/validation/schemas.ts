@@ -10,7 +10,14 @@ export const PLACE_SOURCE_VALUES = ["manual", "google_maps", "tiktok", "instagra
 export const PLACE_PROVIDER_VALUES = ["manual", "mapbox", "google_places"] as const;
 export const FRIEND_REQUEST_DECISION_VALUES = ["accepted", "rejected"] as const;
 export const GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES = ["popular", "food", "coffee", "plans", "sports"] as const;
+export const GROUP_PLAN_VOTE_VALUES = ["attending", "not_attending"] as const;
 const uuidSchema = z.string().uuid("Identificador invalido.");
+const nullableDateTimeSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value && value.length > 0 ? value : null))
+  .refine((value) => value === null || !Number.isNaN(new Date(value).getTime()), "Fecha invalida.");
 const nullableRatingSchema = z.preprocess(
   (value) => (value === "" || value === null || value === undefined ? null : value),
   z.coerce.number().min(0, "La puntuacion no es valida.").max(5, "La puntuacion no es valida.").nullable()
@@ -320,6 +327,67 @@ export const updateGroupDetailsSchema = z.object({
     )
 });
 
+export const createGroupPlanSchema = z.object({
+  groupId: uuidSchema,
+  title: z
+    .string()
+    .trim()
+    .min(1, "El nombre del plan es obligatorio.")
+    .max(100, "El nombre del plan no puede superar 100 caracteres."),
+  description: z
+    .string()
+    .trim()
+    .max(500, "La descripcion no puede superar 500 caracteres.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  plannedDate: nullableDateTimeSchema,
+  initialPlaceId: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+    .refine((value) => value === null || !value || uuidSchema.safeParse(value).success, "Lugar invalido."),
+  initialPlacePlannedAt: nullableDateTimeSchema,
+  initialPlaceNote: z
+    .string()
+    .trim()
+    .max(280, "La nota del lugar no puede superar 280 caracteres.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+});
+
+export const addPlaceToGroupPlanSchema = z.object({
+  groupId: uuidSchema,
+  planId: uuidSchema,
+  placeId: uuidSchema,
+  plannedAt: nullableDateTimeSchema,
+  note: z
+    .string()
+    .trim()
+    .max(280, "La nota del lugar no puede superar 280 caracteres.")
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null))
+});
+
+export const voteGroupPlanSchema = z.object({
+  groupId: uuidSchema,
+  planId: uuidSchema,
+  vote: z
+    .string()
+    .refine((value): value is (typeof GROUP_PLAN_VOTE_VALUES)[number] => GROUP_PLAN_VOTE_VALUES.includes(value as never), "Voto invalido.")
+});
+
+export const deleteGroupPlanSchema = z.object({
+  groupId: uuidSchema,
+  planId: uuidSchema
+});
+
+export const removeGroupPlanPlaceSchema = z.object({
+  groupId: uuidSchema,
+  planId: uuidSchema,
+  planPlaceId: uuidSchema
+});
+
 export const removeGroupMemberSchema = z.object({
   groupId: uuidSchema,
   memberUserId: uuidSchema
@@ -479,6 +547,11 @@ export type UpdatePlaceLocationInput = z.infer<typeof updatePlaceLocationSchema>
 export type ReviewJoinRequestInput = z.infer<typeof reviewJoinRequestSchema>;
 export type UpdateGroupSettingsInput = z.infer<typeof updateGroupSettingsSchema>;
 export type UpdateGroupDetailsInput = z.infer<typeof updateGroupDetailsSchema>;
+export type CreateGroupPlanInput = z.infer<typeof createGroupPlanSchema>;
+export type AddPlaceToGroupPlanInput = z.infer<typeof addPlaceToGroupPlanSchema>;
+export type VoteGroupPlanInput = z.infer<typeof voteGroupPlanSchema>;
+export type DeleteGroupPlanInput = z.infer<typeof deleteGroupPlanSchema>;
+export type RemoveGroupPlanPlaceInput = z.infer<typeof removeGroupPlanPlaceSchema>;
 export type RemoveGroupMemberInput = z.infer<typeof removeGroupMemberSchema>;
 export type SendFriendRequestInput = z.infer<typeof sendFriendRequestSchema>;
 export type RespondFriendRequestInput = z.infer<typeof respondFriendRequestSchema>;

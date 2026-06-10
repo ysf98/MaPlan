@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DraftPlacePlanDialog } from "@/components/groups/DraftPlacePlanDialog";
 import { MapPlaceCard } from "@/components/map/MapPlaceCard";
+import type { GroupPlanItem } from "@/lib/groupPlans";
 import type { MapDraftPlace } from "@/lib/map/geocoding";
 
 type SaveDraftActionState = {
@@ -19,6 +21,7 @@ type MapSaveDraftCardProps = {
   distanceLabel?: string | null;
   formAction: (payload: FormData) => void;
   onCancel: () => void;
+  plans?: GroupPlanItem[];
 };
 
 export function MapSaveDraftCard({
@@ -30,7 +33,8 @@ export function MapSaveDraftCard({
   canSave = true,
   distanceLabel,
   formAction,
-  onCancel
+  onCancel,
+  plans = []
 }: MapSaveDraftCardProps) {
   const formRef = useRef<HTMLFormElement | null>(null);
   const [name, setName] = useState(draft.name);
@@ -89,6 +93,21 @@ export function MapSaveDraftCard({
         onEditSave={submitDraft}
         onEditStart={() => setMode("editName")}
         onSave={submitDraft}
+        extraContent={
+          canSave ? (
+            <DraftPlacePlanDialog
+              canManagePlans={canSave}
+              draft={{
+                ...draft,
+                name,
+                address,
+                city
+              }}
+              groupId={scopeIdValue}
+              plans={plans}
+            />
+          ) : null
+        }
         place={{
           address,
           city,

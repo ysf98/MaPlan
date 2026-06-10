@@ -205,10 +205,12 @@ export async function getGroupPlacesForUser(userId: string, groupId: string): Pr
   });
 }
 
-export async function createPlace(input: CreatePlaceInput): Promise<{ error: string | null }> {
+export async function createPlace(
+  input: CreatePlaceInput
+): Promise<{ error: string | null; placeId: string | null; duplicate: boolean }> {
   const canEdit = await canEditPlaces(input.userId, input.groupId);
   if (!canEdit) {
-    return { error: "No tienes permisos para editar lugares en este grupo." };
+    return { error: "No tienes permisos para editar lugares en este grupo.", placeId: null, duplicate: false };
   }
 
   const name = input.name.trim();
@@ -217,10 +219,10 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
   const provider = input.provider || null;
   const externalPlaceId = input.externalPlaceId?.trim() || null;
   if (!name) {
-    return { error: "El nombre del lugar es obligatorio." };
+    return { error: "El nombre del lugar es obligatorio.", placeId: null, duplicate: false };
   }
   if (!address) {
-    return { error: "La direccion del lugar es obligatoria." };
+    return { error: "La direccion del lugar es obligatoria.", placeId: null, duplicate: false };
   }
 
   const category = normalizeCategory(input.category);
@@ -237,10 +239,10 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
       .maybeSingle();
 
     if (existingByProvider.error) {
-      return { error: existingByProvider.error.message };
+      return { error: existingByProvider.error.message, placeId: null, duplicate: false };
     }
     if (existingByProvider.data) {
-      return { error: "Ese sitio ya esta guardado en este grupo." };
+      return { error: "Ese sitio ya esta guardado en este grupo.", placeId: existingByProvider.data.id, duplicate: true };
     }
   }
 
@@ -255,11 +257,11 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
   const existingPlaceResult = await existingPlaceQuery.maybeSingle();
 
   if (existingPlaceResult.error) {
-    return { error: existingPlaceResult.error.message };
+    return { error: existingPlaceResult.error.message, placeId: null, duplicate: false };
   }
 
   if (existingPlaceResult.data) {
-    return { error: "Ese sitio ya esta guardado en este grupo." };
+    return { error: "Ese sitio ya esta guardado en este grupo.", placeId: existingPlaceResult.data.id, duplicate: true };
   }
 
   const insertedPlace = await supabase
@@ -292,9 +294,9 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
 
   if (insertedPlace.error) {
     if (insertedPlace.error.code === "23505") {
-      return { error: "Ese sitio ya esta guardado en este grupo." };
+      return { error: "Ese sitio ya esta guardado en este grupo.", placeId: null, duplicate: true };
     }
-    return { error: insertedPlace.error.message };
+    return { error: insertedPlace.error.message, placeId: null, duplicate: false };
   }
 
   if (insertedPlace.data?.id) {
@@ -310,7 +312,7 @@ export async function createPlace(input: CreatePlaceInput): Promise<{ error: str
     }
   }
 
-  return { error: null };
+  return { error: null, placeId: insertedPlace.data?.id ?? null, duplicate: false };
 }
 
 export async function updatePlaceStatus(input: UpdatePlaceStatusInput): Promise<{ error: string | null }> {

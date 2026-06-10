@@ -12,6 +12,7 @@ describe("group detail tabs", () => {
     expect(getGroupDetailTab("lugares")).toBe("lugares");
     expect(getGroupDetailTab("actividad")).toBe("actividad");
     expect(getGroupDetailTab("mapa")).toBe("mapa");
+    expect(getGroupDetailTab("planes")).toBe("planes");
   });
 
   it("handles array values safely", () => {

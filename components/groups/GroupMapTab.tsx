@@ -1,5 +1,6 @@
 import { GroupMap } from "@/components/map/GroupMap";
 import { cn } from "@/lib/cn";
+import type { GroupPlanItem } from "@/lib/groupPlans";
 import type { GroupDetailTab } from "@/lib/groups/tabs";
 import type { GroupPlace } from "@/lib/places/shared";
 
@@ -7,6 +8,7 @@ type GroupMapTabProps = {
   groupId: string;
   places: GroupPlace[];
   canEditPlaces: boolean;
+  plans: GroupPlanItem[];
   selectedPlaceId: string | null;
   onSelectPlace: (placeId: string | null) => void;
   isImmersive?: boolean;
@@ -17,13 +19,15 @@ type GroupMapTabProps = {
 const groupMapTabs: Array<{ label: string; value: GroupDetailTab }> = [
   { label: "Lugares", value: "lugares" },
   { label: "Actividad", value: "actividad" },
-  { label: "Mapa", value: "mapa" }
+  { label: "Mapa", value: "mapa" },
+  { label: "Planes", value: "planes" }
 ];
 
 export function GroupMapTab({
   groupId,
   places,
   canEditPlaces,
+  plans,
   selectedPlaceId,
   onSelectPlace,
   isImmersive = false,
@@ -44,6 +48,7 @@ export function GroupMapTab({
         mobileTabs={groupMapTabs}
         onMobileTabChange={onTabChange}
         onSelectPlace={onSelectPlace}
+        plans={plans}
         places={places}
         selectedPlaceId={selectedPlaceId}
       />

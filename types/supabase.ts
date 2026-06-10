@@ -217,6 +217,134 @@ export type Database = {
           },
         ]
       }
+      group_plan_places: {
+        Row: {
+          added_by: string
+          created_at: string
+          id: string
+          note: string | null
+          place_id: string
+          plan_id: string
+          planned_at: string | null
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          place_id: string
+          plan_id: string
+          planned_at?: string | null
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          place_id?: string
+          plan_id?: string
+          planned_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_plan_places_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_plan_places_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "group_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_plan_votes: {
+        Row: {
+          created_at: string
+          id: string
+          plan_id: string
+          updated_at: string
+          user_id: string
+          vote: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_id: string
+          updated_at?: string
+          user_id: string
+          vote?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_id?: string
+          updated_at?: string
+          user_id?: string
+          vote?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_plan_votes_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "group_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_plans: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          group_id: string
+          id: string
+          planned_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          group_id: string
+          id?: string
+          planned_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          group_id?: string
+          id?: string
+          planned_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_plans_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_place_user_states: {
         Row: {
           created_at: string
@@ -581,6 +709,8 @@ export type Database = {
       can_join_group_as_member: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
       kick_group_member: { Args: { p_group_id: string; p_member_user_id: string }; Returns: undefined }
       can_manage_group_members: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
+      can_access_group: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
+      can_edit_group_shared_content: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
       is_group_creator: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
       is_group_member: { Args: { target_group_id: string }; Returns: boolean }
       is_group_owner: { Args: { target_group_id: string }; Returns: boolean }
@@ -607,6 +737,7 @@ export type PlaceProvider = "manual" | "mapbox" | "google_places"
 export type GroupJoinPolicy = "invite_only" | "open_by_code" | "request_to_join"
 export type GroupJoinRequestStatus = "pending" | "approved" | "rejected"
 export type GroupPrivacy = "privado" | "abierto"
+export type GroupPlanVote = "attending" | "not_attending"
 export type FriendRequestStatus = "pending" | "accepted" | "rejected"
 export type GroupInvitationStatus = "pending" | "accepted" | "rejected"
 

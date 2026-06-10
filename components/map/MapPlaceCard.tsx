@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { PlaceNameEditor } from "@/components/map/PlaceNameEditor";
 import { PlaceRatingBadge } from "@/components/places/PlaceRatingBadge";
@@ -52,6 +53,7 @@ type MapPlaceCardProps = {
   onDelete?: () => void;
   onToggleFavorite?: () => void;
   onToggleStatus?: () => void;
+  extraContent?: ReactNode;
 };
 
 const iconActionClass = "flex flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[10px] font-medium text-zinc-600 transition duration-150 hover:scale-110 hover:bg-rose-50 active:scale-95";
@@ -121,7 +123,8 @@ export function MapPlaceCard({
   onEditNameChange,
   onDelete,
   onToggleFavorite,
-  onToggleStatus
+  onToggleStatus,
+  extraContent
 }: MapPlaceCardProps) {
   const canOpenMaps = Boolean(capabilities.canOpenMaps && place.googleMapsUrl);
   const canCall = Boolean(capabilities.canCall && place.phoneNumber);
@@ -280,6 +283,8 @@ export function MapPlaceCard({
               </button>
             ) : null}
           </div>
+
+          {extraContent ? <div className="mt-3 border-t border-rose-100/70 pt-3">{extraContent}</div> : null}
         </>
       )}
     </Card>

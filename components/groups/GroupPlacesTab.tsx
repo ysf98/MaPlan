@@ -7,14 +7,17 @@ import {
   type UpdatePlaceFavoriteActionState,
   type UpdatePlaceStatusActionState
 } from "@/app/groups/[groupId]/actions";
+import { PlacePlanDialog } from "@/components/groups/PlacePlanDialog";
 import { SimplePlacesList } from "@/components/map/SimplePlacesList";
 import { EmptyState } from "@/components/ui/EmptyState";
+import type { GroupPlanItem } from "@/lib/groupPlans";
 import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupPlacesTabProps = {
   groupId: string;
   places: GroupPlace[];
   canEditPlaces: boolean;
+  plans: GroupPlanItem[];
   selectedPlaceId: string | null;
   onSelectPlace: (placeId: string | null) => void;
   onViewInMap: (placeId: string) => void;
@@ -27,7 +30,9 @@ export function GroupPlacesTab({
   groupId,
   places,
   canEditPlaces,
+  plans,
   selectedPlaceId,
+  onSelectPlace,
   onViewInMap
 }: GroupPlacesTabProps) {
   const [statusState, statusFormAction, isUpdatingStatus] = useActionState(updatePlaceStatusAction, statusInitialState);
@@ -90,7 +95,11 @@ export function GroupPlacesTab({
     <div>
       <SimplePlacesList
         cardDataAttribute="data-group-place-card"
+        onTogglePlace={(placeId) => onSelectPlace(selectedPlaceId === placeId ? null : placeId)}
         places={places}
+        renderFooter={(place) => (
+          <PlacePlanDialog canManagePlans={canEditPlaces} compact groupId={groupId} placeId={place.id} plans={plans} />
+        )}
         renderHeaderAccessory={(place) => (
           <button
             className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full border border-rose-100 bg-rose-50 px-3 text-xs font-semibold text-[#c6283a] transition hover:-translate-y-0.5 hover:bg-rose-100 active:translate-y-0"

@@ -91,4 +91,18 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("create policy group_place_user_states_update_own_member");
     expect(sql).toContain("user_id = auth.uid()");
   });
+
+  it("includes group plans tables, unique safeguards and member RLS policies", () => {
+    const sql = readFileSync(resolve(process.cwd(), "supabase/group_plans.sql"), "utf8");
+    expect(sql).toContain("create table if not exists public.group_plans");
+    expect(sql).toContain("create table if not exists public.group_plan_places");
+    expect(sql).toContain("create table if not exists public.group_plan_votes");
+    expect(sql).toContain("group_plan_places_plan_place_unique unique (plan_id, place_id)");
+    expect(sql).toContain("group_plan_votes_plan_user_unique unique (plan_id, user_id)");
+    expect(sql).toContain("check (vote in ('attending', 'not_attending'))");
+    expect(sql).toContain("create policy group_plans_select_group_member");
+    expect(sql).toContain("create policy group_plan_places_insert_editor_only");
+    expect(sql).toContain("create policy group_plan_votes_update_self_member");
+    expect(sql).toContain("gp.planned_date is null or gp.planned_date >= now()");
+  });
 });
