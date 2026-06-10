@@ -21,6 +21,7 @@ import {
   voteGroupPlanSchema,
   updatePersonalPlaceFavoriteSchema,
   updatePersonalPlaceStatusSchema,
+  updateGroupPlanDateSchema,
   updatePlaceLocationSchema,
   updatePlaceFavoriteSchema,
   updatePlaceStatusSchema
@@ -132,6 +133,16 @@ describe("group plan schemas", () => {
       deleteGroupPlanSchema.safeParse({
         groupId: "11111111-1111-4111-8111-111111111111",
         planId: "22222222-2222-4222-8222-222222222222"
+      }).success
+    ).toBe(true);
+  });
+
+  it("updateGroupPlanDateSchema validates plan date changes", () => {
+    expect(
+      updateGroupPlanDateSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        plannedDate: "2026-07-10T21:00"
       }).success
     ).toBe(true);
   });

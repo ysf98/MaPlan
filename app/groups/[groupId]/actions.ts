@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
-import { addPlaceToGroupPlan, createGroupPlan, deleteGroupPlan, removePlaceFromGroupPlan, voteGroupPlan } from "@/lib/groupPlans";
+import { addPlaceToGroupPlan, createGroupPlan, deleteGroupPlan, removePlaceFromGroupPlan, updateGroupPlanDate, voteGroupPlan } from "@/lib/groupPlans";
 import { createPlace, deletePlace, updatePlaceFavorite, updatePlaceLocation, updatePlaceName, updatePlaceStatus } from "@/lib/places";
 import {
   addPlaceToGroupPlanSchema,
@@ -14,6 +14,7 @@ import {
   removeGroupPlanPlaceSchema,
   reviewJoinRequestSchema,
   updateGroupDetailsSchema,
+  updateGroupPlanDateSchema,
   updateGroupSettingsSchema,
   updatePlaceFavoriteSchema,
   updatePlaceLocationSchema,
@@ -94,6 +95,11 @@ export type VoteGroupPlanActionState = {
 };
 
 export type DeleteGroupPlanActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type UpdateGroupPlanDateActionState = {
   error: string | null;
   success: boolean;
 };
@@ -188,6 +194,11 @@ const VOTE_GROUP_PLAN_INITIAL_STATE: VoteGroupPlanActionState = {
 };
 
 const DELETE_GROUP_PLAN_INITIAL_STATE: DeleteGroupPlanActionState = {
+  error: null,
+  success: false
+};
+
+const UPDATE_GROUP_PLAN_DATE_INITIAL_STATE: UpdateGroupPlanDateActionState = {
   error: null,
   success: false
 };
@@ -690,6 +701,37 @@ export async function deleteGroupPlanAction(
     userId: user.id,
     groupId: parsedInput.data.groupId,
     planId: parsedInput.data.planId
+  });
+
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath(`/groups/${parsedInput.data.groupId}`);
+  return { error: null, success: true };
+}
+
+export async function updateGroupPlanDateAction(
+  _previousState: UpdateGroupPlanDateActionState = UPDATE_GROUP_PLAN_DATE_INITIAL_STATE,
+  formData: FormData
+): Promise<UpdateGroupPlanDateActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+
+  const parsedInput = updateGroupPlanDateSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    planId: String(formData.get("planId") || ""),
+    plannedDate: String(formData.get("plannedDate") || "")
+  });
+
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
+  }
+
+  const result = await updateGroupPlanDate({
+    userId: user.id,
+    groupId: parsedInput.data.groupId,
+    planId: parsedInput.data.planId,
+    plannedDate: parsedInput.data.plannedDate
   });
 
   if (result.error) {

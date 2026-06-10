@@ -209,7 +209,7 @@ with check (
     join public.places p on p.id = group_plan_places.place_id
     where gp.id = group_plan_places.plan_id
       and p.group_id = gp.group_id
-      and (gp.planned_date is null or gp.planned_date >= now())
+      and (gp.planned_date is null or gp.planned_date::date >= now()::date)
       and public.can_edit_group_shared_content(gp.group_id, auth.uid())
   )
 );

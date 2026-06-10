@@ -382,6 +382,12 @@ export const deleteGroupPlanSchema = z.object({
   planId: uuidSchema
 });
 
+export const updateGroupPlanDateSchema = z.object({
+  groupId: uuidSchema,
+  planId: uuidSchema,
+  plannedDate: nullableDateTimeSchema
+});
+
 export const removeGroupPlanPlaceSchema = z.object({
   groupId: uuidSchema,
   planId: uuidSchema,
@@ -551,6 +557,7 @@ export type CreateGroupPlanInput = z.infer<typeof createGroupPlanSchema>;
 export type AddPlaceToGroupPlanInput = z.infer<typeof addPlaceToGroupPlanSchema>;
 export type VoteGroupPlanInput = z.infer<typeof voteGroupPlanSchema>;
 export type DeleteGroupPlanInput = z.infer<typeof deleteGroupPlanSchema>;
+export type UpdateGroupPlanDateInput = z.infer<typeof updateGroupPlanDateSchema>;
 export type RemoveGroupPlanPlaceInput = z.infer<typeof removeGroupPlanPlaceSchema>;
 export type RemoveGroupMemberInput = z.infer<typeof removeGroupMemberSchema>;
 export type SendFriendRequestInput = z.infer<typeof sendFriendRequestSchema>;

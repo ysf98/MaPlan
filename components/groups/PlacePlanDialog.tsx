@@ -52,15 +52,12 @@ export function PlacePlanDialog({
       return "";
     }
 
-    const parsedDate = new Date(planDate);
-    if (Number.isNaN(parsedDate.getTime())) {
+    const datePartMatch = planDate.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (!datePartMatch) {
       return "";
     }
 
-    const year = parsedDate.getFullYear();
-    const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
-    const day = String(parsedDate.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}T${timeValue}`;
+    return `${datePartMatch[1]}T${timeValue}`;
   }
 
   useEffect(() => {
@@ -171,7 +168,7 @@ export function PlacePlanDialog({
             <Input
               label="Fecha del plan"
               onChange={(event) => setPlannedDate(event.target.value)}
-              type="datetime-local"
+              type="date"
               value={plannedDate}
             />
             <label className="block space-y-2">
@@ -185,9 +182,9 @@ export function PlacePlanDialog({
               />
             </label>
             <Input
-              label="Hora o fecha del lugar"
+              label="Hora del lugar"
               onChange={(event) => setPlacePlannedAt(event.target.value)}
-              type="datetime-local"
+              type="time"
               value={placePlannedAt}
             />
             <label className="block space-y-2">

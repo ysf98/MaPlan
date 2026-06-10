@@ -35,6 +35,13 @@ type DeleteGroupPlanInput = {
   planId: string;
 };
 
+type UpdateGroupPlanDateInput = {
+  userId: string;
+  groupId: string;
+  planId: string;
+  plannedDate?: string | null;
+};
+
 type RemoveGroupPlanPlaceInput = {
   userId: string;
   groupId: string;
@@ -111,17 +118,45 @@ function normalizeOptionalText(value: string | null | undefined): string | null 
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function extractPlanDatePart(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) {
+    return null;
+  }
+
+  const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (match) {
+    return match[1];
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  const year = parsed.getUTCFullYear();
+  const month = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function normalizePlanDateInput(value: string | null | undefined): string | null {
+  const datePart = extractPlanDatePart(value);
+  if (!datePart) {
+    return null;
+  }
+
+  return `${datePart}T00:00:00.000Z`;
+}
+
 export function canPlanAcceptNewPlaces(plannedDate: string | null | undefined, now = new Date()): boolean {
-  if (!plannedDate) {
+  const datePart = extractPlanDatePart(plannedDate);
+  if (!datePart) {
     return true;
   }
 
-  const planDate = new Date(plannedDate);
-  if (Number.isNaN(planDate.getTime())) {
-    return false;
-  }
-
-  return planDate.getTime() >= now.getTime();
+  const today = now.toISOString().slice(0, 10);
+  return datePart >= today;
 }
 
 async function getPlanForGroup(groupId: string, planId: string): Promise<GroupPlanRow | null> {
@@ -323,7 +358,7 @@ export async function createGroupPlan(input: CreateGroupPlanInput): Promise<{ er
       created_by: input.userId,
       title,
       description: normalizeOptionalText(input.description),
-      planned_date: input.plannedDate || null
+      planned_date: normalizePlanDateInput(input.plannedDate)
     })
     .select("id")
     .maybeSingle();
@@ -410,6 +445,39 @@ export async function deleteGroupPlan(input: DeleteGroupPlanInput): Promise<{ er
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from("group_plans").delete().eq("id", input.planId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { error: null };
+}
+
+export async function updateGroupPlanDate(input: UpdateGroupPlanDateInput): Promise<{ error: string | null }> {
+  const plan = await getPlanForGroup(input.groupId, input.planId);
+  if (!plan) {
+    return { error: "No se encontro el plan." };
+  }
+
+  if (plan.created_by !== input.userId) {
+    return { error: "Solo la persona creadora puede cambiar la fecha de este plan." };
+  }
+
+  if (input.plannedDate) {
+    const parsedDate = new Date(input.plannedDate);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return { error: "Fecha invalida." };
+    }
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("group_plans")
+    .update({
+      planned_date: normalizePlanDateInput(input.plannedDate),
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", input.planId);
 
   if (error) {
     return { error: error.message };
