@@ -55,7 +55,11 @@ describe("security checks", () => {
       address: "Direccion"
     });
 
-    expect(result).toEqual({ error: "No tienes permisos para editar lugares en este grupo." });
+    expect(result).toMatchObject({
+      error: "No tienes permisos para editar lugares en este grupo.",
+      duplicate: false
+    });
+    expect(result.placeId).toBeNull();
   });
 
   it("usuario no miembro no puede actualizar su estado individual de lugar", async () => {

@@ -84,7 +84,8 @@ describe("places domain", () => {
       address: "Direccion"
     });
 
-    expect(result).toEqual({ error: null });
+    expect(result).toMatchObject({ error: null, duplicate: false });
+    expect(result.placeId).toBe("place-1");
     expect(insertMock).toHaveBeenCalled();
     expect(recordPlaceAddedGroupActivityMock).toHaveBeenCalled();
   });
@@ -126,7 +127,8 @@ describe("places domain", () => {
       address: "Direccion owner"
     });
 
-    expect(result).toEqual({ error: null });
+    expect(result).toMatchObject({ error: null, duplicate: false });
+    expect(result.placeId).toBe("place-1");
     expect(insertMock).toHaveBeenCalled();
     expect(recordPlaceAddedGroupActivityMock).toHaveBeenCalled();
   });
