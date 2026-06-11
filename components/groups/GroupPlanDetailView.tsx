@@ -4,10 +4,12 @@ import { startTransition, useActionState, useEffect, useMemo, useState } from "r
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  deleteGroupPlanAction,
   removeGroupPlanPlaceAction,
   updateGroupPlanDetailsAction,
   updateGroupPlanPlaceTimeAction,
   voteGroupPlanAction,
+  type DeleteGroupPlanActionState,
   type RemoveGroupPlanPlaceActionState,
   type UpdateGroupPlanDetailsActionState,
   type UpdateGroupPlanPlaceTimeActionState,
@@ -36,6 +38,7 @@ const updateDetailsInitialState: UpdateGroupPlanDetailsActionState = { error: nu
 const updateTimeInitialState: UpdateGroupPlanPlaceTimeActionState = { error: null, planPlaceId: null, requestId: null, success: false };
 const removePlaceInitialState: RemoveGroupPlanPlaceActionState = { error: null, planPlaceId: null, requestId: null, success: false };
 const voteInitialState: VoteGroupPlanActionState = { error: null, success: false };
+const deletePlanInitialState: DeleteGroupPlanActionState = { error: null, success: false };
 const PLAN_TIME_ZONE = "Europe/Madrid";
 
 function extractPlanDatePart(date: string | null): string | null {
@@ -181,11 +184,31 @@ function BackIcon() {
   );
 }
 
-function EditIcon() {
+function DotsVerticalIcon() {
   return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-      <path d="M12 20h9" />
+    <svg aria-hidden="true" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+      <circle cx="12" cy="5" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="12" cy="19" r="1.8" />
+    </svg>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
       <path d="m16.5 3.5 4 4L7 21H3v-4z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="m19 6-1 14H6L5 6" />
+      <path d="M10 11v5M14 11v5" />
     </svg>
   );
 }
@@ -232,6 +255,7 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
   const router = useRouter();
   const [localPlan, setLocalPlan] = useState(plan);
   const [isEditing, setIsEditing] = useState(false);
+  const [isPlanMenuOpen, setIsPlanMenuOpen] = useState(false);
   const [editedTitle, setEditedTitle] = useState(plan.title);
   const [editedDate, setEditedDate] = useState(toDateInputValue(plan.plannedDate));
   const [editedTimes, setEditedTimes] = useState<Record<string, string>>(() =>
@@ -245,6 +269,7 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
   const [timeState, updateTimeAction, isSavingTime] = useActionState(updateGroupPlanPlaceTimeAction, updateTimeInitialState);
   const [removeState, removePlaceAction, isRemovingPlace] = useActionState(removeGroupPlanPlaceAction, removePlaceInitialState);
   const [voteState, voteAction, isVoting] = useActionState(voteGroupPlanAction, voteInitialState);
+  const [deleteState, deletePlanAction, isDeletingPlan] = useActionState(deleteGroupPlanAction, deletePlanInitialState);
   const sortedPlaces = useMemo(() => sortPlanPlaces(localPlan.places), [localPlan.places]);
   const mapUrl = buildMapboxStaticUrl(sortedPlaces, mapboxToken);
   const markerPoints = getMarkerPoints(sortedPlaces);
@@ -308,6 +333,26 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
     router.refresh();
   }, [router, voteState.success]);
 
+  useEffect(() => {
+    if (!deleteState.success) {
+      return;
+    }
+
+    router.push(backHref);
+    router.refresh();
+  }, [backHref, deleteState.success, router]);
+
+  function resetEditingFields() {
+    setEditedTitle(localPlan.title);
+    setEditedDate(toDateInputValue(localPlan.plannedDate));
+    setEditedTimes(Object.fromEntries(localPlan.places.map((place) => [place.id, toTimeInputValue(place.plannedAt)])));
+  }
+
+  function cancelEditing() {
+    resetEditingFields();
+    setIsEditing(false);
+  }
+
   function saveChanges() {
     const detailsRequestId = crypto.randomUUID();
     const detailsPayload = new FormData();
@@ -353,6 +398,17 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
     setIsEditing(false);
   }
 
+  function deletePlan() {
+    const confirmed = window.confirm(`Eliminar "${localPlan.title}"? Esta accion no se puede deshacer.`);
+    if (!confirmed) return;
+
+    const payload = new FormData();
+    payload.set("groupId", groupId);
+    payload.set("planId", localPlan.id);
+    setIsPlanMenuOpen(false);
+    startTransition(() => deletePlanAction(payload));
+  }
+
   function removePlace(place: GroupPlanPlaceItem) {
     const confirmed = window.confirm(`Quitar "${place.name}" del plan?`);
     if (!confirmed) return;
@@ -393,27 +449,17 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
   }
 
   return (
-    <div className="min-h-screen bg-[#fff8f7] pb-44 text-[#261817]">
+    <div className="min-h-screen bg-[#fff8f7] pb-32 text-[#261817]">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/50 bg-[#fff8f7]/85 px-5 py-2 backdrop-blur-xl">
-        <div className="mx-auto flex h-12 max-w-3xl items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Link aria-label="Volver a planes" className="grid h-10 w-10 place-items-center rounded-full text-[#c6283a] transition hover:bg-rose-50" href={backHref}>
-              <BackIcon />
-            </Link>
+        <div className="relative mx-auto flex h-12 max-w-3xl items-center justify-between gap-3">
+          <Link aria-label="Volver a planes" className="grid h-10 w-10 place-items-center rounded-full text-[#c6283a] transition hover:bg-rose-50" href={backHref}>
+            <BackIcon />
+          </Link>
+          <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
             <MaplanMinimalIcon size="sm" />
             <span className="text-xl font-bold text-[#c6283a]">MaPlan</span>
           </div>
           <div className="flex items-center gap-1 text-[#c6283a]">
-            {canEditPlan ? (
-              <button
-                aria-label={isEditing ? "Cancelar edicion" : "Editar plan"}
-                className="grid h-10 w-10 place-items-center rounded-full transition hover:bg-rose-50"
-                onClick={() => setIsEditing((current) => !current)}
-                type="button"
-              >
-                <EditIcon />
-              </button>
-            ) : null}
             <button aria-label="Compartir plan" className="grid h-10 w-10 place-items-center rounded-full transition hover:bg-rose-50" type="button">
               <ShareIcon />
             </button>
@@ -446,8 +492,45 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
         </section>
 
         <section className="relative z-10 -mt-12 px-5">
-          <div className="rounded-[32px] bg-white p-6 shadow-[0_18px_48px_rgba(181,35,48,0.12)]">
-            <div className="text-xs font-extrabold uppercase text-[#c6283a]">{groupName}</div>
+          <div className="relative rounded-[32px] bg-white p-6 shadow-[0_18px_48px_rgba(181,35,48,0.12)]">
+            {canEditPlan && !isEditing ? (
+              <div className="absolute right-5 top-5">
+                <button
+                  aria-expanded={isPlanMenuOpen}
+                  aria-label="Opciones del plan"
+                  className="grid h-10 w-10 place-items-center rounded-full text-[#c6283a] transition hover:bg-rose-50"
+                  onClick={() => setIsPlanMenuOpen((current) => !current)}
+                  type="button"
+                >
+                  <DotsVerticalIcon />
+                </button>
+                {isPlanMenuOpen ? (
+                  <div className="absolute right-0 top-12 z-20 w-48 overflow-hidden rounded-[20px] border border-rose-100 bg-white py-2 shadow-[0_18px_42px_rgba(38,24,23,0.16)]">
+                    <button
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-zinc-800 transition hover:bg-[#fff4f3]"
+                      onClick={() => {
+                        setIsPlanMenuOpen(false);
+                        setIsEditing(true);
+                      }}
+                      type="button"
+                    >
+                      <PencilIcon />
+                      Editar plan
+                    </button>
+                    <button
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-[#c6283a] transition hover:bg-[#fff4f3] disabled:opacity-60"
+                      disabled={isDeletingPlan}
+                      onClick={deletePlan}
+                      type="button"
+                    >
+                      <TrashIcon />
+                      {isDeletingPlan ? "Eliminando..." : "Eliminar plan"}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <div className="pr-12 text-xs font-extrabold uppercase text-[#c6283a]">{groupName}</div>
             {isEditing ? (
               <div className="mt-3 space-y-3">
                 <Input
@@ -463,10 +546,27 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
                   type="date"
                   value={editedDate}
                 />
+                <div className="flex gap-2 pt-1">
+                  <button
+                    className="h-11 flex-1 rounded-full bg-[#fff0ef] text-sm font-extrabold text-[#c6283a] transition hover:bg-[#fde2e0]"
+                    onClick={cancelEditing}
+                    type="button"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    className="h-11 flex-1 rounded-full bg-[#c6283a] text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(181,35,48,0.20)] transition hover:bg-[#b32033] disabled:opacity-60"
+                    disabled={isSavingDetails || isSavingTime || !editedTitle.trim()}
+                    onClick={saveChanges}
+                    type="button"
+                  >
+                    {isSavingDetails || isSavingTime ? "Guardando..." : "Guardar"}
+                  </button>
+                </div>
               </div>
             ) : (
               <>
-                <h1 className="mt-2 text-2xl font-extrabold leading-8 text-zinc-950">{localPlan.title}</h1>
+                <h1 className="mt-2 pr-12 text-2xl font-extrabold leading-8 text-zinc-950">{localPlan.title}</h1>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-medium text-zinc-600">
                   <span className="inline-flex items-center gap-1">
                     <CalendarIcon />
@@ -481,14 +581,17 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
               </>
             )}
             {detailsState.error ? <p className="mt-3 text-sm font-semibold text-rose-600">{detailsState.error}</p> : null}
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <button className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6283a] text-sm font-bold text-white shadow-[0_12px_24px_rgba(181,35,48,0.22)]" type="button">
-                Chat
-              </button>
-              <button className="inline-flex h-12 items-center justify-center rounded-full bg-[#fde2e0] text-sm font-bold text-[#261817]" type="button">
-                Calendario
-              </button>
-            </div>
+            {deleteState.error ? <p className="mt-3 text-sm font-semibold text-rose-600">{deleteState.error}</p> : null}
+            {!isEditing ? (
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <button className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6283a] text-sm font-bold text-white shadow-[0_12px_24px_rgba(181,35,48,0.22)]" type="button">
+                  Chat
+                </button>
+                <button className="inline-flex h-12 items-center justify-center rounded-full bg-[#fde2e0] text-sm font-bold text-[#261817]" type="button">
+                  Calendario
+                </button>
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -628,23 +731,6 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
           </div>
         </section>
       </main>
-
-      {canEditPlan ? (
-        <button
-          className="fixed inset-x-8 bottom-24 z-40 mx-auto flex h-14 max-w-xs items-center justify-center rounded-full bg-[#c6283a] text-sm font-extrabold text-white shadow-[0_18px_36px_rgba(181,35,48,0.28)] disabled:opacity-60"
-          disabled={isSavingDetails || isSavingTime || !editedTitle.trim()}
-          onClick={() => {
-            if (isEditing) {
-              saveChanges();
-              return;
-            }
-            setIsEditing(true);
-          }}
-          type="button"
-        >
-          {isEditing ? (isSavingDetails || isSavingTime ? "Guardando..." : "Guardar cambios") : "Editar plan"}
-        </button>
-      ) : null}
       <BottomDockNav />
     </div>
   );

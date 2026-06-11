@@ -40,9 +40,11 @@ export function FriendsPageClient({
   const [searchValue, setSearchValue] = useState(query);
   const [liveResults, setLiveResults] = useState<UserSearchItem[]>(initialSearchResults);
   const [isSearching, setIsSearching] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const hasQuery = searchValue.trim().length >= 2;
   const normalizedQuery = useMemo(() => searchValue.trim(), [searchValue]);
+  const showSearchPanel = hasQuery && isSearchFocused;
 
   useEffect(() => {
     const term = normalizedQuery;
@@ -88,18 +90,66 @@ export function FriendsPageClient({
 
   return (
     <section className="space-y-5">
-      <div>
+      <div className="relative z-20">
         <label className="sr-only" htmlFor="friends-search">Buscar amigos</label>
         <input
           id="friends-search"
           autoComplete="off"
-          className="h-11 w-full rounded-xl border border-rose-100 bg-rose-50/70 px-4 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
+          className="h-12 w-full rounded-2xl border border-rose-100 bg-rose-50/70 px-4 pr-11 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
           minLength={2}
           name="q"
+          onBlur={() => window.setTimeout(() => setIsSearchFocused(false), 120)}
           onChange={(event) => setSearchValue(event.target.value)}
+          onFocus={() => setIsSearchFocused(true)}
           placeholder="Buscar amigos o @usuario"
           value={searchValue}
         />
+        <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#c6283a]">
+          <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+        </div>
+
+        {showSearchPanel ? (
+          <div className="absolute inset-x-0 top-[calc(100%+8px)] overflow-hidden rounded-[22px] border border-rose-100 bg-white shadow-[0_18px_42px_rgba(38,24,23,0.14)]">
+            {isSearching ? (
+              <p className="px-4 py-3 text-sm font-semibold text-zinc-500">Buscando usuarios...</p>
+            ) : liveResults.length === 0 ? (
+              <p className="px-4 py-3 text-sm font-semibold text-zinc-500">No encontramos usuarios para esa busqueda.</p>
+            ) : (
+              <ul className="max-h-72 overflow-y-auto py-2">
+                {liveResults.map((user) => (
+                  <li className="flex items-center justify-between gap-3 px-3 py-2 transition hover:bg-[#fff4f3]" key={user.id}>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#fde2e0] text-sm font-extrabold text-[#c6283a]">
+                        {getInitial(user.username)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-extrabold text-zinc-950">@{user.username || "sin-username"}</p>
+                        <p className="text-xs font-medium text-zinc-500">
+                          {user.alreadyFriend ? "Ya sois amigos" : user.hasPendingRequest ? "Solicitud pendiente" : "Disponible para anadir"}
+                        </p>
+                      </div>
+                    </div>
+                    {user.alreadyFriend ? (
+                      <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Amigo</span>
+                    ) : user.hasPendingRequest ? (
+                      <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">Pendiente</span>
+                    ) : (
+                      <form action={sendAction} className="shrink-0">
+                        <input name="receiverId" type="hidden" value={user.id} />
+                        <Button disabled={isSending} size="sm" type="submit" variant="secondary">
+                          {isSending ? "..." : "Anadir"}
+                        </Button>
+                      </form>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
       </div>
 
       <div className="space-y-2">
@@ -217,34 +267,6 @@ export function FriendsPageClient({
 
       {sendState.error ? <p className="text-sm text-rose-600">{sendState.error}</p> : null}
       {sendState.success ? <p className="text-sm text-emerald-600">Solicitud enviada.</p> : null}
-      {hasQuery ? (
-        isSearching ? (
-          <p className="text-sm text-zinc-500">Buscando usuarios...</p>
-        ) : liveResults.length === 0 ? (
-          <p className="text-sm text-zinc-500">No encontramos usuarios para esa busqueda.</p>
-        ) : (
-          <ul className="space-y-2">
-            {liveResults.map((user) => (
-              <li className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white p-3" key={user.id}>
-                <p className="text-sm font-medium text-zinc-950">@{user.username || "sin-username"}</p>
-                {user.alreadyFriend ? (
-                  <span className="text-xs text-emerald-700">Ya sois amigos</span>
-                ) : user.hasPendingRequest ? (
-                  <span className="text-xs text-amber-700">Solicitud pendiente</span>
-                ) : (
-                  <form action={sendAction}>
-                    <input name="receiverId" type="hidden" value={user.id} />
-                    <Button disabled={isSending} size="sm" type="submit" variant="secondary">
-                      {isSending ? "Enviando..." : "Anadir"}
-                    </Button>
-                  </form>
-                )}
-              </li>
-            ))}
-          </ul>
-        )
-      ) : null}
-
       {sentRequests.length > 0 ? (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-zinc-700">Solicitudes enviadas</h3>
