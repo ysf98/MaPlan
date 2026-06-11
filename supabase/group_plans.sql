@@ -158,6 +158,7 @@ drop policy if exists group_plans_delete_creator_only on public.group_plans;
 
 drop policy if exists group_plan_places_select_group_member on public.group_plan_places;
 drop policy if exists group_plan_places_insert_editor_only on public.group_plan_places;
+drop policy if exists group_plan_places_update_creator_only on public.group_plan_places;
 drop policy if exists group_plan_places_delete_creator_only on public.group_plan_places;
 
 drop policy if exists group_plan_votes_select_group_member on public.group_plan_votes;
@@ -225,6 +226,29 @@ with check (
       and p.group_id = gp.group_id
       and (gp.planned_date is null or gp.planned_date::date >= timezone('Europe/Madrid', now())::date)
       and public.can_edit_group_shared_content(gp.group_id, auth.uid())
+  )
+);
+
+create policy group_plan_places_update_creator_only
+on public.group_plan_places
+for update to authenticated
+using (
+  exists (
+    select 1
+    from public.group_plans gp
+    where gp.id = group_plan_places.plan_id
+      and gp.created_by = auth.uid()
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.group_plans gp
+    join public.places p on p.id = group_plan_places.place_id
+    where gp.id = group_plan_places.plan_id
+      and p.group_id = gp.group_id
+      and gp.created_by = auth.uid()
+      and (gp.planned_date is null or gp.planned_date::date >= timezone('Europe/Madrid', now())::date)
   )
 );
 

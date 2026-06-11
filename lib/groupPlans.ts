@@ -61,6 +61,14 @@ type RemoveGroupPlanPlaceInput = {
   planPlaceId: string;
 };
 
+type UpdateGroupPlanPlaceTimeInput = {
+  userId: string;
+  groupId: string;
+  planId: string;
+  planPlaceId: string;
+  plannedAt?: string | null;
+};
+
 type GroupPlanRow = {
   id: string;
   group_id: string;
@@ -94,6 +102,8 @@ export type GroupPlanPlaceItem = {
   address: string;
   city: string | null;
   imageUrl: string | null;
+  latitude: number | null;
+  longitude: number | null;
   googleMapsUrl: string | null;
   phoneNumber: string | null;
   rating: number | null;
@@ -221,7 +231,7 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
     placeIds.length > 0
       ? await supabase
           .from("places")
-          .select("id, name, address, city, image_url, google_maps_url, phone_number, rating, user_ratings_total")
+          .select("id, name, address, city, image_url, latitude, longitude, google_maps_url, phone_number, rating, user_ratings_total")
           .in("id", placeIds)
       : { data: [], error: null };
 
@@ -234,6 +244,8 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
         address: place.address,
         city: place.city,
         imageUrl: place.image_url,
+        latitude: place.latitude,
+        longitude: place.longitude,
         googleMapsUrl: place.google_maps_url,
         phoneNumber: place.phone_number,
         rating: place.rating,
@@ -256,6 +268,8 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
       address: place.address,
       city: place.city,
       imageUrl: place.imageUrl,
+      latitude: place.latitude,
+      longitude: place.longitude,
       googleMapsUrl: place.googleMapsUrl,
       phoneNumber: place.phoneNumber,
       rating: place.rating,
@@ -551,6 +565,41 @@ export async function removePlaceFromGroupPlan(input: RemoveGroupPlanPlaceInput)
   }
 
   const { error } = await supabase.from("group_plan_places").delete().eq("id", input.planPlaceId);
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { error: null };
+}
+
+export async function updateGroupPlanPlaceTime(input: UpdateGroupPlanPlaceTimeInput): Promise<{ error: string | null }> {
+  const plan = await getPlanForGroup(input.groupId, input.planId);
+  if (!plan) {
+    return { error: "No se encontro el plan." };
+  }
+
+  if (plan.created_by !== input.userId) {
+    return { error: "Solo la persona creadora puede cambiar la hora de esta parada." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: planPlace, error: planPlaceError } = await supabase
+    .from("group_plan_places")
+    .select("id")
+    .eq("id", input.planPlaceId)
+    .eq("plan_id", input.planId)
+    .maybeSingle();
+
+  if (planPlaceError || !planPlace) {
+    return { error: "No se encontro la parada del plan." };
+  }
+
+  const { error } = await supabase
+    .from("group_plan_places")
+    .update({ planned_at: input.plannedAt || null })
+    .eq("id", input.planPlaceId)
+    .eq("plan_id", input.planId);
+
   if (error) {
     return { error: error.message };
   }

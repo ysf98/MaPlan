@@ -36,6 +36,8 @@ import type { GroupPlace } from "@/lib/places/shared";
 type GroupPlansTabProps = {
   groupId: string;
   groupName: string;
+  initialMode?: string | null;
+  initialSelectedPlanId?: string | null;
   plans: GroupPlanItem[];
   places: GroupPlace[];
   canCreatePlans: boolean;
@@ -157,6 +159,8 @@ function toPlanPlaceItem(place: GroupPlace): GroupPlanPlaceItem {
     address: place.address,
     city: place.city,
     imageUrl: place.imageUrl ?? null,
+    latitude: place.latitude,
+    longitude: place.longitude,
     googleMapsUrl: place.googleMapsUrl,
     phoneNumber: place.phoneNumber,
     rating: place.rating,
@@ -319,12 +323,20 @@ function RestaurantIcon() {
   );
 }
 
-export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNavigateToPlaces }: GroupPlansTabProps) {
+export function GroupPlansTab({
+  groupId,
+  initialMode = null,
+  initialSelectedPlanId = null,
+  plans,
+  places,
+  canCreatePlans,
+  onNavigateToPlaces
+}: GroupPlansTabProps) {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<"all" | "upcoming" | "past" | "draft">("all");
   const [displayPlans, setDisplayPlans] = useState<GroupPlanItem[]>(plans);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(initialSelectedPlanId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [plannedDate, setPlannedDate] = useState("");
@@ -362,6 +374,7 @@ export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNaviga
     requestId: string;
   } | null>(null);
   const [dismissedRecommendationIds, setDismissedRecommendationIds] = useState<Record<string, true>>({});
+  const [didApplyInitialEditMode, setDidApplyInitialEditMode] = useState(false);
   const [planPlaceToDeleteId, setPlanPlaceToDeleteId] = useState<string | null>(null);
   const [createState, createAction, isCreating] = useActionState(createGroupPlanAction, createInitialState);
   const [addPlaceState, addPlaceAction, isAddingRecommendedPlace] = useActionState(addPlaceToGroupPlanAction, addPlaceInitialState);
@@ -474,7 +487,6 @@ export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNaviga
       isCreator: true
     };
     setDisplayPlans((current) => [createdPlan, ...current.filter((plan) => plan.id !== createdPlan.id)]);
-    setSelectedPlanId(createState.planId);
     setTitle("");
     setDescription("");
     setPlannedDate("");
@@ -483,7 +495,7 @@ export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNaviga
     setIsCreateOpen(false);
     setPendingCreatePlan(null);
     setDismissedRecommendationIds({});
-    router.refresh();
+    router.push(`/groups/${groupId}/plans/${createState.planId}`);
   }, [createState.planId, createState.requestId, createState.success, groupId, pendingCreatePlan, router]);
 
   useEffect(() => {
@@ -594,6 +606,15 @@ export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNaviga
     setPendingPlanDetailsUpdate(null);
   }, [pendingPlanDetailsUpdate, router, updatePlanDetailsState.requestId, updatePlanDetailsState.success]);
 
+  useEffect(() => {
+    if (didApplyInitialEditMode || initialMode !== "edit" || !initialSelectedPlanId || !selectedPlan) {
+      return;
+    }
+
+    openEditDetails(selectedPlan);
+    setDidApplyInitialEditMode(true);
+  }, [didApplyInitialEditMode, initialMode, initialSelectedPlanId, selectedPlan]);
+
   const planDetailError = addPlaceState.error ?? removePlaceState.error ?? deleteState.error ?? voteState.error;
   const isCreatePlanDateAllowed = isOptionalPlanDateAllowed(plannedDate, minPlanDate);
   const isEditedPlanDateAllowed = isOptionalPlanDateAllowed(editedPlannedDate, minPlanDate);
@@ -611,6 +632,10 @@ export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNaviga
     setEditedPlanTitle(plan.title);
     setEditedPlanDetailsDate(toDateTimeLocalValue(plan.plannedDate));
     setMenuPlanId(null);
+  }
+
+  function openPlanPage(planId: string) {
+    router.push(`/groups/${groupId}/plans/${planId}`);
   }
 
   function submitPlanDetailsUpdate(plan: GroupPlanItem) {
@@ -1373,7 +1398,7 @@ export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNaviga
                     <div className="w-full" key={plan.id}>
                       <div className="rounded-[28px] border border-rose-100/60 bg-white p-4 shadow-[0_10px_32px_rgba(181,35,48,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_38px_rgba(181,35,48,0.12)]">
                         <div className="flex items-start justify-between gap-3">
-                          <button className="flex min-w-0 flex-1 gap-3 text-left" onClick={() => setSelectedPlanId(plan.id)} type="button">
+                          <button className="flex min-w-0 flex-1 gap-3 text-left" onClick={() => openPlanPage(plan.id)} type="button">
                             <div className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl ${accent.box}`}>
                               <span className="text-xl font-bold leading-none">{formatDayMonth(plan.plannedDate)}</span>
                               <span className="text-[10px] font-bold uppercase tracking-[0.12em]">{formatYearShort(plan.plannedDate)}</span>
@@ -1386,7 +1411,7 @@ export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNaviga
                           {renderPlanMenu(plan)}
                         </div>
 
-                        <button className="mt-4 block w-full text-left" onClick={() => setSelectedPlanId(plan.id)} type="button">
+                        <button className="mt-4 block w-full text-left" onClick={() => openPlanPage(plan.id)} type="button">
                           {previewPlaces.length ? (
                             <div className="rounded-[20px] bg-[#fff4f3] p-3">
                               {previewPlaces.map((place, placeIndex) => {
@@ -1433,7 +1458,7 @@ export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNaviga
                           </div>
                           <button
                             className={`inline-flex h-9 items-center justify-center rounded-full px-4 text-xs font-semibold transition ${accent.button}`}
-                            onClick={() => setSelectedPlanId(plan.id)}
+                            onClick={() => openPlanPage(plan.id)}
                             type="button"
                           >
                             Ver plan
@@ -1459,7 +1484,7 @@ export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNaviga
                   <div className="w-full" key={plan.id}>
                     <div className="rounded-[24px] border border-rose-100/60 bg-white p-4 shadow-[0_8px_24px_rgba(181,35,48,0.06)] transition hover:-translate-y-0.5">
                       <div className="flex items-center justify-between gap-3">
-                        <button className="min-w-0 flex-1 text-left" onClick={() => setSelectedPlanId(plan.id)} type="button">
+                        <button className="min-w-0 flex-1 text-left" onClick={() => openPlanPage(plan.id)} type="button">
                           <p className="truncate text-lg font-bold text-zinc-950">{plan.title}</p>
                           <p className="mt-1 text-sm text-zinc-500">{plan.description || "Todavia sin descripcion"}</p>
                         </button>
@@ -1487,17 +1512,17 @@ export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNaviga
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#f3dfde] text-zinc-500">
                         <RestaurantIcon />
                       </div>
-                      <div className="min-w-0 flex-1">
+                      <button className="min-w-0 flex-1 text-left" onClick={() => openPlanPage(plan.id)} type="button">
                         <p className="truncate text-base font-semibold text-zinc-950">{plan.title}</p>
                         <p className="mt-1 text-xs text-zinc-500">
                           {shortDate(plan.plannedDate)} • {planAttendanceLabel(plan)}
                         </p>
-                      </div>
+                      </button>
                       <div className="flex items-center gap-1">
                         {renderPlanMenu(plan)}
-                        <span className="shrink-0 text-zinc-300">
+                        <button className="shrink-0 text-zinc-300" onClick={() => openPlanPage(plan.id)} type="button">
                           <ChevronRightIcon />
-                        </span>
+                        </button>
                       </div>
                     </div>
                   </div>

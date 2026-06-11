@@ -21,7 +21,9 @@ type GroupDetailViewProps = {
   currentUserId: string;
   group: GroupDetail;
   groupId: string;
+  initialPlanMode?: string | null;
   initialSelectedPlaceId?: string | null;
+  initialSelectedPlanId?: string | null;
   places: GroupPlace[];
   membersPreview: GroupMemberPreview[];
   totalMembersCount: number;
@@ -39,7 +41,9 @@ export function GroupDetailView({
   currentUserId,
   group,
   groupId,
+  initialPlanMode = null,
   initialSelectedPlaceId = null,
+  initialSelectedPlanId = null,
   places,
   membersPreview,
   totalMembersCount,
@@ -260,6 +264,8 @@ export function GroupDetailView({
                 canCreatePlans={group.canEditPlaces}
                 groupId={groupId}
                 groupName={group.name}
+                initialMode={initialPlanMode}
+                initialSelectedPlanId={initialSelectedPlanId}
                 onNavigateToPlaces={() => setCurrentTab("lugares")}
                 plans={plans}
                 places={places}

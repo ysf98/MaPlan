@@ -34,7 +34,11 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
   const [{ groupId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
   const activeTab = getGroupDetailTab(resolvedSearchParams?.tab);
   const rawPlaceId = resolvedSearchParams?.placeId;
+  const rawPlanId = resolvedSearchParams?.planId;
+  const rawMode = resolvedSearchParams?.mode;
   const initialSelectedPlaceId = Array.isArray(rawPlaceId) ? rawPlaceId[0] ?? null : rawPlaceId ?? null;
+  const initialSelectedPlanId = Array.isArray(rawPlanId) ? rawPlanId[0] ?? null : rawPlanId ?? null;
+  const initialPlanMode = Array.isArray(rawMode) ? rawMode[0] ?? null : rawMode ?? null;
 
   const group = await getGroupDetailForUser(user.id, groupId);
 
@@ -67,6 +71,8 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
         group={group}
         groupId={groupId}
         initialSelectedPlaceId={initialSelectedPlaceId}
+        initialSelectedPlanId={initialSelectedPlanId}
+        initialPlanMode={initialPlanMode}
         invitableFriends={invitableFriends}
         membersPreview={membersPreviewResult.members}
         pendingJoinRequests={pendingJoinRequests}
