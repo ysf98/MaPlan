@@ -221,29 +221,65 @@ export type Database = {
         Row: {
           added_by: string
           created_at: string
+          external_place_id: string | null
+          google_maps_url: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
           note: string | null
-          place_id: string
+          phone_number: string | null
+          place_address: string | null
+          place_city: string | null
+          place_id: string | null
+          place_image_url: string | null
+          place_name: string | null
           plan_id: string
           planned_at: string | null
+          provider: string | null
+          rating: number | null
+          user_ratings_total: number | null
         }
         Insert: {
           added_by: string
           created_at?: string
+          external_place_id?: string | null
+          google_maps_url?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           note?: string | null
-          place_id: string
+          phone_number?: string | null
+          place_address?: string | null
+          place_city?: string | null
+          place_id?: string | null
+          place_image_url?: string | null
+          place_name?: string | null
           plan_id: string
           planned_at?: string | null
+          provider?: string | null
+          rating?: number | null
+          user_ratings_total?: number | null
         }
         Update: {
           added_by?: string
           created_at?: string
+          external_place_id?: string | null
+          google_maps_url?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           note?: string | null
-          place_id?: string
+          phone_number?: string | null
+          place_address?: string | null
+          place_city?: string | null
+          place_id?: string | null
+          place_image_url?: string | null
+          place_name?: string | null
           plan_id?: string
           planned_at?: string | null
+          provider?: string | null
+          rating?: number | null
+          user_ratings_total?: number | null
         }
         Relationships: [
           {

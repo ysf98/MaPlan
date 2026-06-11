@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
 import {
   addPlaceToGroupPlan,
+  addDraftPlaceToGroupPlan,
   createGroupPlan,
   deleteGroupPlan,
   removePlaceFromGroupPlan,
@@ -298,41 +299,21 @@ function parsePlaceDraftFormData(formData: FormData) {
   });
 }
 
-async function createOrReuseDraftPlaceForGroup(
-  userId: string,
-  placeData: ReturnType<typeof createPlaceSchema.parse>
-): Promise<{ error: string | null; placeId: string | null }> {
-  const result = await createPlace({
-    userId,
-    groupId: placeData.groupId,
+function getDraftPlanPlaceInput(placeData: ReturnType<typeof createPlaceSchema.parse>) {
+  return {
     name: placeData.name,
     address: placeData.address,
     city: placeData.city || null,
-    notes: placeData.notes || null,
-    category: placeData.category || null,
-    originalUrl: placeData.originalUrl || null,
-    source: placeData.source || null,
-    provider: placeData.provider || null,
-    externalPlaceId: placeData.externalPlaceId || null,
+    imageUrl: placeData.imageUrl || null,
+    latitude: typeof placeData.latitude === "number" ? placeData.latitude : null,
+    longitude: typeof placeData.longitude === "number" ? placeData.longitude : null,
     googleMapsUrl: placeData.googleMapsUrl || null,
-    businessStatus: placeData.businessStatus || null,
     phoneNumber: placeData.phoneNumber || null,
     rating: placeData.rating ?? null,
     userRatingsTotal: placeData.userRatingsTotal ?? null,
-    imageUrl: placeData.imageUrl || null,
-    latitude: typeof placeData.latitude === "number" ? placeData.latitude : null,
-    longitude: typeof placeData.longitude === "number" ? placeData.longitude : null
-  });
-
-  if (result.error && !result.duplicate) {
-    return { error: result.error, placeId: null };
-  }
-
-  if (!result.placeId) {
-    return { error: result.error ?? "No se pudo preparar el lugar para el plan.", placeId: null };
-  }
-
-  return { error: null, placeId: result.placeId };
+    provider: placeData.provider || null,
+    externalPlaceId: placeData.externalPlaceId || null
+  };
 }
 
 export async function addPlaceAction(
@@ -425,24 +406,34 @@ export async function createGroupPlanFromDraftAction(
     return { error: getValidationErrorMessage(parsedPlan.error), success: false };
   }
 
-  const placeResult = await createOrReuseDraftPlaceForGroup(user.id, parsedPlace.data);
-  if (placeResult.error || !placeResult.placeId) {
-    return { error: placeResult.error, success: false };
-  }
-
   const planResult = await createGroupPlan({
     userId: user.id,
     groupId: parsedPlan.data.groupId,
     title: parsedPlan.data.title,
     description: parsedPlan.data.description,
-    plannedDate: parsedPlan.data.plannedDate,
-    initialPlaceId: placeResult.placeId,
-    initialPlacePlannedAt: parsedPlan.data.initialPlacePlannedAt,
-    initialPlaceNote: parsedPlan.data.initialPlaceNote
+    plannedDate: parsedPlan.data.plannedDate
   });
 
-  if (planResult.error) {
+  if (planResult.error || !planResult.planId) {
     return { error: planResult.error, success: false };
+  }
+
+  const placeResult = await addDraftPlaceToGroupPlan({
+    userId: user.id,
+    groupId: parsedPlan.data.groupId,
+    planId: planResult.planId,
+    ...getDraftPlanPlaceInput(parsedPlace.data),
+    plannedAt: parsedPlan.data.initialPlacePlannedAt,
+    note: parsedPlan.data.initialPlaceNote
+  });
+
+  if (placeResult.error) {
+    await deleteGroupPlan({
+      userId: user.id,
+      groupId: parsedPlan.data.groupId,
+      planId: planResult.planId
+    });
+    return { error: placeResult.error, success: false };
   }
 
   revalidatePath(`/groups/${parsedPlan.data.groupId}`);
@@ -471,16 +462,11 @@ export async function addDraftPlaceToGroupPlanAction(
     return { error: getValidationErrorMessage(parsedPlan.error), success: false };
   }
 
-  const placeResult = await createOrReuseDraftPlaceForGroup(user.id, parsedPlace.data);
-  if (placeResult.error || !placeResult.placeId) {
-    return { error: placeResult.error, success: false };
-  }
-
-  const result = await addPlaceToGroupPlan({
+  const result = await addDraftPlaceToGroupPlan({
     userId: user.id,
     groupId: parsedPlan.data.groupId,
     planId: parsedPlan.data.planId,
-    placeId: placeResult.placeId,
+    ...getDraftPlanPlaceInput(parsedPlace.data),
     plannedAt: parsedPlan.data.plannedAt,
     note: parsedPlan.data.note
   });

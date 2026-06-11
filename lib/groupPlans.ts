@@ -26,6 +26,26 @@ type AddPlaceToGroupPlanInput = {
   note?: string | null;
 };
 
+type AddDraftPlaceToGroupPlanInput = {
+  userId: string;
+  groupId: string;
+  planId: string;
+  name: string;
+  address: string;
+  city?: string | null;
+  imageUrl?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  googleMapsUrl?: string | null;
+  phoneNumber?: string | null;
+  rating?: number | null;
+  userRatingsTotal?: number | null;
+  provider?: string | null;
+  externalPlaceId?: string | null;
+  plannedAt?: string | null;
+  note?: string | null;
+};
+
 type VoteGroupPlanInput = {
   userId: string;
   groupId: string;
@@ -83,7 +103,19 @@ type GroupPlanRow = {
 type GroupPlanPlaceRow = {
   id: string;
   plan_id: string;
-  place_id: string;
+  place_id: string | null;
+  place_name: string | null;
+  place_address: string | null;
+  place_city: string | null;
+  place_image_url: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  google_maps_url: string | null;
+  phone_number: string | null;
+  rating: number | null;
+  user_ratings_total: number | null;
+  provider: string | null;
+  external_place_id: string | null;
   planned_at: string | null;
   note: string | null;
   created_at: string;
@@ -97,7 +129,7 @@ type GroupPlanVoteRow = {
 
 export type GroupPlanPlaceItem = {
   id: string;
-  placeId: string;
+  placeId: string | null;
   name: string;
   address: string;
   city: string | null;
@@ -169,12 +201,41 @@ async function validatePlaceBelongsToGroup(groupId: string, placeId: string): Pr
   return !error && Boolean(data);
 }
 
+async function getGroupPlaceSnapshot(groupId: string, placeId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("places")
+    .select("id, name, address, city, image_url, latitude, longitude, google_maps_url, phone_number, rating, user_ratings_total, provider, external_place_id")
+    .eq("group_id", groupId)
+    .eq("id", placeId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    place_name: data.name,
+    place_address: data.address,
+    place_city: data.city,
+    place_image_url: data.image_url,
+    latitude: data.latitude,
+    longitude: data.longitude,
+    google_maps_url: data.google_maps_url,
+    phone_number: data.phone_number,
+    rating: data.rating,
+    user_ratings_total: data.user_ratings_total,
+    provider: data.provider,
+    external_place_id: data.external_place_id
+  };
+}
+
 async function insertPlaceIntoPlan(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   input: AddPlaceToGroupPlanInput
 ): Promise<{ error: string | null }> {
-  const placeExists = await validatePlaceBelongsToGroup(input.groupId, input.placeId);
-  if (!placeExists) {
+  const snapshot = await getGroupPlaceSnapshot(input.groupId, input.placeId);
+  if (!snapshot) {
     return { error: "No se encontro el lugar del grupo." };
   }
 
@@ -182,6 +243,7 @@ async function insertPlaceIntoPlan(
     plan_id: input.planId,
     place_id: input.placeId,
     added_by: input.userId,
+    ...snapshot,
     planned_at: input.plannedAt || null,
     note: normalizeOptionalText(input.note)
   });
@@ -220,14 +282,16 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
   const [planPlacesResult, votesResult] = await Promise.all([
     supabase
       .from("group_plan_places")
-      .select("id, plan_id, place_id, planned_at, note, created_at")
+      .select(
+        "id, plan_id, place_id, place_name, place_address, place_city, place_image_url, latitude, longitude, google_maps_url, phone_number, rating, user_ratings_total, provider, external_place_id, planned_at, note, created_at"
+      )
       .in("plan_id", planIds)
       .order("created_at", { ascending: true }),
     supabase.from("group_plan_votes").select("plan_id, user_id, vote").in("plan_id", planIds)
   ]);
 
   const planPlaces = (planPlacesResult.data ?? []) as GroupPlanPlaceRow[];
-  const placeIds = planPlaces.map((item) => item.place_id);
+  const placeIds = planPlaces.map((item) => item.place_id).filter((placeId): placeId is string => Boolean(placeId));
   const placeDetailsResult =
     placeIds.length > 0
       ? await supabase
@@ -257,24 +321,26 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
 
   const placesByPlanId = new Map<string, GroupPlanPlaceItem[]>();
   planPlaces.forEach((item) => {
-    const place = placeById.get(item.place_id);
-    if (!place) {
+    const place = item.place_id ? placeById.get(item.place_id) : null;
+    const name = place?.name ?? item.place_name;
+    const address = place?.address ?? item.place_address;
+    if (!name || !address) {
       return;
     }
 
     const nextPlace: GroupPlanPlaceItem = {
       id: item.id,
       placeId: item.place_id,
-      name: place.name,
-      address: place.address,
-      city: place.city,
-      imageUrl: place.imageUrl,
-      latitude: place.latitude,
-      longitude: place.longitude,
-      googleMapsUrl: place.googleMapsUrl,
-      phoneNumber: place.phoneNumber,
-      rating: place.rating,
-      userRatingsTotal: place.userRatingsTotal,
+      name,
+      address,
+      city: place?.city ?? item.place_city,
+      imageUrl: place?.imageUrl ?? item.place_image_url,
+      latitude: place?.latitude ?? item.latitude,
+      longitude: place?.longitude ?? item.longitude,
+      googleMapsUrl: place?.googleMapsUrl ?? item.google_maps_url,
+      phoneNumber: place?.phoneNumber ?? item.phone_number,
+      rating: place?.rating ?? item.rating,
+      userRatingsTotal: place?.userRatingsTotal ?? item.user_ratings_total,
       plannedAt: item.planned_at,
       note: item.note,
       createdAt: item.created_at
@@ -402,6 +468,55 @@ export async function addPlaceToGroupPlan(input: AddPlaceToGroupPlanInput): Prom
 
   const supabase = await createSupabaseServerClient();
   return insertPlaceIntoPlan(supabase, input);
+}
+
+export async function addDraftPlaceToGroupPlan(input: AddDraftPlaceToGroupPlanInput): Promise<{ error: string | null }> {
+  const canEdit = await canEditPlaces(input.userId, input.groupId);
+  if (!canEdit) {
+    return { error: "No tienes permisos para anadir lugares a planes en este grupo." };
+  }
+
+  const plan = await getPlanForGroup(input.groupId, input.planId);
+  if (!plan) {
+    return { error: "No se encontro el plan." };
+  }
+
+  if (!canPlanAcceptNewPlaces(plan.planned_date)) {
+    return { error: "Este plan ya ha pasado y no admite nuevos lugares." };
+  }
+
+  const name = input.name.trim();
+  const address = input.address.trim();
+  if (!name || !address) {
+    return { error: "El lugar necesita nombre y direccion." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("group_plan_places").insert({
+    plan_id: input.planId,
+    place_id: null,
+    added_by: input.userId,
+    place_name: name,
+    place_address: address,
+    place_city: normalizeOptionalText(input.city),
+    place_image_url: normalizeOptionalText(input.imageUrl),
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
+    google_maps_url: normalizeOptionalText(input.googleMapsUrl),
+    phone_number: normalizeOptionalText(input.phoneNumber),
+    rating: input.rating ?? null,
+    user_ratings_total: input.userRatingsTotal ?? null,
+    provider: normalizeOptionalText(input.provider),
+    external_place_id: normalizeOptionalText(input.externalPlaceId),
+    planned_at: input.plannedAt || null,
+    note: normalizeOptionalText(input.note)
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { error: null };
 }
 
 export async function voteGroupPlan(input: VoteGroupPlanInput): Promise<{ error: string | null }> {

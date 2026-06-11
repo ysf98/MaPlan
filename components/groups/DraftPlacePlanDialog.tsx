@@ -146,7 +146,7 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-bold text-zinc-950">Anadir busqueda a un plan</h3>
-                  <p className="mt-1 text-sm text-zinc-600">El lugar se guardara primero en el grupo y despues se anadira al plan.</p>
+                  <p className="mt-1 text-sm text-zinc-600">El lugar se anadira solo a este plan. Podras guardarlo en Lugares aparte si lo necesitas.</p>
                 </div>
                 <button
                   aria-label="Cerrar"

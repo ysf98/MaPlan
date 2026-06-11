@@ -17,6 +17,18 @@ create table if not exists public.group_plan_places (
   plan_id uuid not null references public.group_plans(id) on delete cascade,
   place_id uuid not null references public.places(id) on delete cascade,
   added_by uuid not null references auth.users(id) on delete cascade,
+  place_name text null,
+  place_address text null,
+  place_city text null,
+  place_image_url text null,
+  latitude double precision null,
+  longitude double precision null,
+  google_maps_url text null,
+  phone_number text null,
+  rating numeric null,
+  user_ratings_total integer null,
+  provider text null,
+  external_place_id text null,
   planned_at timestamptz null,
   note text null,
   created_at timestamptz not null default now()
@@ -33,6 +45,28 @@ create table if not exists public.group_plan_votes (
 
 do $$
 begin
+  alter table public.group_plan_places add column if not exists place_name text null;
+  alter table public.group_plan_places add column if not exists place_address text null;
+  alter table public.group_plan_places add column if not exists place_city text null;
+  alter table public.group_plan_places add column if not exists place_image_url text null;
+  alter table public.group_plan_places add column if not exists latitude double precision null;
+  alter table public.group_plan_places add column if not exists longitude double precision null;
+  alter table public.group_plan_places add column if not exists google_maps_url text null;
+  alter table public.group_plan_places add column if not exists phone_number text null;
+  alter table public.group_plan_places add column if not exists rating numeric null;
+  alter table public.group_plan_places add column if not exists user_ratings_total integer null;
+  alter table public.group_plan_places add column if not exists provider text null;
+  alter table public.group_plan_places add column if not exists external_place_id text null;
+
+  alter table public.group_plan_places alter column place_id drop not null;
+
+  if exists (select 1 from pg_constraint where conname = 'group_plan_places_place_id_fkey') then
+    alter table public.group_plan_places drop constraint group_plan_places_place_id_fkey;
+  end if;
+  alter table public.group_plan_places
+    add constraint group_plan_places_place_id_fkey
+    foreign key (place_id) references public.places(id) on delete set null;
+
   if not exists (select 1 from pg_constraint where conname = 'group_plan_places_plan_place_unique') then
     alter table public.group_plan_places
       add constraint group_plan_places_plan_place_unique unique (plan_id, place_id);
@@ -47,6 +81,23 @@ begin
   alter table public.group_plan_votes
     add constraint group_plan_votes_vote_check check (vote in ('attending', 'maybe', 'not_attending'));
 end $$;
+
+update public.group_plan_places gpp
+set
+  place_name = coalesce(gpp.place_name, p.name),
+  place_address = coalesce(gpp.place_address, p.address),
+  place_city = coalesce(gpp.place_city, p.city),
+  place_image_url = coalesce(gpp.place_image_url, p.image_url),
+  latitude = coalesce(gpp.latitude, p.latitude),
+  longitude = coalesce(gpp.longitude, p.longitude),
+  google_maps_url = coalesce(gpp.google_maps_url, p.google_maps_url),
+  phone_number = coalesce(gpp.phone_number, p.phone_number),
+  rating = coalesce(gpp.rating, p.rating),
+  user_ratings_total = coalesce(gpp.user_ratings_total, p.user_ratings_total),
+  provider = coalesce(gpp.provider, p.provider),
+  external_place_id = coalesce(gpp.external_place_id, p.external_place_id)
+from public.places p
+where gpp.place_id = p.id;
 
 create index if not exists idx_group_plans_group_created
 on public.group_plans (group_id, created_at desc);
@@ -220,11 +271,18 @@ with check (
   and exists (
     select 1
     from public.group_plans gp
-    join public.places p on p.id = group_plan_places.place_id
     where gp.id = group_plan_places.plan_id
-      and p.group_id = gp.group_id
       and (gp.planned_date is null or gp.planned_date::date >= timezone('Europe/Madrid', now())::date)
       and public.can_edit_group_shared_content(gp.group_id, auth.uid())
+      and (
+        group_plan_places.place_id is null
+        or exists (
+          select 1
+          from public.places p
+          where p.id = group_plan_places.place_id
+            and p.group_id = gp.group_id
+        )
+      )
   )
 );
 
@@ -243,11 +301,18 @@ with check (
   exists (
     select 1
     from public.group_plans gp
-    join public.places p on p.id = group_plan_places.place_id
     where gp.id = group_plan_places.plan_id
-      and p.group_id = gp.group_id
       and gp.created_by = auth.uid()
       and (gp.planned_date is null or gp.planned_date::date >= timezone('Europe/Madrid', now())::date)
+      and (
+        group_plan_places.place_id is null
+        or exists (
+          select 1
+          from public.places p
+          where p.id = group_plan_places.place_id
+            and p.group_id = gp.group_id
+        )
+      )
   )
 );
 
