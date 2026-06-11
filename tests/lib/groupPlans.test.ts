@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canPlanAcceptNewPlaces } from "@/lib/groupPlans";
-import { formatPlanDateSpanish, isPlanDateTodayOrFuture } from "@/lib/groupPlansShared";
+import { formatPlanDateSpanish, getPlanTimeMinutes, isPlanDateTodayOrFuture } from "@/lib/groupPlansShared";
 
 describe("group plan domain helpers", () => {
   it("accepts plans without date", () => {
@@ -29,5 +29,11 @@ describe("group plan domain helpers", () => {
 
   it("accepts today's date for new plan dates", () => {
     expect(isPlanDateTodayOrFuture("2026-06-10", new Date("2026-06-10T12:00:00.000Z"))).toBe(true);
+  });
+
+  it("extracts plan time minutes in the configured time zone", () => {
+    expect(getPlanTimeMinutes("2026-06-10T19:30:00.000Z", "Europe/Madrid")).toBe(21 * 60 + 30);
+    expect(getPlanTimeMinutes(null)).toBeNull();
+    expect(getPlanTimeMinutes("not-a-date")).toBeNull();
   });
 });

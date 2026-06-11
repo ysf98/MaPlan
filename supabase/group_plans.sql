@@ -15,7 +15,7 @@ create table if not exists public.group_plans (
 create table if not exists public.group_plan_places (
   id uuid primary key default gen_random_uuid(),
   plan_id uuid not null references public.group_plans(id) on delete cascade,
-  place_id uuid not null references public.places(id) on delete cascade,
+  place_id uuid null references public.places(id) on delete set null,
   added_by uuid not null references auth.users(id) on delete cascade,
   place_name text null,
   place_address text null,

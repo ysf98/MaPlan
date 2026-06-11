@@ -27,6 +27,7 @@ import type { GroupPlanItem, GroupPlanPlaceItem } from "@/lib/groupPlans";
 import {
   canPlanAcceptNewPlaces,
   formatPlanDateSpanish,
+  getPlanTimeMinutes,
   getTodayPlanDatePart,
   isPlanDateOnOrAfter,
   normalizePlanDateInput
@@ -101,9 +102,15 @@ function formatPlanTime(date: string | null): string | null {
     return null;
   }
 
+  const minutes = getPlanTimeMinutes(date);
+  if (minutes === null) {
+    return null;
+  }
+
   return new Intl.DateTimeFormat("es-ES", {
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
+    timeZone: "Europe/Madrid"
   }).format(parsed);
 }
 
@@ -1198,7 +1205,7 @@ export function GroupPlansTab({
                   <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full">
                     <QuestionIcon />
                   </div>
-                  <p className="mt-1 text-sm font-semibold">Quizas</p>
+                  <p className="mt-1 text-sm font-semibold">Quizás</p>
                 </button>
                 <button
                   className={`rounded-[20px] p-3 text-center transition ${
@@ -1294,9 +1301,9 @@ export function GroupPlansTab({
       <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {[
           { value: "all", label: "Todos" },
-          { value: "upcoming", label: "Proximos" },
+          { value: "upcoming", label: "Próximos" },
           { value: "past", label: "Pasados" },
-          { value: "draft", label: "Drafts" }
+          { value: "draft", label: "Borradores" }
         ].map((filter) => (
           <button
             className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition ${
@@ -1389,10 +1396,7 @@ export function GroupPlansTab({
           {categorizedPlans.upcoming.length ? (
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-3">
-                <h4 className="text-2xl font-bold text-zinc-950">Proximos Planes</h4>
-                <button className="text-xs font-semibold text-[#c6283a]" type="button">
-                  Ver calendario
-                </button>
+                <h4 className="text-2xl font-bold text-zinc-950">Próximos Planes</h4>
               </div>
 
               <div className="space-y-4">
@@ -1451,7 +1455,7 @@ export function GroupPlansTab({
                               {hiddenPlacesCount > 0 ? (
                                 <div className="flex items-center gap-2 text-sm font-semibold text-[#c6283a]">
                                   <span className="h-2 w-2 rounded-full bg-rose-300" />
-                                  <span>+{hiddenPlacesCount} mas</span>
+                                  <span>+{hiddenPlacesCount} más</span>
                                 </div>
                               ) : null}
                             </div>
@@ -1493,7 +1497,7 @@ export function GroupPlansTab({
           {categorizedPlans.drafts.length ? (
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-3">
-                <h4 className="text-2xl font-bold text-zinc-950">Drafts</h4>
+                <h4 className="text-2xl font-bold text-zinc-950">Borradores</h4>
                 <span className="text-xs font-semibold text-zinc-500">Sin fecha cerrada</span>
               </div>
 
@@ -1504,7 +1508,7 @@ export function GroupPlansTab({
                       <div className="flex items-center justify-between gap-3">
                         <button className="min-w-0 flex-1 text-left" onClick={() => openPlanPage(plan.id)} type="button">
                           <p className="truncate text-lg font-bold text-zinc-950">{plan.title}</p>
-                          <p className="mt-1 text-sm text-zinc-500">{plan.description || "Todavia sin descripcion"}</p>
+                          <p className="mt-1 text-sm text-zinc-500">{plan.description || "Todavía sin descripción"}</p>
                         </button>
                         <div className="flex items-center gap-2">
                           <div className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-[#c6283a]">

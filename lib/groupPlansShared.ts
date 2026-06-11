@@ -75,6 +75,34 @@ export function formatPlanDateSpanish(value: string | null | undefined): string 
   return `${day}/${month}/${year}`;
 }
 
+export function getPlanTimeMinutes(value: string | null | undefined, timeZone = PLAN_DATE_TIME_ZONE): number | null {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    hour12: false,
+    hourCycle: "h23",
+    minute: "2-digit",
+    timeZone
+  }).formatToParts(parsed);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+
+  if (Number.isNaN(hour) || Number.isNaN(minute)) {
+    return null;
+  }
+
+  return (hour % 24) * 60 + minute;
+}
+
 export function isPlanDateTodayOrFuture(value: string | null | undefined, now = new Date()): boolean {
   return isPlanDateOnOrAfter(value, getTodayPlanDatePart(now));
 }

@@ -19,6 +19,7 @@ import { MaplanMinimalIcon } from "@/components/branding/MaplanMinimalIcon";
 import { BottomDockNav } from "@/components/navigation/BottomDockNav";
 import { Input } from "@/components/ui/Input";
 import type { GroupPlanItem, GroupPlanPlaceItem } from "@/lib/groupPlans";
+import { getPlanTimeMinutes } from "@/lib/groupPlansShared";
 import type { GroupPlanVote } from "@/types/supabase";
 
 type GroupPlanDetailViewProps = {
@@ -119,9 +120,7 @@ function buildPlannedAt(date: string, time: string): string {
 
 function getSortableTime(place: GroupPlanPlaceItem): number {
   if (!place.plannedAt) return Number.MAX_SAFE_INTEGER;
-  const parsed = new Date(place.plannedAt);
-  if (Number.isNaN(parsed.getTime())) return Number.MAX_SAFE_INTEGER;
-  return parsed.getHours() * 60 + parsed.getMinutes();
+  return getPlanTimeMinutes(place.plannedAt, PLAN_TIME_ZONE) ?? Number.MAX_SAFE_INTEGER;
 }
 
 function sortPlanPlaces(places: GroupPlanPlaceItem[]): GroupPlanPlaceItem[] {
@@ -582,16 +581,6 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
             )}
             {detailsState.error ? <p className="mt-3 text-sm font-semibold text-rose-600">{detailsState.error}</p> : null}
             {deleteState.error ? <p className="mt-3 text-sm font-semibold text-rose-600">{deleteState.error}</p> : null}
-            {!isEditing ? (
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <button className="inline-flex h-12 items-center justify-center rounded-full bg-[#c6283a] text-sm font-bold text-white shadow-[0_12px_24px_rgba(181,35,48,0.22)]" type="button">
-                  Chat
-                </button>
-                <button className="inline-flex h-12 items-center justify-center rounded-full bg-[#fde2e0] text-sm font-bold text-[#261817]" type="button">
-                  Calendario
-                </button>
-              </div>
-            ) : null}
           </div>
         </section>
 
@@ -692,8 +681,8 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
             {voteState.error ? <p className="mt-3 text-sm font-semibold text-rose-600">{voteState.error}</p> : null}
             <div className="mt-4 grid grid-cols-3 gap-2">
               {[
-                { label: "Ire", value: "attending", active: "bg-emerald-100 text-emerald-700", idle: "bg-white/80 text-zinc-600" },
-                { label: "Quizas", value: "maybe", active: "bg-sky-100 text-sky-700", idle: "bg-white/80 text-zinc-600" },
+                { label: "Iré", value: "attending", active: "bg-emerald-100 text-emerald-700", idle: "bg-white/80 text-zinc-600" },
+                { label: "Quizás", value: "maybe", active: "bg-sky-100 text-sky-700", idle: "bg-white/80 text-zinc-600" },
                 { label: "No", value: "not_attending", active: "bg-rose-100 text-rose-600", idle: "bg-white/80 text-zinc-600" }
               ].map((option) => {
                 const isActive = localPlan.currentUserVote === option.value;
@@ -725,7 +714,7 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
                 ) : null}
               </div>
               <span className="text-sm font-semibold text-zinc-600">
-                {localPlan.attendingCount} confirmados · {localPlan.maybeCount} quizas · {localPlan.notAttendingCount} no
+                {localPlan.attendingCount} confirmados · {localPlan.maybeCount} quizás · {localPlan.notAttendingCount} no
               </span>
             </div>
           </div>

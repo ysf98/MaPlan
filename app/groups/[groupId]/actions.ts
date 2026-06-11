@@ -701,7 +701,6 @@ export async function addPlaceToGroupPlanAction(
 
   revalidatePath(`/groups/${parsedInput.data.groupId}`);
   revalidatePath(`/groups/${parsedInput.data.groupId}/plans/${parsedInput.data.planId}`);
-  revalidatePath(`/groups/${parsedInput.data.groupId}/plans/${parsedInput.data.planId}`);
   return { error: null, requestId, success: true };
 }
 
@@ -733,6 +732,7 @@ export async function voteGroupPlanAction(
   }
 
   revalidatePath(`/groups/${parsedInput.data.groupId}`);
+  revalidatePath(`/groups/${parsedInput.data.groupId}/plans/${parsedInput.data.planId}`);
   return { error: null, success: true };
 }
 
@@ -762,6 +762,7 @@ export async function deleteGroupPlanAction(
   }
 
   revalidatePath(`/groups/${parsedInput.data.groupId}`);
+  revalidatePath(`/groups/${parsedInput.data.groupId}/plans/${parsedInput.data.planId}`);
   return { error: null, success: true };
 }
 
@@ -794,6 +795,7 @@ export async function updateGroupPlanDateAction(
   }
 
   revalidatePath(`/groups/${parsedInput.data.groupId}`);
+  revalidatePath(`/groups/${parsedInput.data.groupId}/plans/${parsedInput.data.planId}`);
   return { error: null, requestId, success: true };
 }
 
@@ -828,6 +830,7 @@ export async function updateGroupPlanDetailsAction(
   }
 
   revalidatePath(`/groups/${parsedInput.data.groupId}`);
+  revalidatePath(`/groups/${parsedInput.data.groupId}/plans/${parsedInput.data.planId}`);
   return { error: null, requestId, success: true };
 }
 

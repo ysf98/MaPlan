@@ -285,23 +285,6 @@ function normalizeTextSearchCandidate(result: GoogleTextSearchResult): NearbySel
   };
 }
 
-function normalizeRecordFromNearby(result: GoogleNearbyResult): CandidateSourceRecord | null {
-  const placeId = (result.place_id || "").trim();
-  const name = (result.name || "").trim();
-  if (!placeId || !name) {
-    return null;
-  }
-  return {
-    placeId,
-    name,
-    address: (result.formatted_address || result.vicinity || "").trim(),
-    businessStatus: (result.business_status || "").trim() || null,
-    photoReference: result.photos?.[0]?.photo_reference || null,
-    rating: typeof result.rating === "number" ? result.rating : null,
-    userRatingsTotal: typeof result.user_ratings_total === "number" ? result.user_ratings_total : null
-  };
-}
-
 function normalizeRecordFromTextSearch(result: GoogleTextSearchResult): CandidateSourceRecord | null {
   const placeId = (result.place_id || "").trim();
   const name = (result.name || "").trim();

@@ -22,6 +22,9 @@ import {
   updatePersonalPlaceFavoriteSchema,
   updatePersonalPlaceStatusSchema,
   updateGroupPlanDateSchema,
+  updateGroupPlanDetailsSchema,
+  updateGroupPlanPlaceTimeSchema,
+  removeGroupPlanPlaceSchema,
   updatePlaceLocationSchema,
   updatePlaceFavoriteSchema,
   updatePlaceStatusSchema
@@ -193,6 +196,56 @@ describe("group plan schemas", () => {
         plannedDate: "2000-01-01"
       }).success
     ).toBe(false);
+  });
+
+  it("updateGroupPlanDetailsSchema validates title and date", () => {
+    expect(
+      updateGroupPlanDetailsSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        title: "Sabado",
+        plannedDate: "2099-07-10"
+      }).success
+    ).toBe(true);
+
+    expect(
+      updateGroupPlanDetailsSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        title: "   ",
+        plannedDate: "2099-07-10"
+      }).success
+    ).toBe(false);
+  });
+
+  it("removeGroupPlanPlaceSchema validates plan stop ids", () => {
+    expect(
+      removeGroupPlanPlaceSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        planPlaceId: "33333333-3333-4333-8333-333333333333"
+      }).success
+    ).toBe(true);
+  });
+
+  it("updateGroupPlanPlaceTimeSchema accepts optional planned time", () => {
+    expect(
+      updateGroupPlanPlaceTimeSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        planPlaceId: "33333333-3333-4333-8333-333333333333",
+        plannedAt: "2099-07-10T21:15"
+      }).success
+    ).toBe(true);
+
+    expect(
+      updateGroupPlanPlaceTimeSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        planPlaceId: "33333333-3333-4333-8333-333333333333",
+        plannedAt: ""
+      }).success
+    ).toBe(true);
   });
 });
 
