@@ -10,7 +10,9 @@ MaPlan es una app social de mapas para guardar, organizar y compartir lugares co
 - Permisos por rol: `owner` / `member`.
 - Invitaciones de grupo y solicitudes de unión.
 - Amigos y solicitudes de amistad.
+- Búsqueda de amigos con sugerencias en vivo desde la propia barra.
 - Mapa de grupo con búsqueda, guardado y filtros.
+- Planes de grupo con ruta, paradas ordenadas, votos de asistencia y edición inline.
 - Mapa personal con pestañas `Lugares` y `Mapa`.
 - Selector de mapas en `/maps` para acceder a mapas grupales o mapa personal.
 - Explorador principal en `/explore` para buscar lugares y guardarlos en distintos destinos.
@@ -137,6 +139,7 @@ Las rutas comunes viven en `utils/constants.ts` bajo `ROUTES`.
 - `/groups/new`
 - `/groups/join`
 - `/groups/[groupId]`
+- `/groups/[groupId]/plans/[planId]`
 - `/maps`
 - `/map`
 - `/explore`
@@ -165,6 +168,24 @@ Los estados personales por usuario de lugares de grupo viven en `group_place_use
 
 Esto permite que cada usuario tenga sus propios favoritos y visitados dentro de un mismo grupo.
 
+### Planes de grupo
+
+Los planes de grupo viven en `group_plans` y sus paradas en `group_plan_places`.
+
+La vista de planes dentro de un grupo permite:
+
+- crear planes desde el grupo o desde una tarjeta de lugar;
+- ver hasta 4 paradas en la tarjeta resumen del plan y un contador `+N` si hay más;
+- abrir un detalle independiente en `/groups/[groupId]/plans/[planId]`;
+- editar nombre, fecha, horas de paradas y eliminar paradas desde el detalle;
+- ordenar el itinerario por hora, dejando al final las paradas sin hora;
+- votar asistencia con `Iré`, `Quizás` y `No`;
+- eliminar el plan desde el menú de opciones de la tarjeta de detalle.
+
+`group_plan_places` guarda una instantánea de los datos importantes del lugar (`place_name`, dirección, imagen, coordenadas, enlaces y metadata principal). Esto permite que una parada siga apareciendo en un plan aunque el lugar original se borre de `places`.
+
+Los lugares añadidos a un plan desde Explore o desde el mapa pueden quedar solo como paradas del plan mediante snapshot, sin guardarse automáticamente como lugar del grupo.
+
 ### Lugares personales
 
 Los lugares del mapa personal viven en `personal_places` e incluyen:
@@ -192,6 +213,12 @@ Los destinos se calculan con `lib/saveDestinations.ts`. La mutación se realiza 
 - `createPlace` para lugares de grupo.
 
 Aunque la UI solo muestra destinos permitidos, el backend vuelve a validar permisos y duplicados antes de guardar.
+
+### Amigos
+
+La sección `/friends` permite buscar usuarios mediante `app/api/friends/search/route.ts`.
+
+El buscador muestra sugerencias en vivo dentro de la propia barra mientras se escribe, incluyendo si el usuario ya es amigo, si hay una solicitud pendiente o si se puede enviar una nueva solicitud.
 
 ### Perfil, listas y logros
 
@@ -263,12 +290,14 @@ Ejecutar en Supabase SQL Editor en este orden:
 15. `supabase/places_favorites.sql`
 16. `supabase/places_phone_number.sql`
 17. `supabase/places_google_metadata.sql`
+18. `supabase/group_plans.sql`
 
 Notas:
 
 - La mayoría de scripts son idempotentes y usan `if not exists` / `drop policy if exists`.
 - `groups_privacy.sql` migra flags legacy si existen.
 - `profiles_full_name.sql` y `groups_cover_image_url.sql` son necesarios para la versión actual.
+- `group_plans.sql` crea planes, paradas con snapshot, votos de asistencia y sus políticas RLS.
 - Si cambia el retorno de una función SQL, Postgres puede fallar con `cannot change return type of existing function`.
 
 Solución habitual:
@@ -312,6 +341,7 @@ Playwright usa `PLAYWRIGHT_BASE_URL` si está definido; si no, arranca el dev se
 ## Estado actual del producto
 
 - Detalle de grupo con tabs `Lugares`, `Actividad` y `Mapa`.
+- Planes de grupo con creación, tarjetas resumen, detalle independiente, edición inline, paradas snapshot y votos de asistencia.
 - Mapa personal alineado con el estilo de grupos.
 - Selector `/maps` para separar mapas grupales y mapa personal.
 - Explore fullscreen para buscar y guardar lugares en mapa personal o grupos permitidos.
@@ -320,4 +350,5 @@ Playwright usa `PLAYWRIGHT_BASE_URL` si está definido; si no, arranca el dev se
 - Listas globales en `/profile/places`.
 - Logros de explorador calculados desde lugares reales.
 - Amigos, invitaciones, solicitudes y notificaciones integradas.
+- Búsqueda de amigos con autocomplete en la barra.
 - Modelo de permisos enforced en UI, server actions y RLS.
