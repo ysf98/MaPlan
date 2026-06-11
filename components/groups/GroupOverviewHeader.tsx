@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { removeGroupMemberAction, type RemoveGroupMemberActionState } from "@/app/groups/[groupId]/actions";
 import type { GroupDetail, GroupMemberPreview } from "@/lib/groups/types";
@@ -17,7 +18,6 @@ type GroupOverviewHeaderProps = {
   currentUserId: string;
   group: GroupDetail;
   membersPreview: GroupMemberPreview[];
-  totalMembersCount: number;
 };
 
 function getRoleLabel(role: GroupMemberPreview["role"]): string {
@@ -29,8 +29,7 @@ export function GroupOverviewHeader({
   canManageMembers,
   currentUserId,
   group,
-  membersPreview,
-  totalMembersCount
+  membersPreview
 }: GroupOverviewHeaderProps) {
   const router = useRouter();
   const [isMembersOpen, setIsMembersOpen] = useState(false);
@@ -77,6 +76,17 @@ export function GroupOverviewHeader({
         </div>
 
         <p className="max-w-[34rem] text-sm leading-5 text-zinc-700">{group.description || "Sin descripcion"}</p>
+
+        <Link
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#c6283a] px-5 text-sm font-extrabold text-white shadow-[0_12px_26px_rgba(198,40,58,0.18)] transition hover:bg-[#b32033] sm:w-auto"
+          href={`/groups/${group.id}/chat`}
+        >
+          <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.1" viewBox="0 0 24 24">
+            <path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-6.2A8 8 0 1 1 21 12Z" />
+            <path d="M8 11h8M8 15h5" />
+          </svg>
+          Abrir chat
+        </Link>
 
         <div>
           <div className="flex items-center justify-between">

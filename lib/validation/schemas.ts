@@ -12,6 +12,7 @@ export const PLACE_PROVIDER_VALUES = ["manual", "mapbox", "google_places"] as co
 export const FRIEND_REQUEST_DECISION_VALUES = ["accepted", "rejected"] as const;
 export const GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES = ["popular", "food", "coffee", "plans", "sports"] as const;
 export const GROUP_PLAN_VOTE_VALUES = ["attending", "maybe", "not_attending"] as const;
+export const GROUP_CHAT_MESSAGE_KIND_VALUES = ["message", "plan_suggestion", "place_comment"] as const;
 const uuidSchema = z.string().uuid("Identificador invalido.");
 const nullableDateTimeSchema = z
   .string()
@@ -420,6 +421,38 @@ export const updateGroupPlanPlaceTimeSchema = z.object({
   plannedAt: nullableDateTimeSchema
 });
 
+const optionalUuidField = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value && value.length > 0 ? value : null))
+  .refine((value) => value === null || uuidSchema.safeParse(value).success, "Identificador invalido.");
+
+export const createGroupChatMessageSchema = z.object({
+  groupId: uuidSchema,
+  content: z
+    .string()
+    .trim()
+    .min(1, "Escribe un mensaje.")
+    .max(1000, "El mensaje no puede superar 1000 caracteres."),
+  kind: z
+    .string()
+    .optional()
+    .transform((value) => value || "message")
+    .refine(
+      (value): value is (typeof GROUP_CHAT_MESSAGE_KIND_VALUES)[number] => GROUP_CHAT_MESSAGE_KIND_VALUES.includes(value as never),
+      "Tipo de mensaje invalido."
+    ),
+  planId: optionalUuidField,
+  placeId: optionalUuidField,
+  planPlaceId: optionalUuidField
+});
+
+export const deleteGroupChatMessageSchema = z.object({
+  groupId: uuidSchema,
+  messageId: uuidSchema
+});
+
 export const removeGroupMemberSchema = z.object({
   groupId: uuidSchema,
   memberUserId: uuidSchema
@@ -587,6 +620,8 @@ export type UpdateGroupPlanDateInput = z.infer<typeof updateGroupPlanDateSchema>
 export type UpdateGroupPlanDetailsInput = z.infer<typeof updateGroupPlanDetailsSchema>;
 export type RemoveGroupPlanPlaceInput = z.infer<typeof removeGroupPlanPlaceSchema>;
 export type UpdateGroupPlanPlaceTimeInput = z.infer<typeof updateGroupPlanPlaceTimeSchema>;
+export type CreateGroupChatMessageInput = z.infer<typeof createGroupChatMessageSchema>;
+export type DeleteGroupChatMessageInput = z.infer<typeof deleteGroupChatMessageSchema>;
 export type RemoveGroupMemberInput = z.infer<typeof removeGroupMemberSchema>;
 export type SendFriendRequestInput = z.infer<typeof sendFriendRequestSchema>;
 export type RespondFriendRequestInput = z.infer<typeof respondFriendRequestSchema>;

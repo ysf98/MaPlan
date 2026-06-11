@@ -135,6 +135,74 @@ export type Database = {
           },
         ]
       }
+      group_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          group_id: string
+          id: string
+          kind: string
+          place_id: string | null
+          plan_id: string | null
+          plan_place_id: string | null
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          group_id: string
+          id?: string
+          kind?: string
+          place_id?: string | null
+          plan_id?: string | null
+          plan_place_id?: string | null
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          kind?: string
+          place_id?: string | null
+          plan_id?: string | null
+          plan_place_id?: string | null
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_chat_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_chat_messages_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_chat_messages_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "group_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_chat_messages_plan_place_id_fkey"
+            columns: ["plan_place_id"]
+            isOneToOne: false
+            referencedRelation: "group_plan_places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_invitations: {
         Row: {
           created_at: string
@@ -774,6 +842,7 @@ export type GroupJoinPolicy = "invite_only" | "open_by_code" | "request_to_join"
 export type GroupJoinRequestStatus = "pending" | "approved" | "rejected"
 export type GroupPrivacy = "privado" | "abierto"
 export type GroupPlanVote = "attending" | "maybe" | "not_attending"
+export type GroupChatMessageKind = "message" | "plan_suggestion" | "place_comment"
 export type FriendRequestStatus = "pending" | "accepted" | "rejected"
 export type GroupInvitationStatus = "pending" | "accepted" | "rejected"
 

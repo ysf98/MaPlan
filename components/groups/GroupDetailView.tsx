@@ -26,7 +26,6 @@ type GroupDetailViewProps = {
   initialSelectedPlanId?: string | null;
   places: GroupPlace[];
   membersPreview: GroupMemberPreview[];
-  totalMembersCount: number;
   invitableFriends: Array<{ id: string; username: string | null }>;
   totalFriendsCount: number;
   activeTab: GroupDetailTab;
@@ -46,7 +45,6 @@ export function GroupDetailView({
   initialSelectedPlanId = null,
   places,
   membersPreview,
-  totalMembersCount,
   invitableFriends,
   totalFriendsCount,
   activeTab,
@@ -207,7 +205,6 @@ export function GroupDetailView({
           currentUserId={currentUserId}
           group={group}
           membersPreview={membersPreview}
-          totalMembersCount={totalMembersCount}
         />
       </div>
 

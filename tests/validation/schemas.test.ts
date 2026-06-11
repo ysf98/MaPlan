@@ -4,7 +4,9 @@ import {
   createGroupPlanSchema,
   createGroupSchema,
   deleteAccountSchema,
+  createGroupChatMessageSchema,
   deleteGroupPlanSchema,
+  deleteGroupChatMessageSchema,
   friendSearchQuerySchema,
   googlePlaceDetailsSchema,
   googlePlacesNearbyRecommendationsSchema,
@@ -244,6 +246,64 @@ describe("group plan schemas", () => {
         planId: "22222222-2222-4222-8222-222222222222",
         planPlaceId: "33333333-3333-4333-8333-333333333333",
         plannedAt: ""
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe("group chat schemas", () => {
+  it("createGroupChatMessageSchema accepts normal messages", () => {
+    const result = createGroupChatMessageSchema.safeParse({
+      groupId: "11111111-1111-4111-8111-111111111111",
+      content: "Quedamos a las 21?",
+      kind: "message",
+      planId: "",
+      placeId: "",
+      planPlaceId: ""
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.planId).toBeNull();
+    }
+  });
+
+  it("createGroupChatMessageSchema accepts plan suggestions with context", () => {
+    expect(
+      createGroupChatMessageSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        content: "Podriamos meter este sitio en la ruta.",
+        kind: "plan_suggestion",
+        planId: "22222222-2222-4222-8222-222222222222",
+        placeId: "33333333-3333-4333-8333-333333333333",
+        planPlaceId: ""
+      }).success
+    ).toBe(true);
+  });
+
+  it("createGroupChatMessageSchema rejects empty messages and invalid kind", () => {
+    expect(
+      createGroupChatMessageSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        content: "   ",
+        kind: "message"
+      }).success
+    ).toBe(false);
+
+    expect(
+      createGroupChatMessageSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        content: "Hola",
+        kind: "system"
+      }).success
+    ).toBe(false);
+  });
+
+  it("deleteGroupChatMessageSchema validates ids", () => {
+    expect(
+      deleteGroupChatMessageSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        messageId: "22222222-2222-4222-8222-222222222222"
       }).success
     ).toBe(true);
   });

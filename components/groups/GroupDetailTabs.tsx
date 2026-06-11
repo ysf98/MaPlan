@@ -18,7 +18,7 @@ export function GroupDetailTabs({ activeTab, onTabChange }: GroupDetailTabsProps
   return (
     <div aria-label="Secciones de grupo" className="border-b border-zinc-200" role="tablist">
       <div
-        className="flex w-full items-end justify-center gap-14 overflow-x-auto overflow-y-hidden px-2 md:overflow-x-visible"
+        className="flex w-full items-end justify-start gap-10 overflow-x-auto overflow-y-hidden px-2 md:justify-center md:overflow-x-visible"
         style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
       >
         {tabs.map((tab) => {

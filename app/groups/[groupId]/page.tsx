@@ -80,7 +80,6 @@ export default async function GroupDetailPage({ params, searchParams }: GroupDet
         places={places}
         reviewedJoinRequests={reviewedJoinRequests}
         totalFriendsCount={friends.length}
-        totalMembersCount={membersPreviewResult.total}
       />
     </AppShell>
   );

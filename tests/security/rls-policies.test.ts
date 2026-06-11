@@ -110,4 +110,22 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("planned_date::date >= timezone('Europe/Madrid', now())::date");
     expect(sql).toContain("gp.planned_date is null or gp.planned_date::date >= timezone('Europe/Madrid', now())::date");
   });
+
+  it("includes group chat table with member RLS and same-group context checks", () => {
+    const sql = readFileSync(resolve(process.cwd(), "supabase/group_chat.sql"), "utf8");
+    expect(sql).toContain("create table if not exists public.group_chat_messages");
+    expect(sql).toContain("group_chat_messages_kind_check check (kind in ('message', 'plan_suggestion', 'place_comment'))");
+    expect(sql).toContain("references public.group_plans(id) on delete set null");
+    expect(sql).toContain("references public.places(id) on delete set null");
+    expect(sql).toContain("references public.group_plan_places(id) on delete set null");
+    expect(sql).toContain("create policy group_chat_messages_select_group_member");
+    expect(sql).toContain("create policy group_chat_messages_insert_group_member");
+    expect(sql).toContain("create policy group_chat_messages_delete_sender");
+    expect(sql).toContain("sender_id = auth.uid()");
+    expect(sql).toContain("public.can_access_group(group_id, auth.uid())");
+    expect(sql).toContain("gp.group_id = group_chat_messages.group_id");
+    expect(sql).toContain("p.group_id = group_chat_messages.group_id");
+    expect(sql).toContain("alter table public.group_chat_messages replica identity full");
+    expect(sql).toContain("alter publication supabase_realtime add table public.group_chat_messages");
+  });
 });

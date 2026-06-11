@@ -11,6 +11,7 @@ MaPlan es una app social de mapas para guardar, organizar y compartir lugares co
 - Invitaciones de grupo y solicitudes de unión.
 - Amigos y solicitudes de amistad.
 - Búsqueda de amigos con sugerencias en vivo desde la propia barra.
+- Chat grupal para comentar planes, lugares e ideas del grupo.
 - Mapa de grupo con búsqueda, guardado y filtros.
 - Planes de grupo con ruta, paradas ordenadas, votos de asistencia y edición inline.
 - Mapa personal con pestañas `Lugares` y `Mapa`.
@@ -220,6 +221,14 @@ La sección `/friends` permite buscar usuarios mediante `app/api/friends/search/
 
 El buscador muestra sugerencias en vivo dentro de la propia barra mientras se escribe, incluyendo si el usuario ya es amigo, si hay una solicitud pendiente o si se puede enviar una nueva solicitud.
 
+### Chat de grupo
+
+Los mensajes del chat grupal viven en `group_chat_messages`.
+
+La vista independiente `/groups/[groupId]/chat` permite a los miembros escribir mensajes normales del grupo en pantalla completa. El modelo también permite guardar contexto opcional de plan, lugar o parada (`plan_id`, `place_id`, `plan_place_id`) para futuras sugerencias sobre planes o comentarios enlazados a lugares.
+
+Solo miembros del grupo pueden leer o escribir mensajes. Cada usuario puede eliminar sus propios mensajes.
+
 ### Perfil, listas y logros
 
 El perfil usa agregación real desde `lib/profilePlaces.ts`:
@@ -291,6 +300,7 @@ Ejecutar en Supabase SQL Editor en este orden:
 16. `supabase/places_phone_number.sql`
 17. `supabase/places_google_metadata.sql`
 18. `supabase/group_plans.sql`
+19. `supabase/group_chat.sql`
 
 Notas:
 
@@ -298,6 +308,7 @@ Notas:
 - `groups_privacy.sql` migra flags legacy si existen.
 - `profiles_full_name.sql` y `groups_cover_image_url.sql` son necesarios para la versión actual.
 - `group_plans.sql` crea planes, paradas con snapshot, votos de asistencia y sus políticas RLS.
+- `group_chat.sql` crea el chat grupal y debe ejecutarse después de `group_plans.sql`.
 - Si cambia el retorno de una función SQL, Postgres puede fallar con `cannot change return type of existing function`.
 
 Solución habitual:
@@ -340,7 +351,7 @@ Playwright usa `PLAYWRIGHT_BASE_URL` si está definido; si no, arranca el dev se
 
 ## Estado actual del producto
 
-- Detalle de grupo con tabs `Lugares`, `Actividad` y `Mapa`.
+- Detalle de grupo con tabs `Lugares`, `Actividad`, `Mapa` y `Planes`, y acceso a chat en vista independiente.
 - Planes de grupo con creación, tarjetas resumen, detalle independiente, edición inline, paradas snapshot y votos de asistencia.
 - Mapa personal alineado con el estilo de grupos.
 - Selector `/maps` para separar mapas grupales y mapa personal.
@@ -351,4 +362,5 @@ Playwright usa `PLAYWRIGHT_BASE_URL` si está definido; si no, arranca el dev se
 - Logros de explorador calculados desde lugares reales.
 - Amigos, invitaciones, solicitudes y notificaciones integradas.
 - Búsqueda de amigos con autocomplete en la barra.
+- Chat grupal con mensajes entre miembros.
 - Modelo de permisos enforced en UI, server actions y RLS.
