@@ -728,6 +728,7 @@ export function GroupMap({
                     groupId={groupId}
                     placeId={internalSelectedPlace.id}
                     plans={plans}
+                    places={places}
                   />
                 }
                 place={{

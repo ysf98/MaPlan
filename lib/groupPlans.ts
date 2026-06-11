@@ -12,6 +12,7 @@ type CreateGroupPlanInput = {
   description?: string | null;
   plannedDate?: string | null;
   initialPlaceId?: string | null;
+  initialPlaceIds?: string[];
   initialPlacePlannedAt?: string | null;
   initialPlaceNote?: string | null;
 };
@@ -42,6 +43,14 @@ type UpdateGroupPlanDateInput = {
   userId: string;
   groupId: string;
   planId: string;
+  plannedDate?: string | null;
+};
+
+type UpdateGroupPlanDetailsInput = {
+  userId: string;
+  groupId: string;
+  planId: string;
+  title: string;
   plannedDate?: string | null;
 };
 
@@ -315,8 +324,10 @@ export async function createGroupPlan(input: CreateGroupPlanInput): Promise<{ er
     }
   }
 
-  if (input.initialPlaceId) {
-    const placeExists = await validatePlaceBelongsToGroup(input.groupId, input.initialPlaceId);
+  const initialPlaceIds = Array.from(new Set([...(input.initialPlaceIds ?? []), input.initialPlaceId].filter(Boolean) as string[]));
+
+  for (const placeId of initialPlaceIds) {
+    const placeExists = await validatePlaceBelongsToGroup(input.groupId, placeId);
     if (!placeExists) {
       return { error: "No se encontro el lugar del grupo.", planId: null };
     }
@@ -339,14 +350,14 @@ export async function createGroupPlan(input: CreateGroupPlanInput): Promise<{ er
     return { error: insertResult.error?.message ?? "No se pudo crear el plan.", planId: null };
   }
 
-  if (input.initialPlaceId) {
+  for (const placeId of initialPlaceIds) {
     const addPlaceResult = await insertPlaceIntoPlan(supabase, {
       userId: input.userId,
       groupId: input.groupId,
       planId: insertResult.data.id,
-      placeId: input.initialPlaceId,
-      plannedAt: input.initialPlacePlannedAt || null,
-      note: input.initialPlaceNote || null
+      placeId,
+      plannedAt: placeId === input.initialPlaceId ? input.initialPlacePlannedAt || null : null,
+      note: placeId === input.initialPlaceId ? input.initialPlaceNote || null : null
     });
 
     if (addPlaceResult.error) {
@@ -463,6 +474,55 @@ export async function updateGroupPlanDate(input: UpdateGroupPlanDateInput): Prom
 
   if (!data) {
     return { error: "No se pudo actualizar la fecha del plan." };
+  }
+
+  return { error: null };
+}
+
+export async function updateGroupPlanDetails(input: UpdateGroupPlanDetailsInput): Promise<{ error: string | null }> {
+  const plan = await getPlanForGroup(input.groupId, input.planId);
+  if (!plan) {
+    return { error: "No se encontro el plan." };
+  }
+
+  if (plan.created_by !== input.userId) {
+    return { error: "Solo la persona creadora puede editar este plan." };
+  }
+
+  const title = input.title.trim();
+  if (!title) {
+    return { error: "El nombre del plan es obligatorio." };
+  }
+
+  if (input.plannedDate) {
+    if (!extractPlanDatePart(input.plannedDate)) {
+      return { error: "Fecha invalida." };
+    }
+
+    if (!isPlanDateTodayOrFuture(input.plannedDate)) {
+      return { error: "La fecha del plan no puede ser anterior a hoy." };
+    }
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("group_plans")
+    .update({
+      title,
+      planned_date: normalizePlanDateInput(input.plannedDate),
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", input.planId)
+    .eq("group_id", input.groupId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (!data) {
+    return { error: "No se pudo actualizar el plan." };
   }
 
   return { error: null };

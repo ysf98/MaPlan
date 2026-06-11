@@ -4,22 +4,26 @@ import { startTransition, useActionState, useEffect, useMemo, useState } from "r
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
+  addPlaceToGroupPlanAction,
   createGroupPlanAction,
   deleteGroupPlanAction,
   removeGroupPlanPlaceAction,
   updateGroupPlanDateAction,
+  updateGroupPlanDetailsAction,
   voteGroupPlanAction,
+  type AddPlaceToGroupPlanActionState,
   type CreateGroupPlanActionState,
   type DeleteGroupPlanActionState,
   type RemoveGroupPlanPlaceActionState,
   type UpdateGroupPlanDateActionState,
+  type UpdateGroupPlanDetailsActionState,
   type VoteGroupPlanActionState
 } from "@/app/groups/[groupId]/actions";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
-import type { GroupPlanItem } from "@/lib/groupPlans";
+import type { GroupPlanItem, GroupPlanPlaceItem } from "@/lib/groupPlans";
 import {
   canPlanAcceptNewPlaces,
   formatPlanDateSpanish,
@@ -27,20 +31,24 @@ import {
   isPlanDateOnOrAfter,
   normalizePlanDateInput
 } from "@/lib/groupPlansShared";
+import type { GroupPlace } from "@/lib/places/shared";
 
 type GroupPlansTabProps = {
   groupId: string;
   groupName: string;
   plans: GroupPlanItem[];
+  places: GroupPlace[];
   canCreatePlans: boolean;
   onNavigateToPlaces: () => void;
 };
 
-const createInitialState: CreateGroupPlanActionState = { error: null, success: false };
+const createInitialState: CreateGroupPlanActionState = { error: null, planId: null, requestId: null, success: false };
+const addPlaceInitialState: AddPlaceToGroupPlanActionState = { error: null, requestId: null, success: false };
 const voteInitialState: VoteGroupPlanActionState = { error: null, success: false };
 const deleteInitialState: DeleteGroupPlanActionState = { error: null, success: false };
 const removePlaceInitialState: RemoveGroupPlanPlaceActionState = { error: null, success: false };
-const updatePlanDateInitialState: UpdateGroupPlanDateActionState = { error: null, success: false };
+const updatePlanDateInitialState: UpdateGroupPlanDateActionState = { error: null, requestId: null, success: false };
+const updatePlanDetailsInitialState: UpdateGroupPlanDetailsActionState = { error: null, requestId: null, success: false };
 
 function extractPlanDatePart(date: string | null): string | null {
   if (!date) {
@@ -108,29 +116,55 @@ function getPlanTimestamp(date: string | null): number | null {
 function formatDayMonth(date: string | null): string {
   const datePart = extractPlanDatePart(date);
   if (!datePart) {
-    return "TBD";
+    return "--";
   }
 
-  const [, month, day] = datePart.split("-");
-  return `${day}/${month}`;
+  return datePart.split("-")[2] ?? "--";
 }
 
 function formatYearShort(date: string | null): string {
   const datePart = extractPlanDatePart(date);
   if (!datePart) {
-    return "";
+    return "TBD";
   }
 
-  return datePart.split("-")[0] ?? "";
+  const [, month] = datePart.split("-");
+  const monthIndex = Number(month) - 1;
+  if (Number.isNaN(monthIndex)) {
+    return "TBD";
+  }
+
+  return new Intl.DateTimeFormat("es-ES", { month: "short", timeZone: "UTC" })
+    .format(new Date(Date.UTC(2026, monthIndex, 1)))
+    .replace(".", "")
+    .toUpperCase();
 }
 
 function toDateTimeLocalValue(date: string | null): string {
-  return formatPlanDateSpanish(date) ?? "";
+  return extractPlanDatePart(date) ?? "";
 }
 
 function isOptionalPlanDateAllowed(value: string, minDatePart: string): boolean {
   const trimmed = value.trim();
   return trimmed.length === 0 || isPlanDateOnOrAfter(trimmed, minDatePart);
+}
+
+function toPlanPlaceItem(place: GroupPlace): GroupPlanPlaceItem {
+  return {
+    id: `optimistic-${place.id}`,
+    placeId: place.id,
+    name: place.name,
+    address: place.address,
+    city: place.city,
+    imageUrl: place.imageUrl ?? null,
+    googleMapsUrl: place.googleMapsUrl,
+    phoneNumber: place.phoneNumber,
+    rating: place.rating,
+    userRatingsTotal: place.userRatingsTotal,
+    plannedAt: null,
+    note: null,
+    createdAt: new Date().toISOString()
+  };
 }
 
 function planLocationLabel(plan: GroupPlanItem): string {
@@ -165,15 +199,6 @@ function voteSummary(plan: GroupPlanItem): string {
   }
 
   return "Aun sin votos";
-}
-
-function GroupIcon() {
-  return (
-    <svg className="h-4 w-4 text-[#c6283a]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
 }
 
 function PencilIcon() {
@@ -294,7 +319,7 @@ function RestaurantIcon() {
   );
 }
 
-export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNavigateToPlaces }: GroupPlansTabProps) {
+export function GroupPlansTab({ groupId, plans, places, canCreatePlans, onNavigateToPlaces }: GroupPlansTabProps) {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<"all" | "upcoming" | "past" | "draft">("all");
   const [displayPlans, setDisplayPlans] = useState<GroupPlanItem[]>(plans);
@@ -303,20 +328,53 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [plannedDate, setPlannedDate] = useState("");
+  const [draftRoutePlaceIds, setDraftRoutePlaceIds] = useState<string[]>([]);
+  const [dismissedDraftRecommendationIds, setDismissedDraftRecommendationIds] = useState<Record<string, true>>({});
   const [minPlanDate] = useState(() => getTodayPlanDatePart());
-  const [nowTimestamp, setNowTimestamp] = useState<number | null>(null);
   const [menuPlanId, setMenuPlanId] = useState<string | null>(null);
   const [planToDelete, setPlanToDelete] = useState<GroupPlanItem | null>(null);
   const [planToEditDate, setPlanToEditDate] = useState<GroupPlanItem | null>(null);
   const [editedPlannedDate, setEditedPlannedDate] = useState("");
+  const [planToEditDetails, setPlanToEditDetails] = useState<GroupPlanItem | null>(null);
+  const [editedPlanTitle, setEditedPlanTitle] = useState("");
+  const [editedPlanDetailsDate, setEditedPlanDetailsDate] = useState("");
+  const [pendingPlanDateUpdate, setPendingPlanDateUpdate] = useState<{
+    planId: string;
+    plannedDate: string;
+    requestId: string;
+  } | null>(null);
+  const [pendingPlanDetailsUpdate, setPendingPlanDetailsUpdate] = useState<{
+    planId: string;
+    plannedDate: string;
+    requestId: string;
+    title: string;
+  } | null>(null);
+  const [pendingCreatePlan, setPendingCreatePlan] = useState<{
+    description: string | null;
+    plannedDate: string | null;
+    requestId: string;
+    selectedPlaces: GroupPlace[];
+    title: string;
+  } | null>(null);
+  const [pendingRecommendedPlace, setPendingRecommendedPlace] = useState<{
+    place: GroupPlace;
+    planId: string;
+    requestId: string;
+  } | null>(null);
+  const [dismissedRecommendationIds, setDismissedRecommendationIds] = useState<Record<string, true>>({});
   const [planPlaceToDeleteId, setPlanPlaceToDeleteId] = useState<string | null>(null);
   const [createState, createAction, isCreating] = useActionState(createGroupPlanAction, createInitialState);
+  const [addPlaceState, addPlaceAction, isAddingRecommendedPlace] = useActionState(addPlaceToGroupPlanAction, addPlaceInitialState);
   const [voteState, voteAction, isVoting] = useActionState(voteGroupPlanAction, voteInitialState);
   const [deleteState, deleteAction, isDeleting] = useActionState(deleteGroupPlanAction, deleteInitialState);
   const [removePlaceState, removePlaceAction, isRemovingPlace] = useActionState(removeGroupPlanPlaceAction, removePlaceInitialState);
   const [updatePlanDateState, updatePlanDateActionForm, isUpdatingPlanDate] = useActionState(
     updateGroupPlanDateAction,
     updatePlanDateInitialState
+  );
+  const [updatePlanDetailsState, updatePlanDetailsActionForm, isUpdatingPlanDetails] = useActionState(
+    updateGroupPlanDetailsAction,
+    updatePlanDetailsInitialState
   );
 
   useEffect(() => {
@@ -340,15 +398,35 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
     () => sortedPlans.find((plan) => plan.id === selectedPlanId) ?? null,
     [selectedPlanId, sortedPlans]
   );
+  const recommendedPlaces = useMemo(() => {
+    if (!selectedPlan) {
+      return [];
+    }
+
+    const placeIdsInPlan = new Set(selectedPlan.places.map((place) => place.placeId));
+    return places
+      .filter((place) => !placeIdsInPlan.has(place.id) && !dismissedRecommendationIds[`${selectedPlan.id}:${place.id}`])
+      .slice(0, 6);
+  }, [dismissedRecommendationIds, places, selectedPlan]);
+  const draftRoutePlaces = useMemo(
+    () => draftRoutePlaceIds.map((placeId) => places.find((place) => place.id === placeId)).filter((place): place is GroupPlace => Boolean(place)),
+    [draftRoutePlaceIds, places]
+  );
+  const draftRecommendedPlaces = useMemo(
+    () =>
+      places
+        .filter((place) => !draftRoutePlaceIds.includes(place.id) && !dismissedDraftRecommendationIds[place.id])
+        .slice(0, 6),
+    [dismissedDraftRecommendationIds, draftRoutePlaceIds, places]
+  );
   const categorizedPlans = useMemo(() => {
-    const currentTimestamp = nowTimestamp ?? 0;
     const upcoming = sortedPlans.filter((plan) => {
-      const timestamp = getPlanTimestamp(plan.plannedDate);
-      return timestamp !== null && timestamp >= currentTimestamp;
+      const datePart = extractPlanDatePart(plan.plannedDate);
+      return datePart !== null && datePart >= minPlanDate;
     });
     const past = sortedPlans.filter((plan) => {
-      const timestamp = getPlanTimestamp(plan.plannedDate);
-      return timestamp !== null && timestamp < currentTimestamp;
+      const datePart = extractPlanDatePart(plan.plannedDate);
+      return datePart !== null && datePart < minPlanDate;
     });
     const drafts = sortedPlans.filter((plan) => getPlanTimestamp(plan.plannedDate) === null);
 
@@ -371,22 +449,70 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
       drafts: drafts.filter((plan) => filtered.some((candidate) => candidate.id === plan.id)),
       filtered
     };
-  }, [activeFilter, nowTimestamp, sortedPlans]);
+  }, [activeFilter, minPlanDate, sortedPlans]);
 
   useEffect(() => {
-    setNowTimestamp(Date.now());
-  }, []);
-
-  useEffect(() => {
-    if (!createState.success) {
+    if (!createState.success || !pendingCreatePlan || createState.requestId !== pendingCreatePlan.requestId || !createState.planId) {
       return;
     }
 
+    const createdPlan: GroupPlanItem = {
+      id: createState.planId,
+      groupId,
+      createdBy: "",
+      title: pendingCreatePlan.title,
+      description: pendingCreatePlan.description,
+      plannedDate: pendingCreatePlan.plannedDate,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      places: pendingCreatePlan.selectedPlaces.map(toPlanPlaceItem),
+      votes: [],
+      attendingCount: 0,
+      notAttendingCount: 0,
+      currentUserVote: null,
+      acceptsNewPlaces: canPlanAcceptNewPlaces(pendingCreatePlan.plannedDate),
+      isCreator: true
+    };
+    setDisplayPlans((current) => [createdPlan, ...current.filter((plan) => plan.id !== createdPlan.id)]);
+    setSelectedPlanId(createState.planId);
     setTitle("");
     setDescription("");
     setPlannedDate("");
+    setDraftRoutePlaceIds([]);
+    setDismissedDraftRecommendationIds({});
     setIsCreateOpen(false);
-  }, [createState.success]);
+    setPendingCreatePlan(null);
+    setDismissedRecommendationIds({});
+    router.refresh();
+  }, [createState.planId, createState.requestId, createState.success, groupId, pendingCreatePlan, router]);
+
+  useEffect(() => {
+    if (
+      !addPlaceState.success ||
+      !pendingRecommendedPlace ||
+      addPlaceState.requestId !== pendingRecommendedPlace.requestId
+    ) {
+      return;
+    }
+
+    const nextPlace = toPlanPlaceItem(pendingRecommendedPlace.place);
+    setDisplayPlans((current) =>
+      current.map((plan) =>
+        plan.id === pendingRecommendedPlace.planId
+          ? {
+              ...plan,
+              places: plan.places.some((place) => place.placeId === nextPlace.placeId) ? plan.places : [...plan.places, nextPlace]
+            }
+          : plan
+      )
+    );
+    setDismissedRecommendationIds((current) => ({
+      ...current,
+      [`${pendingRecommendedPlace.planId}:${pendingRecommendedPlace.place.id}`]: true
+    }));
+    setPendingRecommendedPlace(null);
+    router.refresh();
+  }, [addPlaceState.requestId, addPlaceState.success, pendingRecommendedPlace, router]);
 
   useEffect(() => {
     if (!deleteState.success) {
@@ -412,38 +538,134 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
   }, [removePlaceState.success]);
 
   useEffect(() => {
-    if (!updatePlanDateState.success) {
+    if (
+      !updatePlanDateState.success ||
+      !pendingPlanDateUpdate ||
+      updatePlanDateState.requestId !== pendingPlanDateUpdate.requestId
+    ) {
       return;
     }
 
-    if (planToEditDate) {
-      const normalizedDate = normalizePlanDateInput(editedPlannedDate);
-      setDisplayPlans((current) =>
-        current.map((plan) =>
-          plan.id === planToEditDate.id
-            ? {
-                ...plan,
-                plannedDate: normalizedDate,
-                acceptsNewPlaces: canPlanAcceptNewPlaces(normalizedDate)
-              }
-            : plan
-        )
-      );
-    }
+    const normalizedDate = normalizePlanDateInput(pendingPlanDateUpdate.plannedDate);
+    setDisplayPlans((current) =>
+      current.map((plan) =>
+        plan.id === pendingPlanDateUpdate.planId
+          ? {
+              ...plan,
+              plannedDate: normalizedDate,
+              acceptsNewPlaces: canPlanAcceptNewPlaces(normalizedDate)
+            }
+          : plan
+      )
+    );
     router.refresh();
     setPlanToEditDate(null);
     setEditedPlannedDate("");
     setMenuPlanId(null);
-  }, [editedPlannedDate, planToEditDate, router, updatePlanDateState.success]);
+    setPendingPlanDateUpdate(null);
+  }, [pendingPlanDateUpdate, router, updatePlanDateState.requestId, updatePlanDateState.success]);
 
-  const planDetailError = removePlaceState.error ?? deleteState.error ?? voteState.error;
+  useEffect(() => {
+    if (
+      !updatePlanDetailsState.success ||
+      !pendingPlanDetailsUpdate ||
+      updatePlanDetailsState.requestId !== pendingPlanDetailsUpdate.requestId
+    ) {
+      return;
+    }
+
+    const normalizedDate = normalizePlanDateInput(pendingPlanDetailsUpdate.plannedDate);
+    setDisplayPlans((current) =>
+      current.map((plan) =>
+        plan.id === pendingPlanDetailsUpdate.planId
+          ? {
+              ...plan,
+              title: pendingPlanDetailsUpdate.title,
+              plannedDate: normalizedDate,
+              acceptsNewPlaces: canPlanAcceptNewPlaces(normalizedDate)
+            }
+          : plan
+      )
+    );
+    router.refresh();
+    setPlanToEditDetails(null);
+    setEditedPlanTitle("");
+    setEditedPlanDetailsDate("");
+    setPendingPlanDetailsUpdate(null);
+  }, [pendingPlanDetailsUpdate, router, updatePlanDetailsState.requestId, updatePlanDetailsState.success]);
+
+  const planDetailError = addPlaceState.error ?? removePlaceState.error ?? deleteState.error ?? voteState.error;
   const isCreatePlanDateAllowed = isOptionalPlanDateAllowed(plannedDate, minPlanDate);
   const isEditedPlanDateAllowed = isOptionalPlanDateAllowed(editedPlannedDate, minPlanDate);
+  const isEditedPlanDetailsDateAllowed = isOptionalPlanDateAllowed(editedPlanDetailsDate, minPlanDate);
+  const isEditingSelectedPlan = Boolean(selectedPlan && planToEditDetails?.id === selectedPlan.id);
 
   function openEditDate(plan: GroupPlanItem) {
     setPlanToEditDate(plan);
     setEditedPlannedDate(toDateTimeLocalValue(plan.plannedDate));
     setMenuPlanId(null);
+  }
+
+  function openEditDetails(plan: GroupPlanItem) {
+    setPlanToEditDetails(plan);
+    setEditedPlanTitle(plan.title);
+    setEditedPlanDetailsDate(toDateTimeLocalValue(plan.plannedDate));
+    setMenuPlanId(null);
+  }
+
+  function submitPlanDetailsUpdate(plan: GroupPlanItem) {
+    const requestId = crypto.randomUUID();
+    const trimmedTitle = editedPlanTitle.trim();
+    const payload = new FormData();
+    payload.set("groupId", groupId);
+    payload.set("planId", plan.id);
+    payload.set("title", trimmedTitle);
+    payload.set("plannedDate", editedPlanDetailsDate);
+    payload.set("requestId", requestId);
+    setPendingPlanDetailsUpdate({
+      planId: plan.id,
+      plannedDate: editedPlanDetailsDate,
+      requestId,
+      title: trimmedTitle
+    });
+    startTransition(() => updatePlanDetailsActionForm(payload));
+  }
+
+  function submitCreatePlan() {
+    const requestId = crypto.randomUUID();
+    const normalizedDate = normalizePlanDateInput(plannedDate);
+    const payload = new FormData();
+    payload.set("groupId", groupId);
+    payload.set("title", title);
+    payload.set("description", description);
+    payload.set("plannedDate", plannedDate);
+    payload.set("requestId", requestId);
+    draftRoutePlaceIds.forEach((placeId) => payload.append("initialPlaceIds", placeId));
+    setPendingCreatePlan({
+      description: description.trim() ? description.trim() : null,
+      plannedDate: normalizedDate,
+      requestId,
+      selectedPlaces: draftRoutePlaces,
+      title: title.trim()
+    });
+    startTransition(() => createAction(payload));
+  }
+
+  function addRecommendedPlaceToPlan(plan: GroupPlanItem, place: GroupPlace) {
+    const requestId = crypto.randomUUID();
+    const payload = new FormData();
+    payload.set("groupId", groupId);
+    payload.set("planId", plan.id);
+    payload.set("placeId", place.id);
+    payload.set("plannedAt", "");
+    payload.set("note", "");
+    payload.set("requestId", requestId);
+    setPendingRecommendedPlace({
+      place,
+      planId: plan.id,
+      requestId
+    });
+    startTransition(() => addPlaceAction(payload));
   }
 
   function renderPlanMenu(plan: GroupPlanItem) {
@@ -495,6 +717,188 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
     );
   }
 
+  if (isCreateOpen) {
+    return (
+      <div className="-mx-1.5 min-h-[720px] bg-[#fff8f7] px-5 py-4">
+        <div className="mx-auto max-w-xl">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-700 transition hover:bg-white/80 hover:text-[#c6283a]"
+              onClick={() => {
+                setIsCreateOpen(false);
+                setDraftRoutePlaceIds([]);
+                setDismissedDraftRecommendationIds({});
+              }}
+              type="button"
+            >
+              <BackIcon />
+            </button>
+            <div className="h-9 w-9" aria-hidden="true" />
+          </div>
+
+          <div className="mt-7 space-y-4">
+            <label className="block space-y-2">
+              <span className="text-sm font-semibold text-zinc-700">Nombre del Plan</span>
+              <Input
+                className="bg-[#fdeeee]"
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="Ruta de tapas"
+                value={title}
+              />
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-semibold text-zinc-700">Fecha</span>
+              <Input
+                className="bg-[#fff1ef]"
+                min={minPlanDate}
+                onChange={(event) => setPlannedDate(event.target.value)}
+                type="date"
+                value={plannedDate}
+              />
+            </label>
+            {!isCreatePlanDateAllowed ? (
+              <p className="text-sm text-rose-600">La fecha del plan no puede ser anterior a hoy.</p>
+            ) : null}
+
+            <label className="block space-y-2">
+              <span className="text-sm font-semibold text-zinc-700">Descripcion</span>
+              <textarea
+                className="min-h-[110px] w-full rounded-[22px] border border-transparent bg-[#fff4f3] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-[#ff5a5f]"
+                maxLength={500}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Por ejemplo: tapas tranquilas y luego copa"
+                value={description}
+              />
+            </label>
+            {createState.error ? <p className="text-sm text-rose-600">{createState.error}</p> : null}
+          </div>
+
+          <div className="mt-8">
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="text-[28px] font-bold text-zinc-950">La Ruta</h4>
+              <span className="text-xs font-semibold text-[#c6283a]">{draftRoutePlaces.length} Paradas</span>
+            </div>
+
+            <div className="relative mt-5 pl-7">
+              <div className="absolute left-2 top-2 bottom-8 w-px bg-rose-200" />
+
+              <div className="space-y-4">
+                {draftRoutePlaces.map((place, index) => (
+                  <div className="relative" key={place.id}>
+                    <div
+                      className={`absolute left-[-1.65rem] top-7 h-4 w-4 rounded-full border-2 ${
+                        index === draftRoutePlaces.length - 1 ? "border-rose-300" : "border-[#c6283a]"
+                      } bg-[#fff8f7]`}
+                    />
+                    <div className="flex items-center gap-3 rounded-[24px] bg-white p-3 shadow-[0_12px_30px_rgba(181,35,48,0.08)]">
+                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-[18px] bg-rose-100">
+                        {place.imageUrl ? (
+                          <img alt={place.name} className="h-full w-full object-cover" src={place.imageUrl} />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-[#c6283a]">
+                            {place.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words text-base font-bold leading-5 text-zinc-950">{place.name}</p>
+                        <div className="mt-1 flex items-start gap-1.5 text-sm text-zinc-500">
+                          <LocationIcon />
+                          <span className="line-clamp-2">
+                            {place.address}
+                            {place.city ? `, ${place.city}` : ""}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        aria-label="Quitar parada"
+                        className="rounded-full p-2 text-zinc-300 transition hover:text-rose-500"
+                        onClick={() => setDraftRoutePlaceIds((current) => current.filter((placeId) => placeId !== place.id))}
+                        type="button"
+                      >
+                        <TrashIcon />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {draftRecommendedPlaces.map((place) => (
+                  <div className="relative" key={place.id}>
+                    <div className="absolute left-[-1.65rem] top-7 h-4 w-4 rounded-full border-2 border-dashed border-rose-200 bg-[#fff8f7]" />
+                    <div className="flex items-center gap-3 rounded-[24px] border border-dashed border-rose-200 bg-[#fff8f7] p-3">
+                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-[18px] bg-rose-100">
+                        {place.imageUrl ? (
+                          <img alt={place.name} className="h-full w-full object-cover" src={place.imageUrl} />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-[#c6283a]">
+                            {place.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words text-base font-bold leading-5 text-zinc-950">{place.name}</p>
+                        <div className="mt-1 flex items-start gap-1.5 text-sm text-zinc-500">
+                          <LocationIcon />
+                          <span className="line-clamp-2">
+                            {place.address}
+                            {place.city ? `, ${place.city}` : ""}
+                          </span>
+                        </div>
+                        <span className="mt-2 inline-flex rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-[#c6283a]">
+                          Recomendado
+                        </span>
+                      </div>
+                      <div className="flex shrink-0 flex-col gap-2">
+                        <button
+                          aria-label="Anadir lugar recomendado"
+                          className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
+                          onClick={() => setDraftRoutePlaceIds((current) => [...current, place.id])}
+                          type="button"
+                        >
+                          <CheckIcon />
+                        </button>
+                        <button
+                          aria-label="Descartar recomendacion"
+                          className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-rose-500 transition hover:bg-rose-50"
+                          onClick={() => setDismissedDraftRecommendationIds((current) => ({ ...current, [place.id]: true }))}
+                          type="button"
+                        >
+                          <CloseIcon />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {!draftRoutePlaces.length && !draftRecommendedPlaces.length ? (
+                  <div className="relative">
+                    <div className="absolute left-[-1.65rem] top-6 h-4 w-4 rounded-full border-2 border-rose-200 bg-[#fff8f7]" />
+                    <div className="rounded-[24px] border-2 border-dashed border-rose-200 px-4 py-5 text-sm font-semibold text-zinc-500">
+                      Todavia no hay lugares del grupo para recomendar.
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-8">
+            <Button
+              className="h-14 rounded-[22px] text-base"
+              disabled={!title.trim() || !isCreatePlanDateAllowed || isCreating}
+              fullWidth
+              onClick={submitCreatePlan}
+              type="button"
+            >
+              {isCreating ? "Creando..." : "Crear Plan"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (selectedPlan) {
     return (
       <div className="-mx-1.5 min-h-[720px] bg-[#fff8f7] px-5 py-4">
@@ -507,32 +911,66 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
             >
               <BackIcon />
             </button>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-[0_8px_18px_rgba(24,24,27,0.08)]">
-              <span className="text-sm font-bold text-[#c6283a]">MaP</span>
-            </div>
-          </div>
-
-          <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-rose-100 px-3 py-1.5 text-xs font-semibold text-[#c6283a]">
-            <GroupIcon />
-            {groupName}
+            {selectedPlan.isCreator ? (
+              <button
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-white px-3 text-sm font-semibold text-[#c6283a] shadow-[0_8px_18px_rgba(24,24,27,0.08)] transition hover:bg-rose-50"
+                onClick={() => {
+                  if (isEditingSelectedPlan) {
+                    setPlanToEditDetails(null);
+                    return;
+                  }
+                  openEditDetails(selectedPlan);
+                }}
+                type="button"
+              >
+                <PencilIcon />
+                {isEditingSelectedPlan ? "Cancelar" : "Editar"}
+              </button>
+            ) : (
+              <div className="h-9 w-9" aria-hidden="true" />
+            )}
           </div>
 
           <div className="mt-7 space-y-4">
             <label className="block space-y-2">
               <span className="text-sm font-semibold text-zinc-700">Nombre del Plan</span>
-              <div className="flex min-h-14 items-center gap-3 rounded-[22px] bg-[#fdeeee] px-4 py-3 text-zinc-900">
-                <PencilIcon />
-                <span className="text-[15px] font-semibold leading-5">{selectedPlan.title}</span>
-              </div>
+              {isEditingSelectedPlan ? (
+                <Input
+                  className="bg-[#fdeeee]"
+                  onChange={(event) => setEditedPlanTitle(event.target.value)}
+                  value={editedPlanTitle}
+                />
+              ) : (
+                <div className="flex min-h-14 items-center gap-3 rounded-[22px] bg-[#fdeeee] px-4 py-3 text-zinc-900">
+                  <PencilIcon />
+                  <span className="text-[15px] font-semibold leading-5">{selectedPlan.title}</span>
+                </div>
+              )}
             </label>
 
             <label className="block space-y-2">
               <span className="text-sm font-semibold text-zinc-700">Fecha</span>
-              <div className="flex min-h-14 items-center gap-3 rounded-[22px] bg-[#fff1ef] px-4 py-3 text-zinc-900">
-                <CalendarIcon />
-                <span className="text-[15px] font-semibold leading-5">{formatPlanDate(selectedPlan.plannedDate)}</span>
-              </div>
+              {isEditingSelectedPlan ? (
+                <Input
+                  className="bg-[#fff1ef]"
+                  min={minPlanDate}
+                  onChange={(event) => setEditedPlanDetailsDate(event.target.value)}
+                  type="date"
+                  value={editedPlanDetailsDate}
+                />
+              ) : (
+                <div className="flex min-h-14 items-center gap-3 rounded-[22px] bg-[#fff1ef] px-4 py-3 text-zinc-900">
+                  <CalendarIcon />
+                  <span className="text-[15px] font-semibold leading-5">{formatPlanDate(selectedPlan.plannedDate)}</span>
+                </div>
+              )}
             </label>
+            {isEditingSelectedPlan && !isEditedPlanDetailsDateAllowed ? (
+              <p className="text-sm text-rose-600">La fecha del plan no puede ser anterior a hoy.</p>
+            ) : null}
+            {isEditingSelectedPlan && updatePlanDetailsState.error ? (
+              <p className="text-sm text-rose-600">{updatePlanDetailsState.error}</p>
+            ) : null}
           </div>
 
           <div className="mt-8">
@@ -577,7 +1015,7 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
                           </span>
                         ) : null}
                       </div>
-                      {selectedPlan.isCreator ? (
+                      {selectedPlan.isCreator && !place.id.startsWith("optimistic-") ? (
                         <button
                           className="rounded-full p-2 text-zinc-300 transition hover:text-rose-500"
                           onClick={() => setPlanPlaceToDeleteId(place.id)}
@@ -589,6 +1027,72 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
                     </div>
                   </div>
                 ))}
+
+                {selectedPlan.isCreator && selectedPlan.acceptsNewPlaces && recommendedPlaces.length ? (
+                  <>
+                    {recommendedPlaces.map((place) => {
+                      const isPendingThisPlace =
+                        isAddingRecommendedPlace &&
+                        pendingRecommendedPlace?.planId === selectedPlan.id &&
+                        pendingRecommendedPlace.place.id === place.id;
+
+                      return (
+                        <div className="relative" key={place.id}>
+                          <div className="absolute left-[-1.65rem] top-7 h-4 w-4 rounded-full border-2 border-dashed border-rose-200 bg-[#fff8f7]" />
+                          <div className="flex items-center gap-3 rounded-[24px] border border-dashed border-rose-200 bg-[#fff8f7] p-3">
+                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-[18px] bg-rose-100">
+                              {place.imageUrl ? (
+                                <img alt={place.name} className="h-full w-full object-cover" src={place.imageUrl} />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-[#c6283a]">
+                                  {place.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="break-words text-base font-bold leading-5 text-zinc-950">{place.name}</p>
+                              <div className="mt-1 flex items-start gap-1.5 text-sm text-zinc-500">
+                                <LocationIcon />
+                                <span className="line-clamp-2">
+                                  {place.address}
+                                  {place.city ? `, ${place.city}` : ""}
+                                </span>
+                              </div>
+                              <span className="mt-2 inline-flex rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-[#c6283a]">
+                                Recomendado
+                              </span>
+                            </div>
+                            <div className="flex shrink-0 flex-col gap-2">
+                              <button
+                                aria-label="Anadir lugar recomendado"
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+                                disabled={isAddingRecommendedPlace}
+                                onClick={() => addRecommendedPlaceToPlan(selectedPlan, place)}
+                                type="button"
+                              >
+                                {isPendingThisPlace ? (
+                                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-700" />
+                                ) : (
+                                  <CheckIcon />
+                                )}
+                              </button>
+                              <button
+                                aria-label="Descartar recomendacion"
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-rose-500 transition hover:bg-rose-50"
+                                onClick={() =>
+                                  setDismissedRecommendationIds((current) => ({ ...current, [`${selectedPlan.id}:${place.id}`]: true }))
+                                }
+                                type="button"
+                              >
+                                <CloseIcon />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                ) : null}
 
                 <div className="relative">
                   <div className="absolute left-[-1.65rem] top-6 h-4 w-4 rounded-full border-2 border-rose-200 bg-[#fff8f7]" />
@@ -679,8 +1183,20 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
           {planDetailError ? <p className="mt-4 text-sm text-rose-600">{planDetailError}</p> : null}
 
           <div className="pt-8">
-            <Button className="h-14 rounded-[22px] text-base" fullWidth type="button">
-              {selectedPlan.isCreator ? "Guardar Plan" : "Ver Plan"}
+            <Button
+              className="h-14 rounded-[22px] text-base"
+              disabled={isEditingSelectedPlan && (!editedPlanTitle.trim() || !isEditedPlanDetailsDateAllowed || isUpdatingPlanDetails)}
+              fullWidth
+              onClick={() => {
+                if (isEditingSelectedPlan) {
+                  submitPlanDetailsUpdate(selectedPlan);
+                  return;
+                }
+                setSelectedPlanId(null);
+              }}
+              type="button"
+            >
+              {isEditingSelectedPlan ? (isUpdatingPlanDetails ? "Guardando..." : "Guardar cambios") : selectedPlan.isCreator ? "Guardar Plan" : "Ver Plan"}
             </Button>
           </div>
         </div>
@@ -778,10 +1294,9 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
             <Input label="Nombre del plan" onChange={(event) => setTitle(event.target.value)} value={title} />
             <Input
               label="Fecha del plan"
-              hint="Formato dia/mes/ano. Tiene que ser hoy o una fecha futura."
-              inputMode="numeric"
+              min={minPlanDate}
               onChange={(event) => setPlannedDate(event.target.value)}
-              placeholder="dd/mm/aaaa"
+              type="date"
               value={plannedDate}
             />
             {!isCreatePlanDateAllowed ? (
@@ -852,15 +1367,16 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
                           button: "border border-rose-200 bg-white text-[#c6283a] hover:bg-rose-50"
                         };
 
-                  const previewPlaces = plan.places.slice(0, 2);
+                  const previewPlaces = plan.places.slice(0, 4);
+                  const hiddenPlacesCount = Math.max(0, plan.places.length - previewPlaces.length);
                   return (
                     <div className="w-full" key={plan.id}>
                       <div className="rounded-[28px] border border-rose-100/60 bg-white p-4 shadow-[0_10px_32px_rgba(181,35,48,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_38px_rgba(181,35,48,0.12)]">
                         <div className="flex items-start justify-between gap-3">
                           <button className="flex min-w-0 flex-1 gap-3 text-left" onClick={() => setSelectedPlanId(plan.id)} type="button">
-                            <div className={`flex h-14 w-16 shrink-0 flex-col items-center justify-center rounded-2xl ${accent.box}`}>
-                              <span className="text-[15px] font-bold leading-none">{formatDayMonth(plan.plannedDate)}</span>
-                              <span className="mt-1 text-[10px] font-bold leading-none">{formatYearShort(plan.plannedDate)}</span>
+                            <div className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl ${accent.box}`}>
+                              <span className="text-xl font-bold leading-none">{formatDayMonth(plan.plannedDate)}</span>
+                              <span className="text-[10px] font-bold uppercase tracking-[0.12em]">{formatYearShort(plan.plannedDate)}</span>
                             </div>
                             <div className="min-w-0">
                               <p className="truncate text-[22px] font-bold leading-7 text-zinc-950">{plan.title}</p>
@@ -873,20 +1389,28 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
                         <button className="mt-4 block w-full text-left" onClick={() => setSelectedPlanId(plan.id)} type="button">
                           {previewPlaces.length ? (
                             <div className="rounded-[20px] bg-[#fff4f3] p-3">
-                              {previewPlaces.map((place, placeIndex) => (
-                                <div key={place.id}>
-                                  <div className="flex items-center gap-2 text-sm text-zinc-800">
-                                    <span className={`h-2 w-2 rounded-full ${placeIndex === 0 ? "bg-[#c6283a]" : "bg-emerald-500"}`} />
-                                    <span className="truncate">
-                                      {place.name}
-                                      {place.plannedAt ? ` (${formatPlanTime(place.plannedAt)})` : ""}
-                                    </span>
+                              {previewPlaces.map((place, placeIndex) => {
+                                const hasNextRow = placeIndex < previewPlaces.length - 1 || hiddenPlacesCount > 0;
+
+                                return (
+                                  <div key={place.id}>
+                                    <div className="flex items-center gap-2 text-sm text-zinc-800">
+                                      <span className={`h-2 w-2 rounded-full ${placeIndex === 0 ? "bg-[#c6283a]" : "bg-emerald-500"}`} />
+                                      <span className="truncate">
+                                        {place.name}
+                                        {place.plannedAt ? ` (${formatPlanTime(place.plannedAt)})` : ""}
+                                      </span>
+                                    </div>
+                                    {hasNextRow ? <div className="ml-[3px] mt-1 h-4 border-l border-dashed border-rose-200" /> : null}
                                   </div>
-                                  {placeIndex < previewPlaces.length - 1 ? (
-                                    <div className="ml-[3px] mt-1 h-4 border-l border-dashed border-rose-200" />
-                                  ) : null}
+                                );
+                              })}
+                              {hiddenPlacesCount > 0 ? (
+                                <div className="flex items-center gap-2 text-sm font-semibold text-[#c6283a]">
+                                  <span className="h-2 w-2 rounded-full bg-rose-300" />
+                                  <span>+{hiddenPlacesCount} mas</span>
                                 </div>
-                              ))}
+                              ) : null}
                             </div>
                           ) : null}
                         </button>
@@ -1045,10 +1569,9 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
             <div className="mt-5 space-y-4">
               <Input
                 label="Nueva fecha"
-                hint="Formato dia/mes/ano. Tiene que ser hoy o una fecha futura."
-                inputMode="numeric"
+                min={minPlanDate}
                 onChange={(event) => setEditedPlannedDate(event.target.value)}
-                placeholder="dd/mm/aaaa"
+                type="date"
                 value={editedPlannedDate}
               />
               {!isEditedPlanDateAllowed ? (
@@ -1062,10 +1585,17 @@ export function GroupPlansTab({ groupId, groupName, plans, canCreatePlans, onNav
                 <Button
                   disabled={!isEditedPlanDateAllowed || isUpdatingPlanDate}
                   onClick={() => {
+                    const requestId = crypto.randomUUID();
                     const payload = new FormData();
                     payload.set("groupId", groupId);
                     payload.set("planId", planToEditDate.id);
                     payload.set("plannedDate", editedPlannedDate);
+                    payload.set("requestId", requestId);
+                    setPendingPlanDateUpdate({
+                      planId: planToEditDate.id,
+                      plannedDate: editedPlannedDate,
+                      requestId
+                    });
                     startTransition(() => updatePlanDateActionForm(payload));
                   }}
                   type="button"

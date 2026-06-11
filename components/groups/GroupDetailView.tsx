@@ -262,6 +262,7 @@ export function GroupDetailView({
                 groupName={group.name}
                 onNavigateToPlaces={() => setCurrentTab("lugares")}
                 plans={plans}
+                places={places}
               />
             </div>
           </div>

@@ -396,6 +396,17 @@ export const updateGroupPlanDateSchema = z.object({
   plannedDate: nullablePlanDateSchema
 });
 
+export const updateGroupPlanDetailsSchema = z.object({
+  groupId: uuidSchema,
+  planId: uuidSchema,
+  title: z
+    .string()
+    .trim()
+    .min(1, "El nombre del plan es obligatorio.")
+    .max(100, "El nombre del plan no puede superar 100 caracteres."),
+  plannedDate: nullablePlanDateSchema
+});
+
 export const removeGroupPlanPlaceSchema = z.object({
   groupId: uuidSchema,
   planId: uuidSchema,
@@ -566,6 +577,7 @@ export type AddPlaceToGroupPlanInput = z.infer<typeof addPlaceToGroupPlanSchema>
 export type VoteGroupPlanInput = z.infer<typeof voteGroupPlanSchema>;
 export type DeleteGroupPlanInput = z.infer<typeof deleteGroupPlanSchema>;
 export type UpdateGroupPlanDateInput = z.infer<typeof updateGroupPlanDateSchema>;
+export type UpdateGroupPlanDetailsInput = z.infer<typeof updateGroupPlanDetailsSchema>;
 export type RemoveGroupPlanPlaceInput = z.infer<typeof removeGroupPlanPlaceSchema>;
 export type RemoveGroupMemberInput = z.infer<typeof removeGroupMemberSchema>;
 export type SendFriendRequestInput = z.infer<typeof sendFriendRequestSchema>;
