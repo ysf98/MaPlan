@@ -198,6 +198,10 @@ function voteSummary(plan: GroupPlanItem): string {
     return `${plan.attendingCount} confirmados`;
   }
 
+  if (plan.maybeCount > 0) {
+    return `${plan.maybeCount} quizas`;
+  }
+
   if (plan.notAttendingCount > 0) {
     return `${plan.notAttendingCount} no van`;
   }
@@ -481,6 +485,7 @@ export function GroupPlansTab({
       places: pendingCreatePlan.selectedPlaces.map(toPlanPlaceItem),
       votes: [],
       attendingCount: 0,
+      maybeCount: 0,
       notAttendingCount: 0,
       currentUserVote: null,
       acceptsNewPlaces: canPlanAcceptNewPlaces(pendingCreatePlan.plannedDate),
@@ -1176,7 +1181,20 @@ export function GroupPlansTab({
                   </div>
                   <p className="mt-1 text-sm font-semibold">Voy</p>
                 </button>
-                <button className="rounded-[20px] bg-white/70 p-3 text-center text-zinc-500 transition" disabled type="button">
+                <button
+                  className={`rounded-[20px] p-3 text-center transition ${
+                    selectedPlan.currentUserVote === "maybe" ? "bg-sky-100 text-sky-700" : "bg-white/70 text-zinc-500"
+                  }`}
+                  disabled={isVoting}
+                  onClick={() => {
+                    const payload = new FormData();
+                    payload.set("groupId", groupId);
+                    payload.set("planId", selectedPlan.id);
+                    payload.set("vote", "maybe");
+                    startTransition(() => voteAction(payload));
+                  }}
+                  type="button"
+                >
                   <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full">
                     <QuestionIcon />
                   </div>

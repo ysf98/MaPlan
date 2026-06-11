@@ -737,7 +737,7 @@ export type PlaceProvider = "manual" | "mapbox" | "google_places"
 export type GroupJoinPolicy = "invite_only" | "open_by_code" | "request_to_join"
 export type GroupJoinRequestStatus = "pending" | "approved" | "rejected"
 export type GroupPrivacy = "privado" | "abierto"
-export type GroupPlanVote = "attending" | "not_attending"
+export type GroupPlanVote = "attending" | "maybe" | "not_attending"
 export type FriendRequestStatus = "pending" | "accepted" | "rejected"
 export type GroupInvitationStatus = "pending" | "accepted" | "rejected"
 

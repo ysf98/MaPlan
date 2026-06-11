@@ -7,14 +7,17 @@ import {
   removeGroupPlanPlaceAction,
   updateGroupPlanDetailsAction,
   updateGroupPlanPlaceTimeAction,
+  voteGroupPlanAction,
   type RemoveGroupPlanPlaceActionState,
   type UpdateGroupPlanDetailsActionState,
-  type UpdateGroupPlanPlaceTimeActionState
+  type UpdateGroupPlanPlaceTimeActionState,
+  type VoteGroupPlanActionState
 } from "@/app/groups/[groupId]/actions";
 import { MaplanMinimalIcon } from "@/components/branding/MaplanMinimalIcon";
 import { BottomDockNav } from "@/components/navigation/BottomDockNav";
 import { Input } from "@/components/ui/Input";
 import type { GroupPlanItem, GroupPlanPlaceItem } from "@/lib/groupPlans";
+import type { GroupPlanVote } from "@/types/supabase";
 
 type GroupPlanDetailViewProps = {
   groupId: string;
@@ -32,6 +35,7 @@ type MarkerPoint = {
 const updateDetailsInitialState: UpdateGroupPlanDetailsActionState = { error: null, requestId: null, success: false };
 const updateTimeInitialState: UpdateGroupPlanPlaceTimeActionState = { error: null, planPlaceId: null, requestId: null, success: false };
 const removePlaceInitialState: RemoveGroupPlanPlaceActionState = { error: null, planPlaceId: null, requestId: null, success: false };
+const voteInitialState: VoteGroupPlanActionState = { error: null, success: false };
 const PLAN_TIME_ZONE = "Europe/Madrid";
 
 function extractPlanDatePart(date: string | null): string | null {
@@ -236,9 +240,11 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
   const [pendingDetailsRequestId, setPendingDetailsRequestId] = useState<string | null>(null);
   const [pendingTimeRequestIds, setPendingTimeRequestIds] = useState<Record<string, string>>({});
   const [pendingRemovedPlaceIds, setPendingRemovedPlaceIds] = useState<Record<string, true>>({});
+  const [pendingVote, setPendingVote] = useState<GroupPlanVote | null>(null);
   const [detailsState, updateDetailsAction, isSavingDetails] = useActionState(updateGroupPlanDetailsAction, updateDetailsInitialState);
   const [timeState, updateTimeAction, isSavingTime] = useActionState(updateGroupPlanPlaceTimeAction, updateTimeInitialState);
   const [removeState, removePlaceAction, isRemovingPlace] = useActionState(removeGroupPlanPlaceAction, removePlaceInitialState);
+  const [voteState, voteAction, isVoting] = useActionState(voteGroupPlanAction, voteInitialState);
   const sortedPlaces = useMemo(() => sortPlanPlaces(localPlan.places), [localPlan.places]);
   const mapUrl = buildMapboxStaticUrl(sortedPlaces, mapboxToken);
   const markerPoints = getMarkerPoints(sortedPlaces);
@@ -292,6 +298,15 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
     });
     router.refresh();
   }, [removeState.planPlaceId, removeState.success, router]);
+
+  useEffect(() => {
+    if (!voteState.success) {
+      return;
+    }
+
+    setPendingVote(null);
+    router.refresh();
+  }, [router, voteState.success]);
 
   function saveChanges() {
     const detailsRequestId = crypto.randomUUID();
@@ -354,8 +369,31 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
     startTransition(() => removePlaceAction(payload));
   }
 
+  function applyLocalVote(nextVote: GroupPlanVote) {
+    setLocalPlan((current) => {
+      const previousVote = current.currentUserVote;
+      return {
+        ...current,
+        attendingCount: current.attendingCount + (nextVote === "attending" ? 1 : 0) - (previousVote === "attending" ? 1 : 0),
+        maybeCount: current.maybeCount + (nextVote === "maybe" ? 1 : 0) - (previousVote === "maybe" ? 1 : 0),
+        notAttendingCount: current.notAttendingCount + (nextVote === "not_attending" ? 1 : 0) - (previousVote === "not_attending" ? 1 : 0),
+        currentUserVote: nextVote
+      };
+    });
+  }
+
+  function submitVote(nextVote: GroupPlanVote) {
+    const payload = new FormData();
+    payload.set("groupId", groupId);
+    payload.set("planId", localPlan.id);
+    payload.set("vote", nextVote);
+    setPendingVote(nextVote);
+    applyLocalVote(nextVote);
+    startTransition(() => voteAction(payload));
+  }
+
   return (
-    <div className="min-h-screen bg-[#fff8f7] pb-28 text-[#261817]">
+    <div className="min-h-screen bg-[#fff8f7] pb-44 text-[#261817]">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/50 bg-[#fff8f7]/85 px-5 py-2 backdrop-blur-xl">
         <div className="mx-auto flex h-12 max-w-3xl items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -394,18 +432,6 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
             <div className="absolute inset-0 bg-[linear-gradient(135deg,#88a99d_0%,#e7eee7_52%,#fff0ef_100%)]" />
           )}
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(38,24,23,0.08)_0%,rgba(255,248,247,0)_48%,#fff8f7_100%)]" />
-          <svg className="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-            {markerPoints.length > 1 ? (
-              <polyline
-                fill="none"
-                points={markerPoints.map((point) => `${point.x},${point.y}`).join(" ")}
-                stroke="#ff5a5f"
-                strokeDasharray="4 4"
-                strokeLinecap="round"
-                strokeWidth="1.4"
-              />
-            ) : null}
-          </svg>
           {markerPoints.map((point, index) => (
             <div
               className="absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white shadow-[0_12px_28px_rgba(38,24,23,0.22)]"
@@ -560,6 +586,28 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
               <h2 className="text-xl font-extrabold text-zinc-950">Asistentes</h2>
               <span className="text-xs font-bold text-[#c6283a]">Ver todos</span>
             </div>
+            {voteState.error ? <p className="mt-3 text-sm font-semibold text-rose-600">{voteState.error}</p> : null}
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {[
+                { label: "Ire", value: "attending", active: "bg-emerald-100 text-emerald-700", idle: "bg-white/80 text-zinc-600" },
+                { label: "Quizas", value: "maybe", active: "bg-sky-100 text-sky-700", idle: "bg-white/80 text-zinc-600" },
+                { label: "No", value: "not_attending", active: "bg-rose-100 text-rose-600", idle: "bg-white/80 text-zinc-600" }
+              ].map((option) => {
+                const isActive = localPlan.currentUserVote === option.value;
+                const isPending = pendingVote === option.value && isVoting;
+                return (
+                  <button
+                    className={`h-12 rounded-[18px] text-sm font-extrabold transition ${isActive ? option.active : option.idle}`}
+                    disabled={isVoting}
+                    key={option.value}
+                    onClick={() => submitVote(option.value as GroupPlanVote)}
+                    type="button"
+                  >
+                    {isPending ? "Guardando..." : option.label}
+                  </button>
+                );
+              })}
+            </div>
             <div className="mt-4 flex items-center gap-3">
               <div className="flex -space-x-3">
                 {Array.from({ length: Math.max(1, Math.min(localPlan.attendingCount, 3)) }).map((_, index) => (
@@ -573,7 +621,9 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
                   </div>
                 ) : null}
               </div>
-              <span className="text-sm font-semibold text-zinc-600">Confirmados</span>
+              <span className="text-sm font-semibold text-zinc-600">
+                {localPlan.attendingCount} confirmados · {localPlan.maybeCount} quizas · {localPlan.notAttendingCount} no
+              </span>
             </div>
           </div>
         </section>

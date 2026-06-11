@@ -99,7 +99,7 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("create table if not exists public.group_plan_votes");
     expect(sql).toContain("group_plan_places_plan_place_unique unique (plan_id, place_id)");
     expect(sql).toContain("group_plan_votes_plan_user_unique unique (plan_id, user_id)");
-    expect(sql).toContain("check (vote in ('attending', 'not_attending'))");
+    expect(sql).toContain("check (vote in ('attending', 'maybe', 'not_attending'))");
     expect(sql).toContain("create policy group_plans_select_group_member");
     expect(sql).toContain("create policy group_plan_places_insert_editor_only");
     expect(sql).toContain("create policy group_plan_places_update_creator_only");

@@ -155,6 +155,14 @@ describe("group plan schemas", () => {
         planId: "22222222-2222-4222-8222-222222222222",
         vote: "maybe"
       }).success
+    ).toBe(true);
+
+    expect(
+      voteGroupPlanSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        vote: "unknown"
+      }).success
     ).toBe(false);
   });
 

@@ -125,6 +125,7 @@ export type GroupPlanItem = {
   places: GroupPlanPlaceItem[];
   votes: Array<{ userId: string; vote: GroupPlanVote }>;
   attendingCount: number;
+  maybeCount: number;
   notAttendingCount: number;
   currentUserVote: GroupPlanVote | null;
   acceptsNewPlaces: boolean;
@@ -132,7 +133,7 @@ export type GroupPlanItem = {
 };
 
 function isGroupPlanVote(value: string): value is GroupPlanVote {
-  return value === "attending" || value === "not_attending";
+  return value === "attending" || value === "maybe" || value === "not_attending";
 }
 
 function normalizeOptionalText(value: string | null | undefined): string | null {
@@ -309,6 +310,7 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
       places: placesByPlanId.get(plan.id) ?? [],
       votes,
       attendingCount: votes.filter((vote) => vote.vote === "attending").length,
+      maybeCount: votes.filter((vote) => vote.vote === "maybe").length,
       notAttendingCount: votes.filter((vote) => vote.vote === "not_attending").length,
       currentUserVote: votes.find((vote) => vote.userId === userId)?.vote ?? null,
       acceptsNewPlaces: canPlanAcceptNewPlaces(plan.planned_date),

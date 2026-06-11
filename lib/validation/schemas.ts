@@ -11,7 +11,7 @@ export const PLACE_SOURCE_VALUES = ["manual", "google_maps", "tiktok", "instagra
 export const PLACE_PROVIDER_VALUES = ["manual", "mapbox", "google_places"] as const;
 export const FRIEND_REQUEST_DECISION_VALUES = ["accepted", "rejected"] as const;
 export const GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES = ["popular", "food", "coffee", "plans", "sports"] as const;
-export const GROUP_PLAN_VOTE_VALUES = ["attending", "not_attending"] as const;
+export const GROUP_PLAN_VOTE_VALUES = ["attending", "maybe", "not_attending"] as const;
 const uuidSchema = z.string().uuid("Identificador invalido.");
 const nullableDateTimeSchema = z
   .string()

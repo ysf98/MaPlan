@@ -43,10 +43,9 @@ begin
       add constraint group_plan_votes_plan_user_unique unique (plan_id, user_id);
   end if;
 
-  if not exists (select 1 from pg_constraint where conname = 'group_plan_votes_vote_check') then
-    alter table public.group_plan_votes
-      add constraint group_plan_votes_vote_check check (vote in ('attending', 'not_attending'));
-  end if;
+  alter table public.group_plan_votes drop constraint if exists group_plan_votes_vote_check;
+  alter table public.group_plan_votes
+    add constraint group_plan_votes_vote_check check (vote in ('attending', 'maybe', 'not_attending'));
 end $$;
 
 create index if not exists idx_group_plans_group_created
