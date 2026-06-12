@@ -15,6 +15,18 @@ type GroupChatMessageRow = {
   updated_at: string;
 };
 
+type ChatPlanContextRow = {
+  id: string;
+  title: string;
+};
+
+type ChatPlaceContextRow = {
+  address: string | null;
+  id: string;
+  image_url: string | null;
+  name: string;
+};
+
 type CreateGroupChatMessageInput = {
   userId: string;
   groupId: string;
@@ -46,7 +58,11 @@ export type GroupChatMessageItem = {
   content: string;
   kind: GroupChatMessageKind;
   planId: string | null;
+  planTitle: string | null;
   placeId: string | null;
+  placeAddress: string | null;
+  placeImageUrl: string | null;
+  placeName: string | null;
   planPlaceId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -102,6 +118,18 @@ export async function getGroupChatMessagesForUser(userId: string, groupId: strin
 
   const rows = data as GroupChatMessageRow[];
   const profileById = await getProfileMap(rows.map((row) => row.sender_id));
+  const planIds = Array.from(new Set(rows.map((row) => row.plan_id).filter(Boolean) as string[]));
+  const placeIds = Array.from(new Set(rows.map((row) => row.place_id).filter(Boolean) as string[]));
+  const [plansResult, placesResult] = await Promise.all([
+    planIds.length
+      ? supabase.from("group_plans").select("id, title").eq("group_id", groupId).in("id", planIds)
+      : Promise.resolve({ data: [] as ChatPlanContextRow[] }),
+    placeIds.length
+      ? supabase.from("places").select("id, name, address, image_url").eq("group_id", groupId).in("id", placeIds)
+      : Promise.resolve({ data: [] as ChatPlaceContextRow[] })
+  ]);
+  const planById = new Map(((plansResult.data || []) as ChatPlanContextRow[]).map((plan) => [plan.id, plan]));
+  const placeById = new Map(((placesResult.data || []) as ChatPlaceContextRow[]).map((place) => [place.id, place]));
 
   return rows.flatMap((row) => {
     if (!isGroupChatMessageKind(row.kind)) {
@@ -109,6 +137,8 @@ export async function getGroupChatMessagesForUser(userId: string, groupId: strin
     }
 
     const profile = profileById.get(row.sender_id);
+    const plan = row.plan_id ? planById.get(row.plan_id) : null;
+    const place = row.place_id ? placeById.get(row.place_id) : null;
     return [
       {
         id: row.id,
@@ -119,7 +149,11 @@ export async function getGroupChatMessagesForUser(userId: string, groupId: strin
         content: row.content,
         kind: row.kind,
         planId: row.plan_id,
+        planTitle: plan?.title ?? null,
         placeId: row.place_id,
+        placeAddress: place?.address ?? null,
+        placeImageUrl: place?.image_url ?? null,
+        placeName: place?.name ?? null,
         planPlaceId: row.plan_place_id,
         createdAt: row.created_at,
         updatedAt: row.updated_at

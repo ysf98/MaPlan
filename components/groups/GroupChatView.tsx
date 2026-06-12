@@ -13,13 +13,19 @@ import {
 import { MaplanMinimalIcon } from "@/components/branding/MaplanMinimalIcon";
 import { Button } from "@/components/ui/Button";
 import type { GroupChatMessageItem } from "@/lib/groupChat";
+import type { GroupPlanItem } from "@/lib/groupPlans";
+import type { GroupPlace } from "@/lib/places/shared";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type GroupChatViewProps = {
   currentUserId: string;
   groupId: string;
   groupName: string;
+  initialSelectedPlaceId?: string | null;
+  initialSelectedPlanId?: string | null;
   messages: GroupChatMessageItem[];
+  places: GroupPlace[];
+  plans: GroupPlanItem[];
 };
 
 const createInitialState: CreateGroupChatMessageActionState = { error: null, success: false };
@@ -28,6 +34,20 @@ const deleteInitialState: DeleteGroupChatMessageActionState = { error: null, suc
 type LocalChatMessage = GroupChatMessageItem & {
   deliveryStatus?: "sending";
 };
+
+type ChatContext =
+  | {
+      id: string;
+      kind: "place";
+      subtitle: string | null;
+      title: string;
+    }
+  | {
+      id: string;
+      kind: "plan";
+      subtitle: string | null;
+      title: string;
+    };
 
 function getInitial(username: string | null): string {
   const trimmed = username?.trim() ?? "";
@@ -56,11 +76,65 @@ function BackIcon() {
   );
 }
 
-export function GroupChatView({ currentUserId, groupId, groupName, messages }: GroupChatViewProps) {
+function PlusIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function getContextLabel(kind: ChatContext["kind"]): string {
+  return kind === "plan" ? "Plan" : "Lugar";
+}
+
+function buildMessageContext(message: GroupChatMessageItem): ChatContext | null {
+  if (message.planId) {
+    return {
+      id: message.planId,
+      kind: "plan",
+      subtitle: null,
+      title: message.planTitle || "Plan"
+    };
+  }
+
+  if (message.placeId) {
+    return {
+      id: message.placeId,
+      kind: "place",
+      subtitle: message.placeAddress,
+      title: message.placeName || "Lugar"
+    };
+  }
+
+  return null;
+}
+
+function getContextHref(groupId: string, context: ChatContext): string {
+  if (context.kind === "plan") {
+    return `/groups/${groupId}/plans/${context.id}`;
+  }
+
+  return `/groups/${groupId}?tab=mapa&placeId=${context.id}`;
+}
+
+export function GroupChatView({
+  currentUserId,
+  groupId,
+  groupName,
+  initialSelectedPlaceId = null,
+  initialSelectedPlanId = null,
+  messages,
+  places,
+  plans
+}: GroupChatViewProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState("");
+  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
+  const [attachMode, setAttachMode] = useState<ChatContext["kind"] | null>(null);
+  const [selectedContext, setSelectedContext] = useState<ChatContext | null>(null);
   const [optimisticMessages, setOptimisticMessages] = useState<LocalChatMessage[]>([]);
   const [createState, createAction, isCreating] = useActionState(createGroupChatMessageAction, createInitialState);
   const [deleteState, deleteAction, isDeleting] = useActionState(deleteGroupChatMessageAction, deleteInitialState);
@@ -72,6 +146,47 @@ export function GroupChatView({ currentUserId, groupId, groupName, messages }: G
     [currentUserId, messages]
   );
   const visibleMessages = useMemo<LocalChatMessage[]>(() => [...messages, ...optimisticMessages], [messages, optimisticMessages]);
+  const planContextOptions = useMemo<ChatContext[]>(
+    () =>
+      plans.map((plan) => ({
+        id: plan.id,
+        kind: "plan",
+        subtitle: plan.plannedDate ? new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short" }).format(new Date(plan.plannedDate)) : "Sin fecha",
+        title: plan.title
+      })),
+    [plans]
+  );
+  const placeContextOptions = useMemo<ChatContext[]>(
+    () =>
+      places.map((place) => ({
+        id: place.id,
+        kind: "place",
+        subtitle: place.address,
+        title: place.name
+      })),
+    [places]
+  );
+
+  useEffect(() => {
+    if (initialSelectedPlanId) {
+      const plan = planContextOptions.find((candidate) => candidate.id === initialSelectedPlanId);
+      if (plan) {
+        setSelectedContext(plan);
+        setAttachMode(null);
+        setIsAttachMenuOpen(false);
+      }
+      return;
+    }
+
+    if (initialSelectedPlaceId) {
+      const place = placeContextOptions.find((candidate) => candidate.id === initialSelectedPlaceId);
+      if (place) {
+        setSelectedContext(place);
+        setAttachMode(null);
+        setIsAttachMenuOpen(false);
+      }
+    }
+  }, [initialSelectedPlaceId, initialSelectedPlanId, placeContextOptions, planContextOptions]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: "end" });
@@ -137,15 +252,27 @@ export function GroupChatView({ currentUserId, groupId, groupName, messages }: G
     }
 
     const formData = new FormData(event.currentTarget);
+    if (selectedContext?.kind === "plan") {
+      formData.set("kind", "plan_suggestion");
+      formData.set("planId", selectedContext.id);
+    }
+    if (selectedContext?.kind === "place") {
+      formData.set("kind", "place_comment");
+      formData.set("placeId", selectedContext.id);
+    }
     const optimisticMessage: LocalChatMessage = {
       content,
       createdAt: new Date().toISOString(),
       deliveryStatus: "sending",
       groupId,
       id: `pending-${crypto.randomUUID()}`,
-      kind: "message",
-      planId: null,
-      placeId: null,
+      kind: selectedContext?.kind === "plan" ? "plan_suggestion" : selectedContext?.kind === "place" ? "place_comment" : "message",
+      planId: selectedContext?.kind === "plan" ? selectedContext.id : null,
+      planTitle: selectedContext?.kind === "plan" ? selectedContext.title : null,
+      placeAddress: selectedContext?.kind === "place" ? selectedContext.subtitle : null,
+      placeId: selectedContext?.kind === "place" ? selectedContext.id : null,
+      placeImageUrl: null,
+      placeName: selectedContext?.kind === "place" ? selectedContext.title : null,
       planPlaceId: null,
       senderAvatarUrl: currentSender?.senderAvatarUrl ?? null,
       senderId: currentUserId,
@@ -155,6 +282,9 @@ export function GroupChatView({ currentUserId, groupId, groupName, messages }: G
 
     setOptimisticMessages((current) => [...current, optimisticMessage]);
     setDraft("");
+    setSelectedContext(null);
+    setAttachMode(null);
+    setIsAttachMenuOpen(false);
     startTransition(() => {
       createAction(formData);
     });
@@ -187,6 +317,7 @@ export function GroupChatView({ currentUserId, groupId, groupName, messages }: G
         <section className="flex-1 space-y-3">
           {visibleMessages.map((message) => {
             const isMine = message.senderId === currentUserId;
+            const messageContext = buildMessageContext(message);
             return (
               <article className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`} key={message.id}>
                 <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#fde2e0]">
@@ -216,6 +347,24 @@ export function GroupChatView({ currentUserId, groupId, groupName, messages }: G
                       {message.deliveryStatus === "sending" ? "Ahora" : formatMessageTime(message.createdAt)}
                     </time>
                   </div>
+                  {messageContext ? (
+                    <Link
+                      className={`mt-3 block rounded-[18px] border px-3 py-2 transition ${
+                        isMine ? "border-white/20 bg-white/12 hover:bg-white/18" : "border-rose-100 bg-[#fff4f3] hover:bg-[#fff0ef]"
+                      }`}
+                      href={getContextHref(groupId, messageContext)}
+                    >
+                      <p className={`text-[11px] font-extrabold uppercase ${isMine ? "text-white/70" : "text-[#c6283a]"}`}>
+                        {getContextLabel(messageContext.kind)}
+                      </p>
+                      <p className="mt-0.5 truncate text-sm font-extrabold">{messageContext.title}</p>
+                      {messageContext.subtitle ? (
+                        <p className={`mt-0.5 line-clamp-1 text-xs ${isMine ? "text-white/70" : "text-zinc-500"}`}>
+                          {messageContext.subtitle}
+                        </p>
+                      ) : null}
+                    </Link>
+                  ) : null}
                   <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6">{message.content}</p>
                   {isMine && !message.deliveryStatus ? (
                     <form
@@ -253,7 +402,81 @@ export function GroupChatView({ currentUserId, groupId, groupName, messages }: G
           <label className="sr-only" htmlFor="group-chat-content">
             Mensaje
           </label>
+          {selectedContext ? (
+            <div className="mb-2 flex items-center justify-between gap-3 rounded-[20px] border border-rose-100 bg-white px-4 py-3 shadow-[0_10px_24px_rgba(181,35,48,0.10)]">
+              <div className="min-w-0">
+                <p className="text-[11px] font-extrabold uppercase text-[#c6283a]">{getContextLabel(selectedContext.kind)} seleccionado</p>
+                <p className="truncate text-sm font-extrabold text-zinc-950">{selectedContext.title}</p>
+              </div>
+              <button
+                aria-label="Quitar referencia"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#fff0ef] text-[#c6283a]"
+                onClick={() => setSelectedContext(null)}
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ) : null}
+          {isAttachMenuOpen ? (
+            <div className="mb-2 rounded-[24px] border border-rose-100 bg-white p-3 shadow-[0_16px_38px_rgba(181,35,48,0.14)]">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  className={`h-11 rounded-[18px] text-sm font-extrabold ${attachMode === "place" ? "bg-[#c6283a] text-white" : "bg-[#fff4f3] text-[#c6283a]"}`}
+                  onClick={() => setAttachMode((current) => (current === "place" ? null : "place"))}
+                  type="button"
+                >
+                  Lugar
+                </button>
+                <button
+                  className={`h-11 rounded-[18px] text-sm font-extrabold ${attachMode === "plan" ? "bg-[#c6283a] text-white" : "bg-[#fff4f3] text-[#c6283a]"}`}
+                  onClick={() => setAttachMode((current) => (current === "plan" ? null : "plan"))}
+                  type="button"
+                >
+                  Planes
+                </button>
+              </div>
+              {attachMode ? (
+                <div className="mt-3 max-h-52 space-y-2 overflow-y-auto pr-1">
+                  {(attachMode === "plan" ? planContextOptions : placeContextOptions).map((option) => (
+                    <button
+                      className="flex w-full min-w-0 items-center justify-between gap-3 rounded-[18px] bg-[#fff8f7] px-3 py-2 text-left transition hover:bg-[#fff0ef]"
+                      key={`${option.kind}:${option.id}`}
+                      onClick={() => {
+                        setSelectedContext(option);
+                        setAttachMode(null);
+                        setIsAttachMenuOpen(false);
+                      }}
+                      type="button"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-extrabold text-zinc-950">{option.title}</span>
+                        {option.subtitle ? <span className="block truncate text-xs text-zinc-500">{option.subtitle}</span> : null}
+                      </span>
+                      <span className="shrink-0 text-xs font-bold text-[#c6283a]">Seleccionar</span>
+                    </button>
+                  ))}
+                  {(attachMode === "plan" ? planContextOptions : placeContextOptions).length === 0 ? (
+                    <p className="px-2 py-3 text-sm font-semibold text-zinc-500">
+                      {attachMode === "plan" ? "No hay planes en este grupo." : "No hay lugares guardados en este grupo."}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <div className="flex items-end gap-2 rounded-[28px] border border-rose-100 bg-white p-2 shadow-[0_16px_42px_rgba(181,35,48,0.14)]">
+            <button
+              aria-expanded={isAttachMenuOpen}
+              aria-label="Adjuntar referencia"
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-[20px] bg-[#fff0ef] text-[#c6283a] transition hover:bg-[#fde2e0]"
+              onClick={() => setIsAttachMenuOpen((current) => !current)}
+              type="button"
+            >
+              <PlusIcon />
+            </button>
             <textarea
               className="min-h-12 flex-1 resize-none rounded-[20px] border border-transparent bg-[#fff4f3] px-4 py-3 text-sm text-zinc-950 outline-none focus:border-[#ff5a5f]"
               id="group-chat-content"

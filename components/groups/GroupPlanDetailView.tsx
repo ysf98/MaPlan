@@ -577,6 +577,12 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
                     {localPlan.attendingCount} confirmados
                   </span>
                 </div>
+                <Link
+                  className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-[#fff0ef] px-4 text-sm font-extrabold text-[#c6283a] transition hover:bg-[#fde2e0]"
+                  href={`/groups/${groupId}/chat?planId=${localPlan.id}`}
+                >
+                  Comentar en el chat
+                </Link>
               </>
             )}
             {detailsState.error ? <p className="mt-3 text-sm font-semibold text-rose-600">{detailsState.error}</p> : null}
