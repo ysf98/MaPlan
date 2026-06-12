@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useActionState, useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, startTransition, useActionState, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -35,6 +35,14 @@ type MarkerPoint = {
   place: GroupPlanPlaceItem;
   x: number;
   y: number;
+};
+
+type NativeDateTimeInputProps = {
+  disabled?: boolean;
+  label: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  type: "date" | "time";
+  value: string;
 };
 
 const updateDetailsInitialState: UpdateGroupPlanDetailsActionState = { error: null, requestId: null, success: false };
@@ -206,25 +214,6 @@ function DotsVerticalIcon() {
   );
 }
 
-function PencilIcon() {
-  return (
-    <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-      <path d="m16.5 3.5 4 4L7 21H3v-4z" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-      <path d="M3 6h18" />
-      <path d="M8 6V4h8v2" />
-      <path d="m19 6-1 14H6L5 6" />
-      <path d="M10 11v5M14 11v5" />
-    </svg>
-  );
-}
-
 function ShareIcon() {
   return (
     <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -287,11 +276,27 @@ function ArrowDownIcon() {
   );
 }
 
+function NativeDateTimeInput({ disabled, label, onChange, type, value }: NativeDateTimeInputProps) {
+  return (
+    <label className="block space-y-2">
+      <span className="text-sm font-semibold text-[rgb(var(--muted))]">{label}</span>
+      <input
+        className="h-14 min-h-14 w-full min-w-0 appearance-auto rounded-2xl border border-rose-100 bg-[#fff4f3] px-4 text-left text-base font-bold text-[#261817] accent-[#c6283a] outline-none transition focus:border-[#c6283a] focus:ring-2 focus:ring-[#ffdad8] disabled:opacity-60"
+        disabled={disabled}
+        inputMode="none"
+        onChange={onChange}
+        style={{ colorScheme: "light" }}
+        type={type}
+        value={value}
+      />
+    </label>
+  );
+}
+
 export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: GroupPlanDetailViewProps) {
   const router = useRouter();
   const [localPlan, setLocalPlan] = useState(plan);
   const [isEditing, setIsEditing] = useState(false);
-  const [isPlanMenuOpen, setIsPlanMenuOpen] = useState(false);
   const [editedTitle, setEditedTitle] = useState(plan.title);
   const [editedDate, setEditedDate] = useState(toDateInputValue(plan.plannedDate));
   const [editedTimes, setEditedTimes] = useState<Record<string, string>>(() =>
@@ -447,13 +452,12 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
   }
 
   function deletePlan() {
-    const confirmed = window.confirm(`Eliminar "${localPlan.title}"? Esta accion no se puede deshacer.`);
+    const confirmed = window.confirm(`Eliminar "${localPlan.title}"? Esta acción no se puede deshacer.`);
     if (!confirmed) return;
 
     const payload = new FormData();
     payload.set("groupId", groupId);
     payload.set("planId", localPlan.id);
-    setIsPlanMenuOpen(false);
     startTransition(() => deletePlanAction(payload));
   }
 
@@ -543,6 +547,17 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
     startTransition(() => voteAction(payload));
   }
 
+  function handlePlanAction(value: string) {
+    if (value === "edit") {
+      setIsEditing(true);
+      return;
+    }
+
+    if (value === "delete") {
+      deletePlan();
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#fff8f7] pb-32 text-[#261817]">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/50 bg-[#fff8f7]/85 px-5 py-2 backdrop-blur-xl">
@@ -591,38 +606,31 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
             {canEditPlan && !isEditing ? (
               <div className="absolute right-5 top-5">
                 <button
-                  aria-expanded={isPlanMenuOpen}
+                  aria-hidden="true"
                   aria-label="Opciones del plan"
-                  className="grid h-10 w-10 place-items-center rounded-full text-[#c6283a] transition hover:bg-rose-50"
-                  onClick={() => setIsPlanMenuOpen((current) => !current)}
+                  className="pointer-events-none grid h-11 w-11 place-items-center rounded-full text-[#c6283a] transition hover:bg-rose-50"
+                  disabled={isDeletingPlan}
+                  tabIndex={-1}
                   type="button"
                 >
                   <DotsVerticalIcon />
                 </button>
-                {isPlanMenuOpen ? (
-                  <div className="absolute right-0 top-12 z-20 w-48 overflow-hidden rounded-[20px] border border-rose-100 bg-white py-2 shadow-[0_18px_42px_rgba(38,24,23,0.16)]">
-                    <button
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-zinc-800 transition hover:bg-[#fff4f3]"
-                      onClick={() => {
-                        setIsPlanMenuOpen(false);
-                        setIsEditing(true);
-                      }}
-                      type="button"
-                    >
-                      <PencilIcon />
-                      Editar plan
-                    </button>
-                    <button
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-[#c6283a] transition hover:bg-[#fff4f3] disabled:opacity-60"
-                      disabled={isDeletingPlan}
-                      onClick={deletePlan}
-                      type="button"
-                    >
-                      <TrashIcon />
-                      {isDeletingPlan ? "Eliminando..." : "Eliminar plan"}
-                    </button>
-                  </div>
-                ) : null}
+                <select
+                  aria-label="Opciones del plan"
+                  className="absolute inset-0 h-11 w-11 cursor-pointer opacity-0"
+                  disabled={isDeletingPlan}
+                  onChange={(event) => {
+                    handlePlanAction(event.target.value);
+                    event.target.value = "";
+                  }}
+                  value=""
+                >
+                  <option disabled value="">
+                    Opciones del plan
+                  </option>
+                  <option value="edit">Editar plan</option>
+                  <option value="delete">Eliminar plan</option>
+                </select>
               </div>
             ) : null}
             <div className="pr-12 text-xs font-extrabold uppercase text-[#c6283a]">{groupName}</div>
@@ -634,23 +642,22 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
                   onChange={(event) => setEditedTitle(event.target.value)}
                   value={editedTitle}
                 />
-                <Input
-                  className="bg-[#fff4f3] font-bold"
+                <NativeDateTimeInput
                   label="Fecha"
                   onChange={(event) => setEditedDate(event.target.value)}
                   type="date"
                   value={editedDate}
                 />
-                <div className="flex gap-2 pt-1">
+                <div className="grid grid-cols-1 gap-2 pt-1 min-[380px]:grid-cols-2">
                   <button
-                    className="h-11 flex-1 rounded-full bg-[#fff0ef] text-sm font-extrabold text-[#c6283a] transition hover:bg-[#fde2e0]"
+                    className="h-12 rounded-full bg-[#fff0ef] text-sm font-extrabold text-[#c6283a] transition hover:bg-[#fde2e0]"
                     onClick={cancelEditing}
                     type="button"
                   >
                     Cancelar
                   </button>
                   <button
-                    className="h-11 flex-1 rounded-full bg-[#c6283a] text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(181,35,48,0.20)] transition hover:bg-[#b32033] disabled:opacity-60"
+                    className="h-12 rounded-full bg-[#c6283a] text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(181,35,48,0.20)] transition hover:bg-[#b32033] disabled:opacity-60"
                     disabled={isSavingDetails || isSavingTime || !editedTitle.trim()}
                     onClick={saveChanges}
                     type="button"
@@ -801,8 +808,7 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
                         </div>
                         {isEditing ? (
                           <div className="mt-4 grid gap-3">
-                            <Input
-                              className="bg-[#fff4f3]"
+                            <NativeDateTimeInput
                               disabled={!editedDate || isPendingTime}
                               label="Hora"
                               onChange={(event) => setEditedTimes((current) => ({ ...current, [place.id]: event.target.value }))}
@@ -822,7 +828,7 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
               })
             ) : (
               <div className="rounded-[26px] border border-dashed border-rose-200 bg-white p-5 text-sm font-semibold text-zinc-500">
-                Este plan todavia no tiene paradas guardadas.
+                Este plan todavía no tiene paradas guardadas.
               </div>
             )}
           </div>
