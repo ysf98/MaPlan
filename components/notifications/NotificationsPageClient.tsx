@@ -6,14 +6,14 @@ import { respondFriendRequestAction, type FriendActionState } from "@/app/friend
 import { respondGroupInvitationAction, type RespondGroupInvitationActionState } from "@/app/invitations/actions";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/EmptyState";
 import type { NotificationItem } from "@/lib/notifications";
-import { ROUTES } from "@/utils/constants";
 
 type NotificationsPageClientProps = {
+  groupActivities: NotificationItem[];
   pendingInvitations: NotificationItem[];
   reviewedInvitations: NotificationItem[];
   friendRequests: NotificationItem[];
+  unreadChats: NotificationItem[];
   total: number;
 };
 
@@ -28,9 +28,11 @@ const friendRequestsInitialState: FriendActionState = {
 };
 
 export function NotificationsPageClient({
+  groupActivities,
   pendingInvitations,
   reviewedInvitations,
   friendRequests,
+  unreadChats,
   total
 }: NotificationsPageClientProps) {
   const [invitationState, invitationFormAction, isInvitationPending] = useActionState(
@@ -41,27 +43,57 @@ export function NotificationsPageClient({
 
   return (
     <section className="space-y-4">
-      {total === 0 ? (
-        <EmptyState
-          title="Sin notificaciones pendientes"
-          description="Cuando recibas invitaciones de grupo o solicitudes de amistad apareceran aqui."
-          action={
-            <Link
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-[#c6283a] px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#a91f31]"
-              href={ROUTES.dashboard}
-              prefetch={false}
-            >
-              Volver al inicio
-            </Link>
-          }
-        />
-      ) : (
+      {total > 0 ? (
         <>
-          <Card className="rounded-3xl">
-            <h2 className="text-lg font-semibold text-zinc-950">Invitaciones a grupos</h2>
-            {pendingInvitations.length === 0 ? (
-              <p className="mt-2 text-sm text-zinc-500">No tienes invitaciones pendientes.</p>
-            ) : (
+          {unreadChats.length > 0 ? (
+            <Card className="rounded-3xl">
+              <h2 className="text-lg font-semibold text-zinc-950">Mensajes</h2>
+              <ul className="mt-3 space-y-2">
+                {unreadChats.map((notification) => {
+                  if (notification.kind !== "group_chat_unread") return null;
+                  return (
+                    <li className="rounded-xl border border-zinc-100 p-3" key={notification.id}>
+                      <Link className="block" href={`/groups/${notification.groupId}/chat`}>
+                        <p className="text-sm font-semibold text-zinc-950">
+                          Tienes mensajes por leer del grupo {notification.groupName}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {notification.unreadCount === 1 ? "1 mensaje nuevo" : `${notification.unreadCount} mensajes nuevos`}
+                        </p>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          ) : null}
+
+          {groupActivities.length > 0 ? (
+            <Card className="rounded-3xl">
+              <h2 className="text-lg font-semibold text-zinc-950">Actividad de grupos</h2>
+              <ul className="mt-3 space-y-2">
+                {groupActivities.map((notification) => {
+                  if (notification.kind !== "group_activity") return null;
+                  const activity = notification.activity;
+                  return (
+                    <li className="rounded-xl border border-zinc-100 p-3" key={notification.id}>
+                      {activity.href ? (
+                        <Link className="block text-sm font-medium text-zinc-950" href={activity.href}>
+                          {activity.message}
+                        </Link>
+                      ) : (
+                        <p className="text-sm font-medium text-zinc-950">{activity.message}</p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          ) : null}
+
+          {pendingInvitations.length > 0 ? (
+            <Card className="rounded-3xl">
+              <h2 className="text-lg font-semibold text-zinc-950">Invitaciones a grupos</h2>
               <ul className="mt-3 space-y-2">
                 {pendingInvitations.map((notification) => {
                   if (notification.kind !== "group_invitation") return null;
@@ -91,9 +123,9 @@ export function NotificationsPageClient({
                   );
                 })}
               </ul>
-            )}
-            {invitationState.error ? <p className="mt-2 text-sm text-rose-600">{invitationState.error}</p> : null}
-          </Card>
+              {invitationState.error ? <p className="mt-2 text-sm text-rose-600">{invitationState.error}</p> : null}
+            </Card>
+          ) : null}
 
           {reviewedInvitations.length > 0 ? (
             <Card className="rounded-3xl">
@@ -115,11 +147,9 @@ export function NotificationsPageClient({
             </Card>
           ) : null}
 
-          <Card className="rounded-3xl">
-            <h2 className="text-lg font-semibold text-zinc-950">Solicitudes de amistad</h2>
-            {friendRequests.length === 0 ? (
-              <p className="mt-2 text-sm text-zinc-500">No tienes solicitudes de amistad pendientes.</p>
-            ) : (
+          {friendRequests.length > 0 ? (
+            <Card className="rounded-3xl">
+              <h2 className="text-lg font-semibold text-zinc-950">Solicitudes de amistad</h2>
               <ul className="mt-3 space-y-2">
                 {friendRequests.map((notification) => {
                   if (notification.kind !== "friend_request") return null;
@@ -139,11 +169,11 @@ export function NotificationsPageClient({
                   );
                 })}
               </ul>
-            )}
-            {friendState.error ? <p className="mt-2 text-sm text-rose-600">{friendState.error}</p> : null}
-          </Card>
+              {friendState.error ? <p className="mt-2 text-sm text-rose-600">{friendState.error}</p> : null}
+            </Card>
+          ) : null}
         </>
-      )}
+      ) : null}
     </section>
   );
 }

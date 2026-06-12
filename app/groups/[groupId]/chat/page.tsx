@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { GroupChatView } from "@/components/groups/GroupChatView";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
-import { getGroupChatMessagesForUser } from "@/lib/groupChat";
+import { getGroupChatMessagesForUser, markGroupChatAsReadForUser } from "@/lib/groupChat";
 import { getGroupDetailForUser } from "@/lib/groups";
 
 type GroupChatPageProps = {
@@ -24,6 +24,12 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
   if (!group) {
     notFound();
   }
+
+  await markGroupChatAsReadForUser({
+    groupId,
+    lastReadAt: messages.at(-1)?.createdAt ?? null,
+    userId: user.id
+  });
 
   return (
     <AppShell currentUser={user} fullBleed>

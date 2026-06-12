@@ -31,6 +31,12 @@ type DeleteGroupChatMessageInput = {
   messageId: string;
 };
 
+type MarkGroupChatReadInput = {
+  userId: string;
+  groupId: string;
+  lastReadAt: string | null;
+};
+
 export type GroupChatMessageItem = {
   id: string;
   groupId: string;
@@ -44,6 +50,13 @@ export type GroupChatMessageItem = {
   planPlaceId: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type GroupChatUnreadSummary = {
+  groupId: string;
+  groupName: string;
+  latestMessageAt: string;
+  unreadCount: number;
 };
 
 function isGroupChatMessageKind(value: string): value is GroupChatMessageKind {
@@ -113,6 +126,120 @@ export async function getGroupChatMessagesForUser(userId: string, groupId: strin
       }
     ];
   });
+}
+
+export async function getGroupChatUnreadCountForUser(userId: string, groupId: string): Promise<number> {
+  const hasAccess = await isGroupMember(userId, groupId);
+  if (!hasAccess) {
+    return 0;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: readState } = await supabase
+    .from("group_chat_reads")
+    .select("last_read_at")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  let query = supabase
+    .from("group_chat_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", groupId)
+    .neq("sender_id", userId);
+
+  if (readState?.last_read_at) {
+    query = query.gt("created_at", readState.last_read_at);
+  }
+
+  const { count, error } = await query;
+  if (error) {
+    return 0;
+  }
+
+  return count ?? 0;
+}
+
+export async function getGroupChatUnreadSummariesForUser(userId: string): Promise<GroupChatUnreadSummary[]> {
+  const supabase = await createSupabaseServerClient();
+  const membershipResult = await supabase.from("group_members").select("group_id").eq("user_id", userId);
+  const groupIds = (membershipResult.data || []).map((item) => item.group_id);
+
+  if (groupIds.length === 0) {
+    return [];
+  }
+
+  const [readsResult, messagesResult, groupsResult] = await Promise.all([
+    supabase.from("group_chat_reads").select("group_id, last_read_at").eq("user_id", userId).in("group_id", groupIds),
+    supabase
+      .from("group_chat_messages")
+      .select("group_id, sender_id, created_at")
+      .in("group_id", groupIds)
+      .neq("sender_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabase.from("groups").select("id, name").in("id", groupIds)
+  ]);
+
+  const lastReadAtByGroupId = new Map((readsResult.data || []).map((row) => [row.group_id, row.last_read_at]));
+  const groupNameById = new Map((groupsResult.data || []).map((group) => [group.id, group.name]));
+  const summaryByGroupId = new Map<string, GroupChatUnreadSummary>();
+
+  (messagesResult.data || []).forEach((message) => {
+    const lastReadAt = lastReadAtByGroupId.get(message.group_id);
+    if (lastReadAt && new Date(message.created_at).getTime() <= new Date(lastReadAt).getTime()) {
+      return;
+    }
+
+    const existing = summaryByGroupId.get(message.group_id);
+    if (!existing) {
+      summaryByGroupId.set(message.group_id, {
+        groupId: message.group_id,
+        groupName: groupNameById.get(message.group_id) || "Grupo",
+        latestMessageAt: message.created_at,
+        unreadCount: 1
+      });
+      return;
+    }
+
+    existing.unreadCount += 1;
+    if (new Date(message.created_at).getTime() > new Date(existing.latestMessageAt).getTime()) {
+      existing.latestMessageAt = message.created_at;
+    }
+  });
+
+  return Array.from(summaryByGroupId.values()).sort(
+    (a, b) => new Date(b.latestMessageAt).getTime() - new Date(a.latestMessageAt).getTime()
+  );
+}
+
+export async function markGroupChatAsReadForUser(input: MarkGroupChatReadInput): Promise<{ error: string | null }> {
+  if (!input.lastReadAt) {
+    return { error: null };
+  }
+
+  const hasAccess = await isGroupMember(input.userId, input.groupId);
+  if (!hasAccess) {
+    return { error: "No tienes permisos para leer este chat." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("group_chat_reads")
+    .upsert(
+      {
+        group_id: input.groupId,
+        user_id: input.userId,
+        last_read_at: input.lastReadAt
+      },
+      { onConflict: "group_id,user_id" }
+    );
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { error: null };
 }
 
 export async function createGroupChatMessage(input: CreateGroupChatMessageInput): Promise<{ error: string | null }> {

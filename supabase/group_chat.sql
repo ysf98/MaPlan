@@ -14,6 +14,14 @@ create table if not exists public.group_chat_messages (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.group_chat_reads (
+  group_id uuid not null references public.groups(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  last_read_at timestamptz not null,
+  updated_at timestamptz not null default now(),
+  constraint group_chat_reads_group_user_pk primary key (group_id, user_id)
+);
+
 do $$
 begin
   alter table public.group_chat_messages add column if not exists kind text not null default 'message';
@@ -51,6 +59,9 @@ on public.group_chat_messages (group_id, created_at desc);
 create index if not exists idx_group_chat_messages_sender
 on public.group_chat_messages (sender_id);
 
+create index if not exists idx_group_chat_reads_user_group
+on public.group_chat_reads (user_id, group_id);
+
 alter table public.group_chat_messages replica identity full;
 
 do $$
@@ -82,14 +93,35 @@ create trigger trg_group_chat_messages_updated_at
 before update on public.group_chat_messages
 for each row execute function public.set_group_chat_messages_updated_at();
 
+create or replace function public.set_group_chat_reads_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_group_chat_reads_updated_at on public.group_chat_reads;
+create trigger trg_group_chat_reads_updated_at
+before update on public.group_chat_reads
+for each row execute function public.set_group_chat_reads_updated_at();
+
 grant select, insert, update, delete on table public.group_chat_messages to authenticated;
+grant select, insert, update, delete on table public.group_chat_reads to authenticated;
 
 alter table public.group_chat_messages enable row level security;
+alter table public.group_chat_reads enable row level security;
 
 drop policy if exists group_chat_messages_select_group_member on public.group_chat_messages;
 drop policy if exists group_chat_messages_insert_group_member on public.group_chat_messages;
 drop policy if exists group_chat_messages_update_sender on public.group_chat_messages;
 drop policy if exists group_chat_messages_delete_sender on public.group_chat_messages;
+drop policy if exists group_chat_reads_select_self_member on public.group_chat_reads;
+drop policy if exists group_chat_reads_insert_self_member on public.group_chat_reads;
+drop policy if exists group_chat_reads_update_self_member on public.group_chat_reads;
+drop policy if exists group_chat_reads_delete_self_member on public.group_chat_reads;
 
 create policy group_chat_messages_select_group_member
 on public.group_chat_messages
@@ -151,5 +183,41 @@ on public.group_chat_messages
 for delete to authenticated
 using (
   sender_id = auth.uid()
+  and public.can_access_group(group_id, auth.uid())
+);
+
+create policy group_chat_reads_select_self_member
+on public.group_chat_reads
+for select to authenticated
+using (
+  user_id = auth.uid()
+  and public.can_access_group(group_id, auth.uid())
+);
+
+create policy group_chat_reads_insert_self_member
+on public.group_chat_reads
+for insert to authenticated
+with check (
+  user_id = auth.uid()
+  and public.can_access_group(group_id, auth.uid())
+);
+
+create policy group_chat_reads_update_self_member
+on public.group_chat_reads
+for update to authenticated
+using (
+  user_id = auth.uid()
+  and public.can_access_group(group_id, auth.uid())
+)
+with check (
+  user_id = auth.uid()
+  and public.can_access_group(group_id, auth.uid())
+);
+
+create policy group_chat_reads_delete_self_member
+on public.group_chat_reads
+for delete to authenticated
+using (
+  user_id = auth.uid()
   and public.can_access_group(group_id, auth.uid())
 );

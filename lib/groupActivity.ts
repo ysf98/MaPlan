@@ -1,6 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type GroupActivityEventType = "place_added";
+export type GroupActivityEventType = "place_added" | "plan_created";
 
 export type GroupActivityFeedItem = {
   id: string;
@@ -31,6 +31,13 @@ type RecordPlaceAddedInput = {
   placeName: string;
 };
 
+type RecordPlanCreatedInput = {
+  groupId: string;
+  actorUserId: string;
+  planId: string;
+  planTitle: string;
+};
+
 function buildActivityMessage(input: {
   actorUsername: string | null;
   eventType: GroupActivityEventType;
@@ -45,6 +52,11 @@ function buildActivityMessage(input: {
     return `${actor} anadio ${place}${groupSuffix}.`;
   }
 
+  if (input.eventType === "plan_created") {
+    const plan = input.entityName ? `"${input.entityName}"` : "un plan";
+    return `${actor} ha creado ${plan}${groupSuffix}.`;
+  }
+
   return `${actor} hizo una accion${groupSuffix}.`;
 }
 
@@ -53,7 +65,15 @@ function buildActivityHref(input: {
   groupId: string;
   entityId: string | null;
 }): string | null {
-  if (input.eventType !== "place_added" || !input.entityId) {
+  if (!input.entityId) {
+    return null;
+  }
+
+  if (input.eventType === "plan_created") {
+    return `/groups/${encodeURIComponent(input.groupId)}/plans/${encodeURIComponent(input.entityId)}`;
+  }
+
+  if (input.eventType !== "place_added") {
     return null;
   }
 
@@ -68,6 +88,18 @@ export async function recordPlaceAddedGroupActivity(input: RecordPlaceAddedInput
     event_type: "place_added",
     entity_id: input.placeId,
     entity_name: input.placeName.trim() || null,
+    metadata: null
+  });
+}
+
+export async function recordPlanCreatedGroupActivity(input: RecordPlanCreatedInput): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  await supabase.from("group_activity_events").insert({
+    group_id: input.groupId,
+    actor_user_id: input.actorUserId,
+    event_type: "plan_created",
+    entity_id: input.planId,
+    entity_name: input.planTitle.trim() || null,
     metadata: null
   });
 }

@@ -175,9 +175,7 @@ export function GroupChatView({ currentUserId, groupId, groupName, messages }: G
             <MaplanMinimalIcon size="sm" />
             <span className="text-xl font-bold text-[#c6283a]">MaPlan</span>
           </div>
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-[#fff0ef] text-xs font-extrabold text-[#c6283a]">
-            {visibleMessages.length}
-          </span>
+          <div className="h-10 w-10" />
         </div>
       </header>
 

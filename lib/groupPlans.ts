@@ -1,4 +1,5 @@
 import { canEditPlaces, isGroupMember } from "@/lib/groupPermissions";
+import { recordPlanCreatedGroupActivity } from "@/lib/groupActivity";
 import { canPlanAcceptNewPlaces, extractPlanDatePart, isPlanDateTodayOrFuture, normalizePlanDateInput } from "@/lib/groupPlansShared";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { GroupPlanVote } from "@/types/supabase";
@@ -447,6 +448,13 @@ export async function createGroupPlan(input: CreateGroupPlanInput): Promise<{ er
       return { error: addPlaceResult.error, planId: null };
     }
   }
+
+  await recordPlanCreatedGroupActivity({
+    actorUserId: input.userId,
+    groupId: input.groupId,
+    planId: insertResult.data.id,
+    planTitle: title
+  });
 
   return { error: null, planId: insertResult.data.id };
 }

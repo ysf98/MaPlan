@@ -33,12 +33,12 @@ export default async function DashboardPage() {
 
   const [groups, allRecentActivity, notifications] = await Promise.all([
     getUserGroups(user.id),
-    getGroupActivityFeedForUser(user.id, 6, { includeGroupName: true, maxAgeDays: 31 }),
+    getGroupActivityFeedForUser(user.id, 20, { includeGroupName: true, maxAgeDays: 31 }),
     getPendingNotificationsForUser(user.id)
   ]);
 
-  const activityFeed = allRecentActivity;
-  const groupsWithActivity = summarizeGroupsWithRecentActivity(allRecentActivity, 4);
+  const activityFeed = allRecentActivity.filter((event) => event.actorUserId !== user.id).slice(0, 6);
+  const groupsWithActivity = summarizeGroupsWithRecentActivity(activityFeed, 4);
   const groupById = new Map(groups.map((group) => [group.id, group]));
   const groupsOrderedByActivity = groupsWithActivity
     .map((item) => groupById.get(item.groupId))

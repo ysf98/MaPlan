@@ -17,8 +17,10 @@ export default async function NotificationsPage() {
     <AppShell backHref={ROUTES.dashboard} currentUser={user}>
       <NotificationsPageClient
         friendRequests={pending.friendRequests}
+        groupActivities={pending.groupActivities}
         pendingInvitations={pending.pendingInvitations}
         reviewedInvitations={pending.reviewedInvitations}
+        unreadChats={pending.unreadChats}
         total={pending.total}
       />
     </AppShell>

@@ -77,8 +77,10 @@ describe("RLS policies baseline", () => {
   it("includes group activity table and member-only visibility policy", () => {
     const sql = readFileSync(resolve(process.cwd(), "supabase/rls_group_activity.sql"), "utf8");
     expect(sql).toContain("create table if not exists public.group_activity_events");
+    expect(sql).toContain("check (event_type in ('place_added', 'plan_created'))");
     expect(sql).toContain("create policy group_activity_select_group_member");
     expect(sql).toContain("create policy group_activity_insert_editor_only");
+    expect(sql).toContain("event_type in ('place_added', 'plan_created')");
   });
 
   it("stores group place state per user with own-member RLS policies", () => {
@@ -114,6 +116,8 @@ describe("RLS policies baseline", () => {
   it("includes group chat table with member RLS and same-group context checks", () => {
     const sql = readFileSync(resolve(process.cwd(), "supabase/group_chat.sql"), "utf8");
     expect(sql).toContain("create table if not exists public.group_chat_messages");
+    expect(sql).toContain("create table if not exists public.group_chat_reads");
+    expect(sql).toContain("constraint group_chat_reads_group_user_pk primary key (group_id, user_id)");
     expect(sql).toContain("group_chat_messages_kind_check check (kind in ('message', 'plan_suggestion', 'place_comment'))");
     expect(sql).toContain("references public.group_plans(id) on delete set null");
     expect(sql).toContain("references public.places(id) on delete set null");
@@ -121,7 +125,11 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("create policy group_chat_messages_select_group_member");
     expect(sql).toContain("create policy group_chat_messages_insert_group_member");
     expect(sql).toContain("create policy group_chat_messages_delete_sender");
+    expect(sql).toContain("create policy group_chat_reads_select_self_member");
+    expect(sql).toContain("create policy group_chat_reads_insert_self_member");
+    expect(sql).toContain("create policy group_chat_reads_update_self_member");
     expect(sql).toContain("sender_id = auth.uid()");
+    expect(sql).toContain("user_id = auth.uid()");
     expect(sql).toContain("public.can_access_group(group_id, auth.uid())");
     expect(sql).toContain("gp.group_id = group_chat_messages.group_id");
     expect(sql).toContain("p.group_id = group_chat_messages.group_id");

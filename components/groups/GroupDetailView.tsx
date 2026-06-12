@@ -30,6 +30,7 @@ type GroupDetailViewProps = {
   totalFriendsCount: number;
   activeTab: GroupDetailTab;
   activityEvents: GroupActivityFeedItem[];
+  chatUnreadCount: number;
   pendingJoinRequests: GroupJoinRequestItem[];
   reviewedJoinRequests: GroupJoinRequestItem[];
   plans: GroupPlanItem[];
@@ -49,6 +50,7 @@ export function GroupDetailView({
   totalFriendsCount,
   activeTab,
   activityEvents,
+  chatUnreadCount,
   pendingJoinRequests,
   reviewedJoinRequests,
   plans
@@ -202,6 +204,7 @@ export function GroupDetailView({
         <GroupOverviewHeader
           allMembers={allMembers}
           canManageMembers={group.role === "owner"}
+          chatUnreadCount={chatUnreadCount}
           currentUserId={currentUserId}
           group={group}
           membersPreview={membersPreview}

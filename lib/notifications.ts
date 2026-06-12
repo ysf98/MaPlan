@@ -1,4 +1,6 @@
 import { getFriendRequests } from "@/lib/friends";
+import { getGroupActivityFeedForUser, type GroupActivityFeedItem } from "@/lib/groupActivity";
+import { getGroupChatUnreadSummariesForUser } from "@/lib/groupChat";
 import { getGroupInvitationsForUser } from "@/lib/groupInvitations";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -20,19 +22,37 @@ export type NotificationItem =
       requestId: string;
       senderId: string;
       senderUsername: string | null;
+    }
+  | {
+      id: string;
+      kind: "group_chat_unread";
+      createdAt: string;
+      groupId: string;
+      groupName: string;
+      unreadCount: number;
+    }
+  | {
+      id: string;
+      kind: "group_activity";
+      createdAt: string;
+      activity: GroupActivityFeedItem;
     };
 
 export type PendingNotifications = {
   pendingInvitations: NotificationItem[];
   reviewedInvitations: NotificationItem[];
   friendRequests: NotificationItem[];
+  groupActivities: NotificationItem[];
+  unreadChats: NotificationItem[];
   total: number;
 };
 
 export async function getPendingNotificationsForUser(userId: string): Promise<PendingNotifications> {
-  const [invitations, friendRequests] = await Promise.all([
+  const [invitations, friendRequests, unreadChatSummaries, activityFeed] = await Promise.all([
     getGroupInvitationsForUser(userId),
-    getFriendRequests(userId)
+    getFriendRequests(userId),
+    getGroupChatUnreadSummariesForUser(userId),
+    getGroupActivityFeedForUser(userId, 20, { includeGroupName: true, maxAgeDays: 14 })
   ]);
 
   const invitationNotifications: NotificationItem[] = invitations
@@ -60,17 +80,37 @@ export async function getPendingNotificationsForUser(userId: string): Promise<Pe
     senderUsername: item.senderUsername
   }));
 
+  const unreadChats: NotificationItem[] = unreadChatSummaries.map((item) => ({
+    id: `group_chat_unread:${item.groupId}`,
+    kind: "group_chat_unread",
+    createdAt: item.latestMessageAt,
+    groupId: item.groupId,
+    groupName: item.groupName,
+    unreadCount: item.unreadCount
+  }));
+
+  const groupActivities: NotificationItem[] = activityFeed
+    .filter((item) => item.actorUserId !== userId)
+    .map((item) => ({
+      id: `group_activity:${item.id}`,
+      kind: "group_activity",
+      createdAt: item.createdAt,
+      activity: item
+    }));
+
   return {
     pendingInvitations,
     reviewedInvitations,
     friendRequests: pendingFriendRequests,
-    total: pendingInvitations.length + pendingFriendRequests.length
+    unreadChats,
+    groupActivities,
+    total: pendingInvitations.length + pendingFriendRequests.length + unreadChats.length + groupActivities.length
   };
 }
 
 export async function getPendingNotificationsCountForUser(userId: string): Promise<number> {
   const supabase = await createSupabaseServerClient();
-  const [invitationsResult, friendRequestsResult] = await Promise.all([
+  const [invitationsResult, friendRequestsResult, unreadChatSummaries, activityFeed] = await Promise.all([
     supabase
       .from("group_invitations")
       .select("id", { count: "exact", head: true })
@@ -80,8 +120,15 @@ export async function getPendingNotificationsCountForUser(userId: string): Promi
       .from("friend_requests")
       .select("id", { count: "exact", head: true })
       .eq("receiver_id", userId)
-      .eq("status", "pending")
+      .eq("status", "pending"),
+    getGroupChatUnreadSummariesForUser(userId),
+    getGroupActivityFeedForUser(userId, 20, { includeGroupName: true, maxAgeDays: 14 })
   ]);
 
-  return (invitationsResult.count || 0) + (friendRequestsResult.count || 0);
+  return (
+    (invitationsResult.count || 0) +
+    (friendRequestsResult.count || 0) +
+    unreadChatSummaries.length +
+    activityFeed.filter((item) => item.actorUserId !== userId).length
+  );
 }

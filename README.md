@@ -223,11 +223,13 @@ El buscador muestra sugerencias en vivo dentro de la propia barra mientras se es
 
 ### Chat de grupo
 
-Los mensajes del chat grupal viven en `group_chat_messages`.
+Los mensajes del chat grupal viven en `group_chat_messages`. El estado de lectura por usuario vive en `group_chat_reads`.
 
 La vista independiente `/groups/[groupId]/chat` permite a los miembros escribir mensajes normales del grupo en pantalla completa. El modelo también permite guardar contexto opcional de plan, lugar o parada (`plan_id`, `place_id`, `plan_place_id`) para futuras sugerencias sobre planes o comentarios enlazados a lugares.
 
 Solo miembros del grupo pueden leer o escribir mensajes. Cada usuario puede eliminar sus propios mensajes.
+
+El botÃ³n `Abrir chat` muestra un contador flotante con mensajes no leÃ­dos. El contador excluye mensajes enviados por el propio usuario y se limpia al entrar en la vista del chat.
 
 ### Perfil, listas y logros
 
@@ -362,5 +364,5 @@ Playwright usa `PLAYWRIGHT_BASE_URL` si está definido; si no, arranca el dev se
 - Logros de explorador calculados desde lugares reales.
 - Amigos, invitaciones, solicitudes y notificaciones integradas.
 - Búsqueda de amigos con autocomplete en la barra.
-- Chat grupal con mensajes entre miembros.
+- Chat grupal con mensajes entre miembros, Realtime y contador de no leÃ­dos.
 - Modelo de permisos enforced en UI, server actions y RLS.

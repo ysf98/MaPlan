@@ -16,13 +16,16 @@ create table if not exists public.group_activity_events (
 
 do $$
 begin
-  if not exists (
+  if exists (
     select 1 from pg_constraint where conname = 'group_activity_events_event_type_check'
   ) then
     alter table public.group_activity_events
-      add constraint group_activity_events_event_type_check
-      check (event_type in ('place_added'));
+      drop constraint group_activity_events_event_type_check;
   end if;
+
+  alter table public.group_activity_events
+    add constraint group_activity_events_event_type_check
+    check (event_type in ('place_added', 'plan_created'));
 end $$;
 
 create index if not exists idx_group_activity_group_created_at_desc
@@ -59,7 +62,7 @@ for insert
 to authenticated
 with check (
   actor_user_id = auth.uid()
-  and event_type = 'place_added'
+  and event_type in ('place_added', 'plan_created')
   and (
     exists (
       select 1
