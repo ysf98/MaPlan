@@ -8,6 +8,7 @@ import {
   addDraftPlaceToGroupPlan,
   createGroupPlan,
   deleteGroupPlan,
+  reorderGroupPlanPlaces,
   removePlaceFromGroupPlan,
   updateGroupPlanDate,
   updateGroupPlanDetails,
@@ -22,6 +23,7 @@ import {
   createPlaceSchema,
   removeGroupMemberSchema,
   removeGroupPlanPlaceSchema,
+  reorderGroupPlanPlacesSchema,
   reviewJoinRequestSchema,
   updateGroupDetailsSchema,
   updateGroupPlanDateSchema,
@@ -152,6 +154,12 @@ export type UpdateGroupPlanPlaceTimeActionState = {
   success: boolean;
 };
 
+export type ReorderGroupPlanPlacesActionState = {
+  error: string | null;
+  requestId?: string | null;
+  success: boolean;
+};
+
 export type RemoveGroupMemberActionState = {
   error: string | null;
   success: boolean;
@@ -266,6 +274,12 @@ const REMOVE_GROUP_PLAN_PLACE_INITIAL_STATE: RemoveGroupPlanPlaceActionState = {
 const UPDATE_GROUP_PLAN_PLACE_TIME_INITIAL_STATE: UpdateGroupPlanPlaceTimeActionState = {
   error: null,
   planPlaceId: null,
+  requestId: null,
+  success: false
+};
+
+const REORDER_GROUP_PLAN_PLACES_INITIAL_STATE: ReorderGroupPlanPlacesActionState = {
+  error: null,
   requestId: null,
   success: false
 };
@@ -902,6 +916,43 @@ export async function updateGroupPlanPlaceTimeAction(
   revalidatePath(`/groups/${parsedInput.data.groupId}`);
   revalidatePath(`/groups/${parsedInput.data.groupId}/plans/${parsedInput.data.planId}`);
   return { error: null, planPlaceId, requestId, success: true };
+}
+
+export async function reorderGroupPlanPlacesAction(
+  _previousState: ReorderGroupPlanPlacesActionState = REORDER_GROUP_PLAN_PLACES_INITIAL_STATE,
+  formData: FormData
+): Promise<ReorderGroupPlanPlacesActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+  const requestId = String(formData.get("requestId") || "");
+  const orderedPlanPlaceIds = formData
+    .getAll("orderedPlanPlaceIds")
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  const parsedInput = reorderGroupPlanPlacesSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    planId: String(formData.get("planId") || ""),
+    orderedPlanPlaceIds
+  });
+
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), requestId, success: false };
+  }
+
+  const result = await reorderGroupPlanPlaces({
+    userId: user.id,
+    groupId: parsedInput.data.groupId,
+    planId: parsedInput.data.planId,
+    orderedPlanPlaceIds: parsedInput.data.orderedPlanPlaceIds
+  });
+
+  if (result.error) {
+    return { error: result.error, requestId, success: false };
+  }
+
+  revalidatePath(`/groups/${parsedInput.data.groupId}`);
+  revalidatePath(`/groups/${parsedInput.data.groupId}/plans/${parsedInput.data.planId}`);
+  return { error: null, requestId, success: true };
 }
 
 export async function updatePlaceNameAction(

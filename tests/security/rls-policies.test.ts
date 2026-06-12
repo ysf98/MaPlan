@@ -101,6 +101,9 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("create table if not exists public.group_plan_votes");
     expect(sql).toContain("place_id uuid null references public.places(id) on delete set null");
     expect(sql).toContain("foreign key (place_id) references public.places(id) on delete set null");
+    expect(sql).toContain("position integer not null default 0");
+    expect(sql).toContain("idx_group_plan_places_plan");
+    expect(sql).toContain("on public.group_plan_places (plan_id, position asc, created_at asc)");
     expect(sql).toContain("group_plan_places_plan_place_unique unique (plan_id, place_id)");
     expect(sql).toContain("group_plan_votes_plan_user_unique unique (plan_id, user_id)");
     expect(sql).toContain("check (vote in ('attending', 'maybe', 'not_attending'))");

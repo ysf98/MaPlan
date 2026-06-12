@@ -158,7 +158,7 @@ function isOptionalPlanDateAllowed(value: string, minDatePart: string): boolean 
   return trimmed.length === 0 || isPlanDateOnOrAfter(trimmed, minDatePart);
 }
 
-function toPlanPlaceItem(place: GroupPlace): GroupPlanPlaceItem {
+function toPlanPlaceItem(place: GroupPlace, position = 0): GroupPlanPlaceItem {
   return {
     id: `optimistic-${place.id}`,
     placeId: place.id,
@@ -173,6 +173,7 @@ function toPlanPlaceItem(place: GroupPlace): GroupPlanPlaceItem {
     rating: place.rating,
     userRatingsTotal: place.userRatingsTotal,
     plannedAt: null,
+    position,
     note: null,
     createdAt: new Date().toISOString()
   };
@@ -489,7 +490,7 @@ export function GroupPlansTab({
       plannedDate: pendingCreatePlan.plannedDate,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      places: pendingCreatePlan.selectedPlaces.map(toPlanPlaceItem),
+      places: pendingCreatePlan.selectedPlaces.map((place, index) => toPlanPlaceItem(place, index)),
       votes: [],
       attendingCount: 0,
       maybeCount: 0,
@@ -519,13 +520,14 @@ export function GroupPlansTab({
       return;
     }
 
-    const nextPlace = toPlanPlaceItem(pendingRecommendedPlace.place);
     setDisplayPlans((current) =>
       current.map((plan) =>
         plan.id === pendingRecommendedPlace.planId
           ? {
               ...plan,
-              places: plan.places.some((place) => place.placeId === nextPlace.placeId) ? plan.places : [...plan.places, nextPlace]
+              places: plan.places.some((place) => place.placeId === pendingRecommendedPlace.place.id)
+                ? plan.places
+                : [...plan.places, toPlanPlaceItem(pendingRecommendedPlace.place, plan.places.length)]
             }
           : plan
       )

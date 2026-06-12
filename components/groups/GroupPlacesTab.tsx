@@ -24,6 +24,7 @@ type GroupPlacesTabProps = {
 
 const statusInitialState: UpdatePlaceStatusActionState = { error: null, success: false };
 const favoriteInitialState: UpdatePlaceFavoriteActionState = { error: null, success: false };
+type PlacesPlanFilter = "all" | "in_plans" | "without_plan";
 
 export function GroupPlacesTab({
   groupId,
@@ -37,6 +38,28 @@ export function GroupPlacesTab({
   const [favoriteState, favoriteFormAction, isUpdatingFavorite] = useActionState(updatePlaceFavoriteAction, favoriteInitialState);
   const [optimisticFavoriteById, setOptimisticFavoriteById] = useState<Record<string, boolean>>({});
   const [optimisticVisitedById, setOptimisticVisitedById] = useState<Record<string, boolean>>({});
+  const [planFilter, setPlanFilter] = useState<PlacesPlanFilter>("all");
+
+  const planNamesByPlaceId = useMemo(() => {
+    const next = new Map<string, string[]>();
+    for (const plan of plans) {
+      for (const planPlace of plan.places) {
+        if (!planPlace.placeId) continue;
+        const names = next.get(planPlace.placeId) ?? [];
+        names.push(plan.title);
+        next.set(planPlace.placeId, names);
+      }
+    }
+    return next;
+  }, [plans]);
+
+  const visiblePlaces = useMemo(() => {
+    if (planFilter === "all") return places;
+    return places.filter((place) => {
+      const isInPlan = planNamesByPlaceId.has(place.id);
+      return planFilter === "in_plans" ? isInPlan : !isInPlan;
+    });
+  }, [places, planFilter, planNamesByPlaceId]);
 
   const displayedById = useMemo(() => {
     const next: Record<string, { favorite: boolean; visited: boolean }> = {};
@@ -91,9 +114,33 @@ export function GroupPlacesTab({
 
   return (
     <div>
-      <SimplePlacesList
-        cardDataAttribute="data-group-place-card"
-        places={places}
+      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        {[
+          { label: "Todos", value: "all" },
+          { label: "En planes", value: "in_plans" },
+          { label: "Sin plan", value: "without_plan" }
+        ].map((option) => {
+          const isActive = planFilter === option.value;
+          return (
+            <button
+              className={`h-10 shrink-0 rounded-full px-4 text-sm font-extrabold transition ${
+                isActive
+                  ? "bg-[#c6283a] text-white shadow-[0_10px_22px_rgba(181,35,48,0.18)]"
+                  : "bg-white text-zinc-600 shadow-sm hover:bg-rose-50"
+              }`}
+              key={option.value}
+              onClick={() => setPlanFilter(option.value as PlacesPlanFilter)}
+              type="button"
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+      {visiblePlaces.length ? (
+        <SimplePlacesList
+          cardDataAttribute="data-group-place-card"
+          places={visiblePlaces}
         renderHeaderAccessory={(place) => (
           <button
             className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full border border-rose-100 bg-rose-50 px-3 text-xs font-semibold text-[#c6283a] transition hover:-translate-y-0.5 hover:bg-rose-100 active:translate-y-0"
@@ -112,11 +159,24 @@ export function GroupPlacesTab({
             </svg>
           </button>
         )}
-        renderMetaAccessory={
-          canEditPlaces
-            ? (place) => <PlacePlanDialog canManagePlans compact groupId={groupId} placeId={place.id} plans={plans} />
-            : undefined
-        }
+          renderMetaAccessory={(place) => {
+            const planNames = planNamesByPlaceId.get(place.id) ?? [];
+            if (!canEditPlaces && planNames.length === 0) {
+              return null;
+            }
+
+            return (
+              <div className="flex flex-wrap items-center gap-2">
+                {planNames.length ? (
+                  <span className="rounded-full bg-[#fff0ef] px-3 py-1.5 text-[11px] font-extrabold text-[#c6283a]">
+                    En {planNames[0]}
+                    {planNames.length > 1 ? ` +${planNames.length - 1}` : ""}
+                  </span>
+                ) : null}
+                {canEditPlaces ? <PlacePlanDialog canManagePlans compact groupId={groupId} placeId={place.id} plans={plans} /> : null}
+              </div>
+            );
+          }}
         renderImageOverlay={(place) => {
           const displayed = displayedById[place.id];
           const sendStatus = (status: GroupPlace["status"]) => {
@@ -183,7 +243,12 @@ export function GroupPlacesTab({
           );
         }}
         selectedPlaceId={selectedPlaceId}
-      />
+        />
+      ) : (
+        <div className="rounded-[26px] border border-dashed border-rose-200 bg-white p-5 text-sm font-semibold text-zinc-500">
+          No hay lugares en este filtro.
+        </div>
+      )}
       {statusState.error ? <p className="mt-3 text-sm text-rose-600">{statusState.error}</p> : null}
       {statusState.success ? <p className="mt-3 text-sm text-emerald-600">Estado actualizado.</p> : null}
       {favoriteState.error ? <p className="mt-3 text-sm text-rose-600">{favoriteState.error}</p> : null}

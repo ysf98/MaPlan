@@ -421,6 +421,12 @@ export const updateGroupPlanPlaceTimeSchema = z.object({
   plannedAt: nullableDateTimeSchema
 });
 
+export const reorderGroupPlanPlacesSchema = z.object({
+  groupId: uuidSchema,
+  planId: uuidSchema,
+  orderedPlanPlaceIds: z.array(uuidSchema).min(1, "Orden invalido.")
+});
+
 const optionalUuidField = z
   .string()
   .trim()
@@ -620,6 +626,7 @@ export type UpdateGroupPlanDateInput = z.infer<typeof updateGroupPlanDateSchema>
 export type UpdateGroupPlanDetailsInput = z.infer<typeof updateGroupPlanDetailsSchema>;
 export type RemoveGroupPlanPlaceInput = z.infer<typeof removeGroupPlanPlaceSchema>;
 export type UpdateGroupPlanPlaceTimeInput = z.infer<typeof updateGroupPlanPlaceTimeSchema>;
+export type ReorderGroupPlanPlacesInput = z.infer<typeof reorderGroupPlanPlacesSchema>;
 export type CreateGroupChatMessageInput = z.infer<typeof createGroupChatMessageSchema>;
 export type DeleteGroupChatMessageInput = z.infer<typeof deleteGroupChatMessageSchema>;
 export type RemoveGroupMemberInput = z.infer<typeof removeGroupMemberSchema>;

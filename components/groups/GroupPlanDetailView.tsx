@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   deleteGroupPlanAction,
+  reorderGroupPlanPlacesAction,
   removeGroupPlanPlaceAction,
   updateGroupPlanDetailsAction,
   updateGroupPlanPlaceTimeAction,
   voteGroupPlanAction,
   type DeleteGroupPlanActionState,
+  type ReorderGroupPlanPlacesActionState,
   type RemoveGroupPlanPlaceActionState,
   type UpdateGroupPlanDetailsActionState,
   type UpdateGroupPlanPlaceTimeActionState,
@@ -38,6 +40,7 @@ type MarkerPoint = {
 const updateDetailsInitialState: UpdateGroupPlanDetailsActionState = { error: null, requestId: null, success: false };
 const updateTimeInitialState: UpdateGroupPlanPlaceTimeActionState = { error: null, planPlaceId: null, requestId: null, success: false };
 const removePlaceInitialState: RemoveGroupPlanPlaceActionState = { error: null, planPlaceId: null, requestId: null, success: false };
+const reorderPlacesInitialState: ReorderGroupPlanPlacesActionState = { error: null, requestId: null, success: false };
 const voteInitialState: VoteGroupPlanActionState = { error: null, success: false };
 const deletePlanInitialState: DeleteGroupPlanActionState = { error: null, success: false };
 const PLAN_TIME_ZONE = "Europe/Madrid";
@@ -123,11 +126,21 @@ function getSortableTime(place: GroupPlanPlaceItem): number {
   return getPlanTimeMinutes(place.plannedAt, PLAN_TIME_ZONE) ?? Number.MAX_SAFE_INTEGER;
 }
 
-function sortPlanPlaces(places: GroupPlanPlaceItem[]): GroupPlanPlaceItem[] {
+function getSortablePosition(place: GroupPlanPlaceItem): number {
+  return typeof place.position === "number" ? place.position : Number.MAX_SAFE_INTEGER;
+}
+
+function sortPlanPlaces(places: GroupPlanPlaceItem[], preferManualOrder = false): GroupPlanPlaceItem[] {
   return [...places].sort((a, b) => {
+    const aPosition = getSortablePosition(a);
+    const bPosition = getSortablePosition(b);
+    if (preferManualOrder && aPosition !== bPosition) return aPosition - bPosition;
+
     const aTime = getSortableTime(a);
     const bTime = getSortableTime(b);
     if (aTime !== bTime) return aTime - bTime;
+
+    if (aPosition !== bPosition) return aPosition - bPosition;
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   });
 }
@@ -250,6 +263,30 @@ function UsersIcon() {
   );
 }
 
+function GripIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.4" viewBox="0 0 24 24">
+      <path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" />
+    </svg>
+  );
+}
+
+function ArrowUpIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+      <path d="m18 15-6-6-6 6" />
+    </svg>
+  );
+}
+
+function ArrowDownIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: GroupPlanDetailViewProps) {
   const router = useRouter();
   const [localPlan, setLocalPlan] = useState(plan);
@@ -263,13 +300,16 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
   const [pendingDetailsRequestId, setPendingDetailsRequestId] = useState<string | null>(null);
   const [pendingTimeRequestIds, setPendingTimeRequestIds] = useState<Record<string, string>>({});
   const [pendingRemovedPlaceIds, setPendingRemovedPlaceIds] = useState<Record<string, true>>({});
+  const [pendingReorderRequestId, setPendingReorderRequestId] = useState<string | null>(null);
+  const [draggedPlaceId, setDraggedPlaceId] = useState<string | null>(null);
   const [pendingVote, setPendingVote] = useState<GroupPlanVote | null>(null);
   const [detailsState, updateDetailsAction, isSavingDetails] = useActionState(updateGroupPlanDetailsAction, updateDetailsInitialState);
   const [timeState, updateTimeAction, isSavingTime] = useActionState(updateGroupPlanPlaceTimeAction, updateTimeInitialState);
   const [removeState, removePlaceAction, isRemovingPlace] = useActionState(removeGroupPlanPlaceAction, removePlaceInitialState);
+  const [reorderState, reorderPlacesAction, isReorderingPlaces] = useActionState(reorderGroupPlanPlacesAction, reorderPlacesInitialState);
   const [voteState, voteAction, isVoting] = useActionState(voteGroupPlanAction, voteInitialState);
   const [deleteState, deletePlanAction, isDeletingPlan] = useActionState(deleteGroupPlanAction, deletePlanInitialState);
-  const sortedPlaces = useMemo(() => sortPlanPlaces(localPlan.places), [localPlan.places]);
+  const sortedPlaces = useMemo(() => sortPlanPlaces(localPlan.places, isEditing), [isEditing, localPlan.places]);
   const mapUrl = buildMapboxStaticUrl(sortedPlaces, mapboxToken);
   const markerPoints = getMarkerPoints(sortedPlaces);
   const backHref = `/groups/${groupId}?tab=planes`;
@@ -281,6 +321,15 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
     setEditedDate(toDateInputValue(plan.plannedDate));
     setEditedTimes(Object.fromEntries(plan.places.map((place) => [place.id, toTimeInputValue(place.plannedAt)])));
   }, [plan]);
+
+  useEffect(() => {
+    if (!reorderState.success || !pendingReorderRequestId || reorderState.requestId !== pendingReorderRequestId) {
+      return;
+    }
+
+    setPendingReorderRequestId(null);
+    router.refresh();
+  }, [pendingReorderRequestId, reorderState.requestId, reorderState.success, router]);
 
   useEffect(() => {
     if (!detailsState.success || !pendingDetailsRequestId || detailsState.requestId !== pendingDetailsRequestId) {
@@ -422,6 +471,53 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
     setLocalPlan((current) => ({ ...current, places: current.places.filter((candidate) => candidate.id !== place.id) }));
     setPendingRemovedPlaceIds((current) => ({ ...current, [place.id]: true }));
     startTransition(() => removePlaceAction(payload));
+  }
+
+  function persistPlaceOrder(orderedPlaces: GroupPlanPlaceItem[]) {
+    const requestId = crypto.randomUUID();
+    const payload = new FormData();
+    payload.set("groupId", groupId);
+    payload.set("planId", localPlan.id);
+    payload.set("requestId", requestId);
+    orderedPlaces.forEach((place) => payload.append("orderedPlanPlaceIds", place.id));
+
+    setPendingReorderRequestId(requestId);
+    startTransition(() => reorderPlacesAction(payload));
+  }
+
+  function applyPlaceOrder(orderedPlaces: GroupPlanPlaceItem[]) {
+    const positionedPlaces = orderedPlaces.map((place, position) => ({ ...place, position }));
+    const positionedById = new Map(positionedPlaces.map((place) => [place.id, place]));
+
+    setLocalPlan((current) => ({
+      ...current,
+      places: current.places.map((place) => positionedById.get(place.id) ?? place)
+    }));
+    persistPlaceOrder(positionedPlaces);
+  }
+
+  function movePlace(fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= sortedPlaces.length || toIndex >= sortedPlaces.length) {
+      return;
+    }
+
+    const nextPlaces = [...sortedPlaces];
+    const [movedPlace] = nextPlaces.splice(fromIndex, 1);
+    if (!movedPlace) return;
+    nextPlaces.splice(toIndex, 0, movedPlace);
+    applyPlaceOrder(nextPlaces);
+  }
+
+  function dropPlaceOn(targetPlaceId: string) {
+    if (!draggedPlaceId || draggedPlaceId === targetPlaceId) {
+      setDraggedPlaceId(null);
+      return;
+    }
+
+    const fromIndex = sortedPlaces.findIndex((place) => place.id === draggedPlaceId);
+    const toIndex = sortedPlaces.findIndex((place) => place.id === targetPlaceId);
+    movePlace(fromIndex, toIndex);
+    setDraggedPlaceId(null);
   }
 
   function applyLocalVote(nextVote: GroupPlanVote) {
@@ -594,6 +690,13 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
           <h2 className="px-1 text-2xl font-extrabold text-zinc-950">Itinerario</h2>
           {timeState.error ? <p className="mt-2 px-1 text-sm font-semibold text-rose-600">{timeState.error}</p> : null}
           {removeState.error ? <p className="mt-2 px-1 text-sm font-semibold text-rose-600">{removeState.error}</p> : null}
+          {reorderState.error ? <p className="mt-2 px-1 text-sm font-semibold text-rose-600">{reorderState.error}</p> : null}
+          {isEditing && sortedPlaces.length > 1 ? (
+            <p className="mt-2 px-1 text-xs font-semibold text-zinc-500">
+              Arrastra una parada o usa las flechas para ajustar el orden manual.
+              {isReorderingPlaces ? " Guardando orden..." : ""}
+            </p>
+          ) : null}
           <div className="relative mt-5 space-y-6">
             <div className="absolute bottom-8 left-5 top-5 w-px bg-rose-200" />
             {sortedPlaces.length ? (
@@ -601,8 +704,27 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
                 const time = formatPlanTime(place.plannedAt);
                 const isPendingTime = Boolean(pendingTimeRequestIds[place.id]);
                 const isPendingRemove = Boolean(pendingRemovedPlaceIds[place.id]);
+                const isDragging = draggedPlaceId === place.id;
                 return (
-                  <article className="relative flex gap-4" key={place.id}>
+                  <article
+                    className={`relative flex gap-4 transition ${isDragging ? "scale-[0.99] opacity-60" : ""}`}
+                    draggable={isEditing}
+                    key={place.id}
+                    onDragEnd={() => setDraggedPlaceId(null)}
+                    onDragOver={(event) => {
+                      if (!isEditing) return;
+                      event.preventDefault();
+                    }}
+                    onDragStart={() => {
+                      if (!isEditing) return;
+                      setDraggedPlaceId(place.id);
+                    }}
+                    onDrop={(event) => {
+                      if (!isEditing) return;
+                      event.preventDefault();
+                      dropPlaceOn(place.id);
+                    }}
+                  >
                     <div className="relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#c6283a] text-white ring-4 ring-white shadow-[0_10px_22px_rgba(181,35,48,0.22)]">
                       {index + 1}
                     </div>
@@ -635,6 +757,34 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
                         )}
                       </div>
                       <div className="p-4">
+                        {isEditing ? (
+                          <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl bg-[#fff4f3] px-3 py-2 text-xs font-bold text-[#c6283a]">
+                            <span className="inline-flex items-center gap-2">
+                              <GripIcon />
+                              Reordenar
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <button
+                                aria-label={`Subir ${place.name}`}
+                                className="grid h-8 w-8 place-items-center rounded-full bg-white text-[#c6283a] shadow-sm transition hover:bg-rose-50 disabled:opacity-35"
+                                disabled={index === 0 || isReorderingPlaces}
+                                onClick={() => movePlace(index, index - 1)}
+                                type="button"
+                              >
+                                <ArrowUpIcon />
+                              </button>
+                              <button
+                                aria-label={`Bajar ${place.name}`}
+                                className="grid h-8 w-8 place-items-center rounded-full bg-white text-[#c6283a] shadow-sm transition hover:bg-rose-50 disabled:opacity-35"
+                                disabled={index === sortedPlaces.length - 1 || isReorderingPlaces}
+                                onClick={() => movePlace(index, index + 1)}
+                                type="button"
+                              >
+                                <ArrowDownIcon />
+                              </button>
+                            </span>
+                          </div>
+                        ) : null}
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <h3 className="text-lg font-extrabold leading-6 text-zinc-950">{place.name}</h3>

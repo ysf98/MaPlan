@@ -82,6 +82,13 @@ type RemoveGroupPlanPlaceInput = {
   planPlaceId: string;
 };
 
+type ReorderGroupPlanPlacesInput = {
+  userId: string;
+  groupId: string;
+  planId: string;
+  orderedPlanPlaceIds: string[];
+};
+
 type UpdateGroupPlanPlaceTimeInput = {
   userId: string;
   groupId: string;
@@ -118,6 +125,7 @@ type GroupPlanPlaceRow = {
   provider: string | null;
   external_place_id: string | null;
   planned_at: string | null;
+  position: number;
   note: string | null;
   created_at: string;
 };
@@ -142,6 +150,7 @@ export type GroupPlanPlaceItem = {
   rating: number | null;
   userRatingsTotal: number | null;
   plannedAt: string | null;
+  position: number;
   note: string | null;
   createdAt: string;
 };
@@ -240,12 +249,22 @@ async function insertPlaceIntoPlan(
     return { error: "No se encontro el lugar del grupo." };
   }
 
+  const { count, error: countError } = await supabase
+    .from("group_plan_places")
+    .select("id", { count: "exact", head: true })
+    .eq("plan_id", input.planId);
+
+  if (countError) {
+    return { error: countError.message };
+  }
+
   const { error } = await supabase.from("group_plan_places").insert({
     plan_id: input.planId,
     place_id: input.placeId,
     added_by: input.userId,
     ...snapshot,
     planned_at: input.plannedAt || null,
+    position: count ?? 0,
     note: normalizeOptionalText(input.note)
   });
 
@@ -284,9 +303,10 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
     supabase
       .from("group_plan_places")
       .select(
-        "id, plan_id, place_id, place_name, place_address, place_city, place_image_url, latitude, longitude, google_maps_url, phone_number, rating, user_ratings_total, provider, external_place_id, planned_at, note, created_at"
+        "id, plan_id, place_id, place_name, place_address, place_city, place_image_url, latitude, longitude, google_maps_url, phone_number, rating, user_ratings_total, provider, external_place_id, planned_at, position, note, created_at"
       )
       .in("plan_id", planIds)
+      .order("position", { ascending: true })
       .order("created_at", { ascending: true }),
     supabase.from("group_plan_votes").select("plan_id, user_id, vote").in("plan_id", planIds)
   ]);
@@ -343,6 +363,7 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
       rating: place?.rating ?? item.rating,
       userRatingsTotal: place?.userRatingsTotal ?? item.user_ratings_total,
       plannedAt: item.planned_at,
+      position: item.position,
       note: item.note,
       createdAt: item.created_at
     };
@@ -500,6 +521,15 @@ export async function addDraftPlaceToGroupPlan(input: AddDraftPlaceToGroupPlanIn
   }
 
   const supabase = await createSupabaseServerClient();
+  const { count, error: countError } = await supabase
+    .from("group_plan_places")
+    .select("id", { count: "exact", head: true })
+    .eq("plan_id", input.planId);
+
+  if (countError) {
+    return { error: countError.message };
+  }
+
   const { error } = await supabase.from("group_plan_places").insert({
     plan_id: input.planId,
     place_id: null,
@@ -517,6 +547,7 @@ export async function addDraftPlaceToGroupPlan(input: AddDraftPlaceToGroupPlanIn
     provider: normalizeOptionalText(input.provider),
     external_place_id: normalizeOptionalText(input.externalPlaceId),
     planned_at: input.plannedAt || null,
+    position: count ?? 0,
     note: normalizeOptionalText(input.note)
   });
 
@@ -727,6 +758,48 @@ export async function updateGroupPlanPlaceTime(input: UpdateGroupPlanPlaceTimeIn
 
   if (error) {
     return { error: error.message };
+  }
+
+  return { error: null };
+}
+
+export async function reorderGroupPlanPlaces(input: ReorderGroupPlanPlacesInput): Promise<{ error: string | null }> {
+  const plan = await getPlanForGroup(input.groupId, input.planId);
+  if (!plan) {
+    return { error: "No se encontro el plan." };
+  }
+
+  if (plan.created_by !== input.userId) {
+    return { error: "Solo la persona creadora puede reordenar este plan." };
+  }
+
+  const orderedIds = Array.from(new Set(input.orderedPlanPlaceIds));
+  if (orderedIds.length === 0) {
+    return { error: "Orden invalido." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: planPlaces, error: planPlacesError } = await supabase
+    .from("group_plan_places")
+    .select("id")
+    .eq("plan_id", input.planId);
+
+  if (planPlacesError || !planPlaces) {
+    return { error: "No se pudieron leer las paradas del plan." };
+  }
+
+  const currentIds = planPlaces.map((place) => place.id);
+  if (orderedIds.length !== currentIds.length || currentIds.some((id) => !orderedIds.includes(id))) {
+    return { error: "El orden no coincide con las paradas del plan." };
+  }
+
+  const updates = orderedIds.map((id, position) =>
+    supabase.from("group_plan_places").update({ position }).eq("id", id).eq("plan_id", input.planId)
+  );
+  const results = await Promise.all(updates);
+  const failed = results.find((result) => result.error);
+  if (failed?.error) {
+    return { error: failed.error.message };
   }
 
   return { error: null };

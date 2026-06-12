@@ -26,6 +26,7 @@ import {
   updateGroupPlanDateSchema,
   updateGroupPlanDetailsSchema,
   updateGroupPlanPlaceTimeSchema,
+  reorderGroupPlanPlacesSchema,
   removeGroupPlanPlaceSchema,
   updatePlaceLocationSchema,
   updatePlaceFavoriteSchema,
@@ -248,6 +249,24 @@ describe("group plan schemas", () => {
         plannedAt: ""
       }).success
     ).toBe(true);
+  });
+
+  it("reorderGroupPlanPlacesSchema validates ordered stop ids", () => {
+    expect(
+      reorderGroupPlanPlacesSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        orderedPlanPlaceIds: ["33333333-3333-4333-8333-333333333333", "44444444-4444-4444-8444-444444444444"]
+      }).success
+    ).toBe(true);
+
+    expect(
+      reorderGroupPlanPlacesSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        planId: "22222222-2222-4222-8222-222222222222",
+        orderedPlanPlaceIds: []
+      }).success
+    ).toBe(false);
   });
 });
 

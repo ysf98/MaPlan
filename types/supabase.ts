@@ -330,6 +330,7 @@ export type Database = {
           place_id: string | null
           place_image_url: string | null
           place_name: string | null
+          position: number
           plan_id: string
           planned_at: string | null
           provider: string | null
@@ -351,6 +352,7 @@ export type Database = {
           place_id?: string | null
           place_image_url?: string | null
           place_name?: string | null
+          position?: number
           plan_id: string
           planned_at?: string | null
           provider?: string | null
@@ -372,6 +374,7 @@ export type Database = {
           place_id?: string | null
           place_image_url?: string | null
           place_name?: string | null
+          position?: number
           plan_id?: string
           planned_at?: string | null
           provider?: string | null

@@ -8,6 +8,7 @@ const addDraftPlaceToGroupPlanMock = vi.fn();
 const voteGroupPlanMock = vi.fn();
 const removePlaceFromGroupPlanMock = vi.fn();
 const updateGroupPlanPlaceTimeMock = vi.fn();
+const reorderGroupPlanPlacesMock = vi.fn();
 const createPlaceMock = vi.fn();
 
 vi.mock("next/cache", () => ({
@@ -28,6 +29,7 @@ vi.mock("@/lib/groupPlans", () => ({
   addPlaceToGroupPlan: vi.fn(),
   createGroupPlan: createGroupPlanMock,
   deleteGroupPlan: vi.fn(),
+  reorderGroupPlanPlaces: reorderGroupPlanPlacesMock,
   removePlaceFromGroupPlan: removePlaceFromGroupPlanMock,
   updateGroupPlanDate: vi.fn(),
   updateGroupPlanDetails: vi.fn(),
@@ -95,6 +97,7 @@ describe("group plan server actions", () => {
     voteGroupPlanMock.mockResolvedValue({ error: null });
     removePlaceFromGroupPlanMock.mockResolvedValue({ error: null });
     updateGroupPlanPlaceTimeMock.mockResolvedValue({ error: null });
+    reorderGroupPlanPlacesMock.mockResolvedValue({ error: null });
   });
 
   it("createGroupPlanAction validates payload before calling domain", async () => {
@@ -197,6 +200,29 @@ describe("group plan server actions", () => {
       planId,
       planPlaceId,
       plannedAt: "2099-07-10T21:15",
+      userId: user.id
+    });
+    expect(revalidatePathMock).toHaveBeenCalledWith(`/groups/${groupId}`);
+    expect(revalidatePathMock).toHaveBeenCalledWith(`/groups/${groupId}/plans/${planId}`);
+  });
+
+  it("reorderGroupPlanPlacesAction calls domain and revalidates group plus detail route", async () => {
+    const { reorderGroupPlanPlacesAction } = await import("@/app/groups/[groupId]/actions");
+    const secondPlanPlaceId = "44444444-4444-4444-8444-444444444444";
+    const formData = new FormData();
+    formData.set("groupId", groupId);
+    formData.set("planId", planId);
+    formData.set("requestId", "request-3");
+    formData.append("orderedPlanPlaceIds", secondPlanPlaceId);
+    formData.append("orderedPlanPlaceIds", planPlaceId);
+
+    const result = await reorderGroupPlanPlacesAction({ error: null, success: false }, formData);
+
+    expect(result).toMatchObject({ error: null, requestId: "request-3", success: true });
+    expect(reorderGroupPlanPlacesMock).toHaveBeenCalledWith({
+      groupId,
+      orderedPlanPlaceIds: [secondPlanPlaceId, planPlaceId],
+      planId,
       userId: user.id
     });
     expect(revalidatePathMock).toHaveBeenCalledWith(`/groups/${groupId}`);

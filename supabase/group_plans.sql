@@ -30,6 +30,7 @@ create table if not exists public.group_plan_places (
   provider text null,
   external_place_id text null,
   planned_at timestamptz null,
+  position integer not null default 0,
   note text null,
   created_at timestamptz not null default now()
 );
@@ -57,6 +58,7 @@ begin
   alter table public.group_plan_places add column if not exists user_ratings_total integer null;
   alter table public.group_plan_places add column if not exists provider text null;
   alter table public.group_plan_places add column if not exists external_place_id text null;
+  alter table public.group_plan_places add column if not exists position integer not null default 0;
 
   alter table public.group_plan_places alter column place_id drop not null;
 
@@ -99,6 +101,18 @@ set
 from public.places p
 where gpp.place_id = p.id;
 
+with ranked_plan_places as (
+  select
+    id,
+    row_number() over (partition by plan_id order by planned_at asc nulls last, created_at asc, id asc) - 1 as next_position
+  from public.group_plan_places
+)
+update public.group_plan_places gpp
+set position = ranked_plan_places.next_position
+from ranked_plan_places
+where ranked_plan_places.id = gpp.id
+  and gpp.position = 0;
+
 create index if not exists idx_group_plans_group_created
 on public.group_plans (group_id, created_at desc);
 
@@ -106,7 +120,7 @@ create index if not exists idx_group_plans_group_planned_date
 on public.group_plans (group_id, planned_date asc nulls last);
 
 create index if not exists idx_group_plan_places_plan
-on public.group_plan_places (plan_id, created_at asc);
+on public.group_plan_places (plan_id, position asc, created_at asc);
 
 create index if not exists idx_group_plan_places_place
 on public.group_plan_places (place_id);
