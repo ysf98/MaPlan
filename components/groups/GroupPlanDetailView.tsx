@@ -100,6 +100,15 @@ function toTimeInputValue(date: string | null): string {
   }).format(parsed);
 }
 
+function formatNativeInputValue(value: string, type: "date" | "time"): string {
+  if (!value) return type === "date" ? "Seleccionar fecha" : "Seleccionar hora";
+  if (type === "time") return value;
+
+  const [year, month, day] = value.split("-");
+  if (!year || !month || !day) return value;
+  return `${day}/${month}/${year}`;
+}
+
 function getTimeZoneOffsetMinutes(timestamp: number, timeZone: string): number {
   const parts = new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
@@ -277,18 +286,39 @@ function ArrowDownIcon() {
 }
 
 function NativeDateTimeInput({ disabled, label, onChange, type, value }: NativeDateTimeInputProps) {
+  const displayValue = formatNativeInputValue(value, type);
+
   return (
     <label className="block space-y-2">
       <span className="text-sm font-semibold text-[rgb(var(--muted))]">{label}</span>
-      <input
-        className="h-14 min-h-14 w-full min-w-0 appearance-auto rounded-2xl border border-rose-100 bg-[#fff4f3] px-4 text-left text-base font-bold text-[#261817] accent-[#c6283a] outline-none transition focus:border-[#c6283a] focus:ring-2 focus:ring-[#ffdad8] disabled:opacity-60"
-        disabled={disabled}
-        inputMode="none"
-        onChange={onChange}
-        style={{ colorScheme: "light" }}
-        type={type}
-        value={value}
-      />
+      <span
+        className={`relative block h-12 min-w-0 overflow-hidden rounded-2xl border border-rose-100 bg-[#fff4f3] px-4 text-[#261817] transition focus-within:border-[#c6283a] focus-within:ring-2 focus-within:ring-[#ffdad8] ${
+          disabled ? "opacity-60" : ""
+        }`}
+      >
+        <span className="flex h-full min-w-0 items-center justify-between gap-3">
+          <span className="min-w-0 truncate text-sm font-extrabold">{displayValue}</span>
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white text-[#c6283a] shadow-sm">
+            {type === "date" ? (
+              <CalendarIcon />
+            ) : (
+              <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+            )}
+          </span>
+        </span>
+        <input
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          disabled={disabled}
+          inputMode="none"
+          onChange={onChange}
+          style={{ colorScheme: "light" }}
+          type={type}
+          value={value}
+        />
+      </span>
     </label>
   );
 }
