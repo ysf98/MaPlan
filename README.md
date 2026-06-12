@@ -13,7 +13,7 @@ MaPlan es una app social de mapas para guardar, organizar y compartir lugares co
 - Búsqueda de amigos con sugerencias en vivo desde la propia barra.
 - Chat grupal para comentar planes, lugares e ideas del grupo.
 - Mapa de grupo con búsqueda, guardado y filtros.
-- Planes de grupo con ruta, paradas ordenadas, votos de asistencia y edición inline.
+- Planes de grupo con ruta, paradas ordenadas por hora, reordenación manual, votos de asistencia y edición inline.
 - Mapa personal con pestañas `Lugares` y `Mapa`.
 - Selector de mapas en `/maps` para acceder a mapas grupales o mapa personal.
 - Explorador principal en `/explore` para buscar lugares y guardarlos en distintos destinos.
@@ -24,7 +24,7 @@ MaPlan es una app social de mapas para guardar, organizar y compartir lugares co
 - Logros de explorador: Cartógrafo, Gourmet, Naturalista y Deportista.
 - Imágenes de lugares desde Google Places o guardado manual.
 - Enlaces de Google Maps compatibles con web y móvil.
-- Notificaciones y actividad de grupo.
+- Notificaciones de grupo, mensajes no leídos y actividad de otros usuarios.
 - RLS y validaciones server-side para proteger datos.
 
 ## Stack
@@ -140,6 +140,7 @@ Las rutas comunes viven en `utils/constants.ts` bajo `ROUTES`.
 - `/groups/new`
 - `/groups/join`
 - `/groups/[groupId]`
+- `/groups/[groupId]/chat`
 - `/groups/[groupId]/plans/[planId]`
 - `/maps`
 - `/map`
@@ -162,6 +163,8 @@ La pertenencia se gestiona en `group_members`; el creador real del grupo tambié
 
 Los lugares compartidos viven en `places`.
 
+La pestaña de lugares de un grupo permite filtrar entre todos los lugares, lugares incluidos en planes y lugares sin plan. Las tarjetas muestran una referencia compacta al plan cuando el lugar ya forma parte de una ruta.
+
 Los estados personales por usuario de lugares de grupo viven en `group_place_user_states`:
 
 - `status`: `pending` / `visited`
@@ -180,10 +183,11 @@ La vista de planes dentro de un grupo permite:
 - abrir un detalle independiente en `/groups/[groupId]/plans/[planId]`;
 - editar nombre, fecha, horas de paradas y eliminar paradas desde el detalle;
 - ordenar el itinerario por hora, dejando al final las paradas sin hora;
+- reordenar manualmente paradas en modo edición con drag & drop o controles de subir/bajar;
 - votar asistencia con `Iré`, `Quizás` y `No`;
 - eliminar el plan desde el menú de opciones de la tarjeta de detalle.
 
-`group_plan_places` guarda una instantánea de los datos importantes del lugar (`place_name`, dirección, imagen, coordenadas, enlaces y metadata principal). Esto permite que una parada siga apareciendo en un plan aunque el lugar original se borre de `places`.
+`group_plan_places` guarda una instantánea de los datos importantes del lugar (`place_name`, dirección, imagen, coordenadas, enlaces y metadata principal) y un `position` para mantener el orden manual. Esto permite que una parada siga apareciendo en un plan aunque el lugar original se borre de `places`.
 
 Los lugares añadidos a un plan desde Explore o desde el mapa pueden quedar solo como paradas del plan mediante snapshot, sin guardarse automáticamente como lugar del grupo.
 
@@ -225,11 +229,11 @@ El buscador muestra sugerencias en vivo dentro de la propia barra mientras se es
 
 Los mensajes del chat grupal viven en `group_chat_messages`. El estado de lectura por usuario vive en `group_chat_reads`.
 
-La vista independiente `/groups/[groupId]/chat` permite a los miembros escribir mensajes normales del grupo en pantalla completa. El modelo también permite guardar contexto opcional de plan, lugar o parada (`plan_id`, `place_id`, `plan_place_id`) para futuras sugerencias sobre planes o comentarios enlazados a lugares.
+La vista independiente `/groups/[groupId]/chat` permite a los miembros escribir mensajes normales del grupo en pantalla completa. El selector `+` permite adjuntar contexto de un plan o lugar guardado del grupo, y las tarjetas de contexto enlazan a la vista correspondiente.
 
 Solo miembros del grupo pueden leer o escribir mensajes. Cada usuario puede eliminar sus propios mensajes.
 
-El botÃ³n `Abrir chat` muestra un contador flotante con mensajes no leÃ­dos. El contador excluye mensajes enviados por el propio usuario y se limpia al entrar en la vista del chat.
+El botón `Abrir chat` muestra un contador flotante con mensajes no leídos. El contador excluye mensajes enviados por el propio usuario y se limpia al entrar en la vista del chat.
 
 ### Perfil, listas y logros
 
@@ -354,7 +358,7 @@ Playwright usa `PLAYWRIGHT_BASE_URL` si está definido; si no, arranca el dev se
 ## Estado actual del producto
 
 - Detalle de grupo con tabs `Lugares`, `Actividad`, `Mapa` y `Planes`, y acceso a chat en vista independiente.
-- Planes de grupo con creación, tarjetas resumen, detalle independiente, edición inline, paradas snapshot y votos de asistencia.
+- Planes de grupo con creación, tarjetas resumen, detalle independiente, edición inline, paradas snapshot, reordenación manual y votos de asistencia.
 - Mapa personal alineado con el estilo de grupos.
 - Selector `/maps` para separar mapas grupales y mapa personal.
 - Explore fullscreen para buscar y guardar lugares en mapa personal o grupos permitidos.
@@ -362,7 +366,7 @@ Playwright usa `PLAYWRIGHT_BASE_URL` si está definido; si no, arranca el dev se
 - Perfil con contadores agregados reales.
 - Listas globales en `/profile/places`.
 - Logros de explorador calculados desde lugares reales.
-- Amigos, invitaciones, solicitudes y notificaciones integradas.
+- Amigos, invitaciones, solicitudes y notificaciones integradas, incluyendo mensajes pendientes y planes creados por otros usuarios.
 - Búsqueda de amigos con autocomplete en la barra.
-- Chat grupal con mensajes entre miembros, Realtime y contador de no leÃ­dos.
+- Chat grupal con mensajes entre miembros, Realtime, tarjetas de contexto enlazables y contador de no leídos.
 - Modelo de permisos enforced en UI, server actions y RLS.
