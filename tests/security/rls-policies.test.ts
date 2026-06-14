@@ -77,9 +77,14 @@ describe("RLS policies baseline", () => {
   it("includes group activity table and member-only visibility policy", () => {
     const sql = readFileSync(resolve(process.cwd(), "supabase/rls_group_activity.sql"), "utf8");
     expect(sql).toContain("create table if not exists public.group_activity_events");
+    expect(sql).toContain("create table if not exists public.group_activity_reads");
     expect(sql).toContain("check (event_type in ('place_added', 'plan_created'))");
     expect(sql).toContain("create policy group_activity_select_group_member");
     expect(sql).toContain("create policy group_activity_insert_editor_only");
+    expect(sql).toContain("create policy group_activity_reads_select_self");
+    expect(sql).toContain("create policy group_activity_reads_insert_self");
+    expect(sql).toContain("create policy group_activity_reads_update_self");
+    expect(sql).toContain("user_id = auth.uid()");
     expect(sql).toContain("event_type in ('place_added', 'plan_created')");
   });
 

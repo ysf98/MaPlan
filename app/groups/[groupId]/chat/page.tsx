@@ -2,10 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { GroupChatView } from "@/components/groups/GroupChatView";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
-import { getGroupChatMessagesForUser, markGroupChatAsReadForUser } from "@/lib/groupChat";
+import { getGroupChatMessagesForUser } from "@/lib/groupChat";
 import { getGroupDetailForUser } from "@/lib/groups";
-import { getGroupPlansForUser } from "@/lib/groupPlans";
-import { getGroupPlacesForUser } from "@/lib/places";
 
 type GroupChatPageProps = {
   params: Promise<{
@@ -26,22 +24,14 @@ export default async function GroupChatPage({ params, searchParams }: GroupChatP
   const rawPlaceId = resolvedSearchParams?.placeId;
   const initialSelectedPlanId = Array.isArray(rawPlanId) ? rawPlanId[0] ?? null : rawPlanId ?? null;
   const initialSelectedPlaceId = Array.isArray(rawPlaceId) ? rawPlaceId[0] ?? null : rawPlaceId ?? null;
-  const [group, messages, plans, places] = await Promise.all([
+  const [group, messages] = await Promise.all([
     getGroupDetailForUser(user.id, groupId),
-    getGroupChatMessagesForUser(user.id, groupId),
-    getGroupPlansForUser(user.id, groupId),
-    getGroupPlacesForUser(user.id, groupId)
+    getGroupChatMessagesForUser(user.id, groupId)
   ]);
 
   if (!group) {
     notFound();
   }
-
-  await markGroupChatAsReadForUser({
-    groupId,
-    lastReadAt: messages.at(-1)?.createdAt ?? null,
-    userId: user.id
-  });
 
   return (
     <AppShell currentUser={user} fullBleed>
@@ -51,9 +41,8 @@ export default async function GroupChatPage({ params, searchParams }: GroupChatP
         groupName={group.name}
         initialSelectedPlaceId={initialSelectedPlaceId}
         initialSelectedPlanId={initialSelectedPlanId}
+        latestMessageAt={messages.at(-1)?.createdAt ?? null}
         messages={messages}
-        places={places}
-        plans={plans}
       />
     </AppShell>
   );

@@ -14,6 +14,12 @@ create table if not exists public.group_activity_events (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.group_activity_reads (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  last_seen_at timestamptz not null,
+  updated_at timestamptz not null default now()
+);
+
 do $$
 begin
   if exists (
@@ -37,9 +43,14 @@ create index if not exists idx_group_activity_created_at_desc
 create index if not exists idx_group_activity_actor_created_at_desc
   on public.group_activity_events (actor_user_id, created_at desc);
 
+create index if not exists idx_group_activity_reads_last_seen_at
+  on public.group_activity_reads (last_seen_at desc);
+
 grant select, insert on table public.group_activity_events to authenticated;
+grant select, insert, update on table public.group_activity_reads to authenticated;
 
 alter table public.group_activity_events enable row level security;
+alter table public.group_activity_reads enable row level security;
 
 drop policy if exists group_activity_select_group_member on public.group_activity_events;
 create policy group_activity_select_group_member
@@ -81,3 +92,25 @@ with check (
     )
   )
 );
+
+drop policy if exists group_activity_reads_select_self on public.group_activity_reads;
+create policy group_activity_reads_select_self
+on public.group_activity_reads
+for select
+to authenticated
+using (user_id = auth.uid());
+
+drop policy if exists group_activity_reads_insert_self on public.group_activity_reads;
+create policy group_activity_reads_insert_self
+on public.group_activity_reads
+for insert
+to authenticated
+with check (user_id = auth.uid());
+
+drop policy if exists group_activity_reads_update_self on public.group_activity_reads;
+create policy group_activity_reads_update_self
+on public.group_activity_reads
+for update
+to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());

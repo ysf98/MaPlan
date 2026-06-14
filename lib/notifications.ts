@@ -1,5 +1,9 @@
 import { getFriendRequests } from "@/lib/friends";
-import { getGroupActivityFeedForUser, type GroupActivityFeedItem } from "@/lib/groupActivity";
+import {
+  getGroupActivityFeedForUser,
+  getGroupActivityLastSeenAtForUser,
+  type GroupActivityFeedItem
+} from "@/lib/groupActivity";
 import { getGroupChatUnreadSummariesForUser } from "@/lib/groupChat";
 import { getGroupInvitationsForUser } from "@/lib/groupInvitations";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -48,11 +52,12 @@ export type PendingNotifications = {
 };
 
 export async function getPendingNotificationsForUser(userId: string): Promise<PendingNotifications> {
-  const [invitations, friendRequests, unreadChatSummaries, activityFeed] = await Promise.all([
+  const [invitations, friendRequests, unreadChatSummaries, activityFeed, activityLastSeenAt] = await Promise.all([
     getGroupInvitationsForUser(userId),
     getFriendRequests(userId),
     getGroupChatUnreadSummariesForUser(userId),
-    getGroupActivityFeedForUser(userId, 20, { includeGroupName: true, maxAgeDays: 14 })
+    getGroupActivityFeedForUser(userId, 20, { includeGroupName: true, maxAgeDays: 14 }),
+    getGroupActivityLastSeenAtForUser(userId)
   ]);
 
   const invitationNotifications: NotificationItem[] = invitations
@@ -98,19 +103,23 @@ export async function getPendingNotificationsForUser(userId: string): Promise<Pe
       activity: item
     }));
 
+  const unreadGroupActivities = groupActivities.filter(
+    (item) => !activityLastSeenAt || new Date(item.createdAt).getTime() > new Date(activityLastSeenAt).getTime()
+  );
+
   return {
     pendingInvitations,
     reviewedInvitations,
     friendRequests: pendingFriendRequests,
     unreadChats,
     groupActivities,
-    total: pendingInvitations.length + pendingFriendRequests.length + unreadChats.length + groupActivities.length
+    total: pendingInvitations.length + pendingFriendRequests.length + unreadChats.length + unreadGroupActivities.length
   };
 }
 
 export async function getPendingNotificationsCountForUser(userId: string): Promise<number> {
   const supabase = await createSupabaseServerClient();
-  const [invitationsResult, friendRequestsResult, unreadChatSummaries, activityFeed] = await Promise.all([
+  const [invitationsResult, friendRequestsResult, unreadChatSummaries, activityFeed, activityLastSeenAt] = await Promise.all([
     supabase
       .from("group_invitations")
       .select("id", { count: "exact", head: true })
@@ -122,13 +131,20 @@ export async function getPendingNotificationsCountForUser(userId: string): Promi
       .eq("receiver_id", userId)
       .eq("status", "pending"),
     getGroupChatUnreadSummariesForUser(userId),
-    getGroupActivityFeedForUser(userId, 20, { includeGroupName: true, maxAgeDays: 14 })
+    getGroupActivityFeedForUser(userId, 20, { includeGroupName: true, maxAgeDays: 14 }),
+    getGroupActivityLastSeenAtForUser(userId)
   ]);
+
+  const unreadGroupActivitiesCount = activityFeed.filter(
+    (item) =>
+      item.actorUserId !== userId &&
+      (!activityLastSeenAt || new Date(item.createdAt).getTime() > new Date(activityLastSeenAt).getTime())
+  ).length;
 
   return (
     (invitationsResult.count || 0) +
     (friendRequestsResult.count || 0) +
     unreadChatSummaries.length +
-    activityFeed.filter((item) => item.actorUserId !== userId).length
+    unreadGroupActivitiesCount
   );
 }

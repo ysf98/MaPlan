@@ -187,6 +187,32 @@ export async function getGroupActivityFeedForUser(
   });
 }
 
+export async function getGroupActivityLastSeenAtForUser(userId: string): Promise<string | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("group_activity_reads")
+    .select("last_seen_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  return data?.last_seen_at ?? null;
+}
+
+export async function markGroupActivitySeenForUser(userId: string, lastSeenAt: string | null): Promise<void> {
+  if (!lastSeenAt) {
+    return;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  await supabase.from("group_activity_reads").upsert(
+    {
+      last_seen_at: lastSeenAt,
+      user_id: userId
+    },
+    { onConflict: "user_id" }
+  );
+}
+
 export function summarizeGroupsWithRecentActivity(events: GroupActivityFeedItem[], maxGroups = 5): GroupWithActivityItem[] {
   if (events.length === 0) {
     return [];

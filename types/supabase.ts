@@ -94,7 +94,7 @@ export type Database = {
         }
         Relationships: []
       }
-      group_activity_events: {
+        group_activity_events: {
         Row: {
           actor_user_id: string
           created_at: string
@@ -133,9 +133,27 @@ export type Database = {
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      group_chat_messages: {
+          ]
+        }
+        group_activity_reads: {
+          Row: {
+            last_seen_at: string
+            updated_at: string
+            user_id: string
+          }
+          Insert: {
+            last_seen_at: string
+            updated_at?: string
+            user_id: string
+          }
+          Update: {
+            last_seen_at?: string
+            updated_at?: string
+            user_id?: string
+          }
+          Relationships: []
+        }
+        group_chat_messages: {
         Row: {
           content: string
           created_at: string

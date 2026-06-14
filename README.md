@@ -24,7 +24,7 @@ MaPlan es una app social de mapas para guardar, organizar y compartir lugares co
 - Logros de explorador: Cartógrafo, Gourmet, Naturalista y Deportista.
 - Imágenes de lugares desde Google Places o guardado manual.
 - Enlaces de Google Maps compatibles con web y móvil.
-- Notificaciones de grupo, mensajes no leídos y actividad de otros usuarios.
+- Notificaciones de grupo con estado visto, mensajes no leídos y actividad de otros usuarios.
 - RLS y validaciones server-side para proteger datos.
 
 ## Stack
@@ -313,6 +313,7 @@ Notas:
 - La mayoría de scripts son idempotentes y usan `if not exists` / `drop policy if exists`.
 - `groups_privacy.sql` migra flags legacy si existen.
 - `profiles_full_name.sql` y `groups_cover_image_url.sql` son necesarios para la versión actual.
+- `rls_group_activity.sql` crea la actividad de grupo y el estado de actividad vista por usuario.
 - `group_plans.sql` crea planes, paradas con snapshot, votos de asistencia y sus políticas RLS.
 - `group_chat.sql` crea el chat grupal y debe ejecutarse después de `group_plans.sql`.
 - Si cambia el retorno de una función SQL, Postgres puede fallar con `cannot change return type of existing function`.
@@ -366,7 +367,7 @@ Playwright usa `PLAYWRIGHT_BASE_URL` si está definido; si no, arranca el dev se
 - Perfil con contadores agregados reales.
 - Listas globales en `/profile/places`.
 - Logros de explorador calculados desde lugares reales.
-- Amigos, invitaciones, solicitudes y notificaciones integradas, incluyendo mensajes pendientes y planes creados por otros usuarios.
+- Amigos, invitaciones, solicitudes y notificaciones integradas, incluyendo mensajes pendientes, actividad vista y planes creados por otros usuarios.
 - Búsqueda de amigos con autocomplete en la barra.
 - Chat grupal con mensajes entre miembros, Realtime, tarjetas de contexto enlazables y contador de no leídos.
 - Modelo de permisos enforced en UI, server actions y RLS.

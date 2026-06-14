@@ -109,14 +109,14 @@ export async function getGroupChatMessagesForUser(userId: string, groupId: strin
     .from("group_chat_messages")
     .select("id, group_id, sender_id, content, kind, plan_id, place_id, plan_place_id, created_at, updated_at")
     .eq("group_id", groupId)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(100);
 
   if (error || !data) {
     return [];
   }
 
-  const rows = data as GroupChatMessageRow[];
+  const rows = [...(data as GroupChatMessageRow[])].reverse();
   const profileById = await getProfileMap(rows.map((row) => row.sender_id));
   const planIds = Array.from(new Set(rows.map((row) => row.plan_id).filter(Boolean) as string[]));
   const placeIds = Array.from(new Set(rows.map((row) => row.place_id).filter(Boolean) as string[]));

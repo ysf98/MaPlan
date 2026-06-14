@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,8 +13,6 @@ import {
 import { MaplanMinimalIcon } from "@/components/branding/MaplanMinimalIcon";
 import { Button } from "@/components/ui/Button";
 import type { GroupChatMessageItem } from "@/lib/groupChat";
-import type { GroupPlanItem } from "@/lib/groupPlans";
-import type { GroupPlace } from "@/lib/places/shared";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type GroupChatViewProps = {
@@ -23,9 +21,8 @@ type GroupChatViewProps = {
   groupName: string;
   initialSelectedPlaceId?: string | null;
   initialSelectedPlanId?: string | null;
+  latestMessageAt: string | null;
   messages: GroupChatMessageItem[];
-  places: GroupPlace[];
-  plans: GroupPlanItem[];
 };
 
 const createInitialState: CreateGroupChatMessageActionState = { error: null, success: false };
@@ -48,6 +45,11 @@ type ChatContext =
       subtitle: string | null;
       title: string;
     };
+
+type ChatContextResponse = {
+  places?: ChatContext[];
+  plans?: ChatContext[];
+};
 
 function getInitial(username: string | null): string {
   const trimmed = username?.trim() ?? "";
@@ -124,9 +126,8 @@ export function GroupChatView({
   groupName,
   initialSelectedPlaceId = null,
   initialSelectedPlanId = null,
+  latestMessageAt,
   messages,
-  places,
-  plans
 }: GroupChatViewProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -135,6 +136,11 @@ export function GroupChatView({
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
   const [attachMode, setAttachMode] = useState<ChatContext["kind"] | null>(null);
   const [selectedContext, setSelectedContext] = useState<ChatContext | null>(null);
+  const [planContextOptions, setPlanContextOptions] = useState<ChatContext[]>([]);
+  const [placeContextOptions, setPlaceContextOptions] = useState<ChatContext[]>([]);
+  const [hasLoadedContext, setHasLoadedContext] = useState(false);
+  const [isLoadingContext, setIsLoadingContext] = useState(false);
+  const [contextError, setContextError] = useState<string | null>(null);
   const [optimisticMessages, setOptimisticMessages] = useState<LocalChatMessage[]>([]);
   const [createState, createAction, isCreating] = useActionState(createGroupChatMessageAction, createInitialState);
   const [deleteState, deleteAction, isDeleting] = useActionState(deleteGroupChatMessageAction, deleteInitialState);
@@ -146,28 +152,35 @@ export function GroupChatView({
     [currentUserId, messages]
   );
   const visibleMessages = useMemo<LocalChatMessage[]>(() => [...messages, ...optimisticMessages], [messages, optimisticMessages]);
-  const planContextOptions = useMemo<ChatContext[]>(
-    () =>
-      plans.map((plan) => ({
-        id: plan.id,
-        kind: "plan",
-        subtitle: plan.plannedDate ? new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short" }).format(new Date(plan.plannedDate)) : "Sin fecha",
-        title: plan.title
-      })),
-    [plans]
-  );
-  const placeContextOptions = useMemo<ChatContext[]>(
-    () =>
-      places.map((place) => ({
-        id: place.id,
-        kind: "place",
-        subtitle: place.address,
-        title: place.name
-      })),
-    [places]
-  );
+  const loadChatContext = useCallback(async () => {
+    if (hasLoadedContext || isLoadingContext) {
+      return;
+    }
+
+    setIsLoadingContext(true);
+    setContextError(null);
+    try {
+      const response = await fetch(`/api/groups/${groupId}/chat-context`, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("No se pudo cargar el contexto.");
+      }
+      const data = (await response.json()) as ChatContextResponse;
+      setPlanContextOptions((data.plans || []).filter((option) => option.kind === "plan"));
+      setPlaceContextOptions((data.places || []).filter((option) => option.kind === "place"));
+      setHasLoadedContext(true);
+    } catch {
+      setContextError("No se pudieron cargar planes y lugares.");
+    } finally {
+      setIsLoadingContext(false);
+    }
+  }, [groupId, hasLoadedContext, isLoadingContext]);
 
   useEffect(() => {
+    if ((initialSelectedPlanId || initialSelectedPlaceId) && !hasLoadedContext) {
+      void loadChatContext();
+      return;
+    }
+
     if (initialSelectedPlanId) {
       const plan = planContextOptions.find((candidate) => candidate.id === initialSelectedPlanId);
       if (plan) {
@@ -186,11 +199,27 @@ export function GroupChatView({
         setIsAttachMenuOpen(false);
       }
     }
-  }, [initialSelectedPlaceId, initialSelectedPlanId, placeContextOptions, planContextOptions]);
+  }, [hasLoadedContext, initialSelectedPlaceId, initialSelectedPlanId, loadChatContext, placeContextOptions, planContextOptions]);
+
+  useEffect(() => {
+    if (!latestMessageAt) {
+      return;
+    }
+
+    void fetch(`/api/groups/${groupId}/chat-read`, {
+      body: JSON.stringify({ lastReadAt: latestMessageAt }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST"
+    });
+  }, [groupId, latestMessageAt]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: "end" });
   }, [visibleMessages.length]);
+
+  useEffect(() => {
+    router.prefetch(`/groups/${groupId}`);
+  }, [groupId, router]);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -290,17 +319,29 @@ export function GroupChatView({
     });
   }
 
+  function goBack() {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push(`/groups/${groupId}`);
+  }
+
   return (
     <div className="min-h-dvh bg-[#fff8f7] text-[#261817]">
       <header className="fixed inset-x-0 top-0 z-40 border-b border-white/60 bg-[#fff8f7]/90 px-5 py-2 backdrop-blur-xl">
         <div className="relative mx-auto flex h-12 max-w-3xl items-center justify-between gap-3">
-          <Link
-            aria-label="Volver al grupo"
+          <button
+            aria-label="Volver atrás"
             className="grid h-10 w-10 place-items-center rounded-full text-[#c6283a] transition hover:bg-rose-50"
-            href={`/groups/${groupId}`}
+            onClick={goBack}
+            onPointerEnter={() => router.prefetch(`/groups/${groupId}`)}
+            onPointerDown={() => router.prefetch(`/groups/${groupId}`)}
+            type="button"
           >
             <BackIcon />
-          </Link>
+          </button>
           <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
             <MaplanMinimalIcon size="sm" />
             <span className="text-xl font-bold text-[#c6283a]">MaPlan</span>
@@ -440,7 +481,11 @@ export function GroupChatView({
               </div>
               {attachMode ? (
                 <div className="mt-3 max-h-52 space-y-2 overflow-y-auto pr-1">
-                  {(attachMode === "plan" ? planContextOptions : placeContextOptions).map((option) => (
+                  {isLoadingContext ? (
+                    <p className="px-2 py-3 text-sm font-semibold text-zinc-500">Cargando opciones...</p>
+                  ) : null}
+                  {!isLoadingContext && contextError ? <p className="px-2 py-3 text-sm font-semibold text-rose-600">{contextError}</p> : null}
+                  {!isLoadingContext && (attachMode === "plan" ? planContextOptions : placeContextOptions).map((option) => (
                     <button
                       className="flex w-full min-w-0 items-center justify-between gap-3 rounded-[18px] bg-[#fff8f7] px-3 py-2 text-left transition hover:bg-[#fff0ef]"
                       key={`${option.kind}:${option.id}`}
@@ -458,7 +503,7 @@ export function GroupChatView({
                       <span className="shrink-0 text-xs font-bold text-[#c6283a]">Seleccionar</span>
                     </button>
                   ))}
-                  {(attachMode === "plan" ? planContextOptions : placeContextOptions).length === 0 ? (
+                  {!isLoadingContext && !contextError && (attachMode === "plan" ? planContextOptions : placeContextOptions).length === 0 ? (
                     <p className="px-2 py-3 text-sm font-semibold text-zinc-500">
                       {attachMode === "plan" ? "No hay planes en este grupo." : "No hay lugares guardados en este grupo."}
                     </p>
@@ -472,7 +517,15 @@ export function GroupChatView({
               aria-expanded={isAttachMenuOpen}
               aria-label="Adjuntar referencia"
               className="grid h-12 w-12 shrink-0 place-items-center rounded-[20px] bg-[#fff0ef] text-[#c6283a] transition hover:bg-[#fde2e0]"
-              onClick={() => setIsAttachMenuOpen((current) => !current)}
+              onClick={() => {
+                setIsAttachMenuOpen((current) => {
+                  const next = !current;
+                  if (next) {
+                    void loadChatContext();
+                  }
+                  return next;
+                });
+              }}
               type="button"
             >
               <PlusIcon />

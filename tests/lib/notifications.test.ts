@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const getGroupInvitationsForUserMock = vi.fn();
 const getFriendRequestsMock = vi.fn();
 const getGroupActivityFeedForUserMock = vi.fn();
+const getGroupActivityLastSeenAtForUserMock = vi.fn();
 const getGroupChatUnreadSummariesForUserMock = vi.fn();
 const createSupabaseServerClientMock = vi.fn();
 
@@ -15,7 +16,8 @@ vi.mock("@/lib/friends", () => ({
 }));
 
 vi.mock("@/lib/groupActivity", () => ({
-  getGroupActivityFeedForUser: getGroupActivityFeedForUserMock
+  getGroupActivityFeedForUser: getGroupActivityFeedForUserMock,
+  getGroupActivityLastSeenAtForUser: getGroupActivityLastSeenAtForUserMock
 }));
 
 vi.mock("@/lib/groupChat", () => ({
@@ -29,6 +31,7 @@ vi.mock("@/lib/supabase/server", () => ({
 describe("notifications lib", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getGroupActivityLastSeenAtForUserMock.mockResolvedValue(null);
   });
 
   it("builds pending notifications and total count", async () => {
@@ -144,5 +147,45 @@ describe("notifications lib", () => {
     expect(fromMock).toHaveBeenCalledWith("group_invitations");
     expect(fromMock).toHaveBeenCalledWith("friend_requests");
     expect(selectMock).toHaveBeenCalledWith("id", { count: "exact", head: true });
+  });
+
+  it("keeps seen group activity visible but excludes it from the unread total", async () => {
+    getGroupInvitationsForUserMock.mockResolvedValue([]);
+    getFriendRequestsMock.mockResolvedValue({ received: [], sent: [] });
+    getGroupChatUnreadSummariesForUserMock.mockResolvedValue([]);
+    getGroupActivityLastSeenAtForUserMock.mockResolvedValue("2026-01-01T03:30:00.000Z");
+    getGroupActivityFeedForUserMock.mockResolvedValue([
+      {
+        id: "activity-seen",
+        groupId: "group-1",
+        groupName: "Grupo Madrid",
+        actorUserId: "user-other",
+        actorUsername: "ana",
+        actorAvatarUrl: null,
+        eventType: "plan_created",
+        entityId: "plan-1",
+        entityName: "Tapas",
+        createdAt: "2026-01-01T03:00:00.000Z",
+        message: '@ana ha creado "Tapas" en "Grupo Madrid".',
+        href: "/groups/group-1/plans/plan-1"
+      }
+    ]);
+
+    const invitationCountQuery = { eq: vi.fn() };
+    invitationCountQuery.eq.mockReturnValueOnce(invitationCountQuery).mockResolvedValueOnce({ count: 0 });
+    const friendRequestCountQuery = { eq: vi.fn() };
+    friendRequestCountQuery.eq.mockReturnValueOnce(friendRequestCountQuery).mockResolvedValueOnce({ count: 0 });
+    const selectMock = vi.fn().mockReturnValueOnce(invitationCountQuery).mockReturnValueOnce(friendRequestCountQuery);
+    createSupabaseServerClientMock.mockResolvedValue({
+      from: vi.fn().mockReturnValue({ select: selectMock })
+    });
+
+    const { getPendingNotificationsForUser, getPendingNotificationsCountForUser } = await import("@/lib/notifications");
+    const pending = await getPendingNotificationsForUser("user-me");
+    const count = await getPendingNotificationsCountForUser("user-me");
+
+    expect(pending.groupActivities).toHaveLength(1);
+    expect(pending.total).toBe(0);
+    expect(count).toBe(0);
   });
 });
