@@ -15,3 +15,11 @@ export async function loginWithEnvUser(page: Page) {
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }
+
+export async function expectProtectedRouteRedirectsToLogin(page: Page, path: string) {
+  await page.goto(path);
+
+  const encodedPath = encodeURIComponent(path);
+  await expect(page).toHaveURL(new RegExp(`/login\\?next=(${encodedPath}|${path.replace(/\//g, "\\/")})$`));
+  await expect(page.getByRole("heading", { name: "Bienvenido de nuevo" })).toBeVisible();
+}

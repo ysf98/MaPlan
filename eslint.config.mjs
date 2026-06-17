@@ -6,6 +6,13 @@ const eslintConfig = [
   ...nextTypescript,
   {
     rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_"
+        }
+      ],
       "react-hooks/refs": "off",
       "react-hooks/set-state-in-effect": "off"
     }
