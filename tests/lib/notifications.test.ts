@@ -115,7 +115,7 @@ describe("notifications lib", () => {
         entityId: "place-1",
         entityName: "Bar",
         createdAt: "2026-01-01T04:00:00.000Z",
-        message: '@me anadio "Bar" en "Grupo Madrid".',
+        message: '@me añadió "Bar" en "Grupo Madrid".',
         href: "/groups/group-1?tab=mapa&placeId=place-1"
       }
     ]);

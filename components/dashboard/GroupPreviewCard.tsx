@@ -6,13 +6,14 @@ import { ROUTES } from "@/utils/constants";
 type GroupPreviewCardProps = {
   group: DashboardGroupSummary;
   className?: string;
+  showPlanCount?: boolean;
 };
 
 function getInitial(name: string | null): string {
   return name?.trim().charAt(0).toUpperCase() || "M";
 }
 
-export function GroupPreviewCard({ group, className }: GroupPreviewCardProps) {
+export function GroupPreviewCard({ group, className, showPlanCount = false }: GroupPreviewCardProps) {
   const visibleMembers = group.members.slice(0, 3);
   const hiddenMembers = Math.max(group.memberCount - visibleMembers.length, 0);
 
@@ -32,7 +33,7 @@ export function GroupPreviewCard({ group, className }: GroupPreviewCardProps) {
         <h3 className="absolute bottom-4 left-4 right-4 truncate text-lg font-bold text-white">{group.name}</h3>
       </div>
       <div className="space-y-4 px-4 py-4">
-        <div className="flex items-center gap-4 text-xs font-semibold text-zinc-600">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-zinc-600">
           <span className="inline-flex items-center gap-1.5">
             <svg aria-hidden="true" className="h-4 w-4 text-[#c6283a]" fill="none" viewBox="0 0 24 24">
               <path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" strokeWidth="1.7" />
@@ -53,6 +54,16 @@ export function GroupPreviewCard({ group, className }: GroupPreviewCardProps) {
             </svg>
             {group.placeCount} lugares
           </span>
+          {showPlanCount ? (
+            <span className="inline-flex items-center gap-1.5">
+              <svg aria-hidden="true" className="h-4 w-4 text-[#c6283a]" fill="none" viewBox="0 0 24 24">
+                <path d="M8 3v3M16 3v3M4.5 9h15" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+                <rect height="17" rx="3" stroke="currentColor" strokeWidth="1.7" width="17" x="3.5" y="4" />
+                <path d="m8 14 2.2 2.2L16 11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" />
+              </svg>
+              {group.planCount} {group.planCount === 1 ? "plan" : "planes"}
+            </span>
+          ) : null}
         </div>
         <div className="flex items-center">
           {visibleMembers.map((member) => (

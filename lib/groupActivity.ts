@@ -49,7 +49,7 @@ function buildActivityMessage(input: {
   const groupSuffix = input.includeGroupName ? ` en "${input.groupName}"` : "";
   if (input.eventType === "place_added") {
     const place = input.entityName ? `"${input.entityName}"` : "un lugar";
-    return `${actor} anadio ${place}${groupSuffix}.`;
+    return `${actor} añadió ${place}${groupSuffix}.`;
   }
 
   if (input.eventType === "plan_created") {

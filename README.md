@@ -73,6 +73,17 @@ E2E_RUN_SIGNUP=1
 PLAYWRIGHT_BASE_URL=
 ```
 
+## Cuentas de demostración
+
+La aplicación dispone de dos usuarios de prueba:
+
+| Usuario | Correo electrónico | Contraseña |
+| --- | --- | --- |
+| Demo 1 | `demo1@example.com` | `MaPlanDemo2026!` |
+| Demo 2 | `demo2@example.com` | `MaPlanDemo2026!` |
+
+Estas credenciales son exclusivamente para demostraciones y pruebas. No deben reutilizarse en entornos de producción.
+
 Reglas de seguridad:
 
 - No commitear `.env` ni secretos.

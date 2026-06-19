@@ -40,7 +40,7 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((group) => (
             <li key={group.id}>
-              <GroupPreviewCard className="w-full" group={group} />
+              <GroupPreviewCard className="w-full" group={group} showPlanCount />
             </li>
           ))}
         </ul>

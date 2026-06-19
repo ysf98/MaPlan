@@ -214,6 +214,6 @@ describe("group activity lib", () => {
     const { getGroupActivityFeedForUser } = await import("@/lib/groupActivity");
     const result = await getGroupActivityFeedForUser("me", 10, { includeGroupName: false });
 
-    expect(result[0].message).toBe('@ana anadio "Sitio 1".');
+    expect(result[0].message).toBe('@ana añadió "Sitio 1".');
   });
 });

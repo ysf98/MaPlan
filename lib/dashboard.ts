@@ -8,6 +8,7 @@ export type DashboardGroupSummary = GroupListItem & {
   memberCount: number;
   members: GroupMemberPreview[];
   placeCount: number;
+  planCount: number;
 };
 
 export type DashboardPlaceStats = {
@@ -56,18 +57,25 @@ export async function getDashboardGroupSummaries(
   }
 
   const supabase = await createSupabaseServerClient();
-  const [placesResult, membersResult, previews] = await Promise.all([
+  const [placesResult, plansResult, membersResult, previews] = await Promise.all([
     supabase.from("places").select("group_id").in("group_id", groupIds),
+    supabase.from("group_plans").select("group_id").in("group_id", groupIds),
     supabase.from("group_members").select("group_id").in("group_id", groupIds),
     Promise.all(groupIds.map((groupId) => getGroupMembersPreviewForUser(userId, groupId)))
   ]);
 
   const placeCountByGroupId = new Map<string, number>();
+  const planCountByGroupId = new Map<string, number>();
   const places = (placesResult.data || []) as DashboardGroupIdRow[];
+  const plans = (plansResult.data || []) as DashboardGroupIdRow[];
   const members = (membersResult.data || []) as DashboardGroupIdRow[];
 
   places.forEach((place) => {
     placeCountByGroupId.set(place.group_id, (placeCountByGroupId.get(place.group_id) || 0) + 1);
+  });
+
+  plans.forEach((plan) => {
+    planCountByGroupId.set(plan.group_id, (planCountByGroupId.get(plan.group_id) || 0) + 1);
   });
 
   const memberCountByGroupId = new Map<string, number>();
@@ -80,6 +88,7 @@ export async function getDashboardGroupSummaries(
     coverImageUrl: group.coverImageUrl || getGroupCoverImageUrl(group.id),
     memberCount: previews[index]?.total || memberCountByGroupId.get(group.id) || 1,
     members: previews[index]?.members || [],
-    placeCount: placeCountByGroupId.get(group.id) || 0
+    placeCount: placeCountByGroupId.get(group.id) || 0,
+    planCount: planCountByGroupId.get(group.id) || 0
   }));
 }
