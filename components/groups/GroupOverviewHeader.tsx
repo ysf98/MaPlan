@@ -109,7 +109,7 @@ export function GroupOverviewHeader({
           </div>
         </div>
 
-        <p className="max-w-[34rem] text-sm leading-5 text-zinc-700">{group.description || "Sin descripcion"}</p>
+        <p className="max-w-[34rem] text-sm leading-5 text-zinc-700">{group.description || "Sin descripción"}</p>
 
         <Link
           className="relative inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#c6283a] px-5 text-sm font-extrabold text-white shadow-[0_12px_26px_rgba(198,40,58,0.18)] transition hover:bg-[#b32033] sm:w-auto"
@@ -204,7 +204,7 @@ export function GroupOverviewHeader({
                       <form
                         action={memberAction}
                         onSubmit={(event) => {
-                          const confirmed = window.confirm("Estas seguro de que quieres expulsar a este miembro?");
+                          const confirmed = window.confirm("¿Estás seguro de que quieres expulsar a este miembro?");
                           if (!confirmed) {
                             event.preventDefault();
                             return;

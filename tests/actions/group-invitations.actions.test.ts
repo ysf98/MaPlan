@@ -125,7 +125,7 @@ describe("group invitations actions", () => {
     const { respondGroupInvitationAction } = await import("@/app/invitations/actions");
     getCurrentUserMock.mockResolvedValue({ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" });
     respondGroupInvitationMock.mockResolvedValue({
-      error: "No tienes permisos para responder esta invitacion.",
+      error: "No tienes permisos para responder esta invitación.",
       groupId: null
     });
 
@@ -136,7 +136,7 @@ describe("group invitations actions", () => {
     const result = await respondGroupInvitationAction(initialInvitationState, formData);
     expect(result).toEqual({
       decision: null,
-      error: "No tienes permisos para responder esta invitacion.",
+      error: "No tienes permisos para responder esta invitación.",
       groupId: null,
       success: false
     });

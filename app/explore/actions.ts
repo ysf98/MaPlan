@@ -64,7 +64,7 @@ export async function saveExploredPlaceAction(
 
   if (destinationType === "personal") {
     if (destinationId !== "personal") {
-      return actionFailure("Destino invalido.");
+      return actionFailure("Destino inválido.");
     }
 
     const result = await createPersonalPlace({

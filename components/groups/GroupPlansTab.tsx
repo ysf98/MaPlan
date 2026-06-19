@@ -207,14 +207,14 @@ function voteSummary(plan: GroupPlanItem): string {
   }
 
   if (plan.maybeCount > 0) {
-    return `${plan.maybeCount} quizas`;
+    return `${plan.maybeCount} quizás`;
   }
 
   if (plan.notAttendingCount > 0) {
     return `${plan.notAttendingCount} no van`;
   }
 
-  return "Aun sin votos";
+  return "Aún sin votos";
 }
 
 function PencilIcon() {
@@ -807,7 +807,7 @@ export function GroupPlansTab({
             ) : null}
 
             <label className="block space-y-2">
-              <span className="text-sm font-semibold text-zinc-700">Descripcion</span>
+              <span className="text-sm font-semibold text-zinc-700">Descripción</span>
               <textarea
                 className="min-h-[110px] w-full rounded-[22px] border border-transparent bg-[#fff4f3] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-[#ff5a5f]"
                 maxLength={500}
@@ -896,7 +896,7 @@ export function GroupPlansTab({
                       </div>
                       <div className="flex shrink-0 flex-col gap-2">
                         <button
-                          aria-label="Anadir lugar recomendado"
+                          aria-label="Añadir lugar recomendado"
                           className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
                           onClick={() => setDraftRoutePlaceIds((current) => [...current, place.id])}
                           type="button"
@@ -920,7 +920,7 @@ export function GroupPlansTab({
                   <div className="relative">
                     <div className="absolute left-[-1.65rem] top-6 h-4 w-4 rounded-full border-2 border-rose-200 bg-[#fff8f7]" />
                     <div className="rounded-[24px] border-2 border-dashed border-rose-200 px-4 py-5 text-sm font-semibold text-zinc-500">
-                      Todavia no hay lugares del grupo para recomendar.
+                      Todavía no hay lugares del grupo para recomendar.
                     </div>
                   </div>
                 ) : null}
@@ -1109,7 +1109,7 @@ export function GroupPlansTab({
                             </div>
                             <div className="flex shrink-0 flex-col gap-2">
                               <button
-                                aria-label="Anadir lugar recomendado"
+                                aria-label="Añadir lugar recomendado"
                                 className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
                                 disabled={isAddingRecommendedPlace}
                                 onClick={() => addRecommendedPlaceToPlan(selectedPlan, place)}
@@ -1148,7 +1148,7 @@ export function GroupPlansTab({
                       type="button"
                     >
                       <PlusIcon />
-                      Anadir Lugar
+                      Añadir lugar
                     </button>
                   </div>
                 ) : null}
@@ -1363,7 +1363,7 @@ export function GroupPlansTab({
               <p className="text-sm text-rose-600">La fecha del plan no puede ser anterior a hoy.</p>
             ) : null}
             <label className="block space-y-2">
-              <span className="text-sm font-semibold text-zinc-700">Descripcion</span>
+              <span className="text-sm font-semibold text-zinc-700">Descripción</span>
               <textarea
                 className="min-h-[110px] w-full rounded-[20px] border border-transparent bg-[#fff4f3] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-[#ff5a5f]"
                 maxLength={500}
@@ -1398,7 +1398,7 @@ export function GroupPlansTab({
 
       {!categorizedPlans.filtered.length ? (
         <EmptyState
-          description="Todavia no hay planes para este filtro. Prueba a crear una salida nueva para el grupo."
+          description="Todavía no hay planes para este filtro. Prueba a crear una salida nueva para el grupo."
           title="Sin planes por ahora"
         />
       ) : (

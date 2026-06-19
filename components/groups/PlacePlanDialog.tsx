@@ -147,7 +147,7 @@ export function PlacePlanDialog({
               <p className="text-sm text-rose-600">La fecha del plan no puede ser anterior a hoy.</p>
             ) : null}
             <label className="block space-y-2">
-              <span className="text-sm font-semibold text-zinc-700">Descripcion</span>
+              <span className="text-sm font-semibold text-zinc-700">Descripción</span>
               <textarea
                 className="min-h-[110px] w-full rounded-[22px] border border-transparent bg-[#fff4f3] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-[#ff5a5f]"
                 maxLength={500}
@@ -218,7 +218,7 @@ export function PlacePlanDialog({
                             </div>
                             <div className="flex shrink-0 flex-col gap-2">
                               <button
-                                aria-label="Anadir lugar recomendado"
+                                aria-label="Añadir lugar recomendado"
                                 className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
                                 onClick={() => setRoutePlaceIds((current) => [...current, place.id])}
                                 type="button"
@@ -283,10 +283,10 @@ export function PlacePlanDialog({
           <span
             className={`inline-flex items-center justify-center bg-[#fff0ef] font-semibold text-[#c6283a] transition hover:bg-[#fde2e0] ${triggerClass}`}
           >
-            {isAdding ? "Anadiendo..." : "Anadir a plan"}
+            {isAdding ? "Añadiendo..." : "Añadir a plan"}
           </span>
           <select
-            aria-label="Anadir lugar a un plan"
+            aria-label="Añadir lugar a un plan"
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             disabled={isAdding || availablePlans.length === 0}
             onChange={(event) => {

@@ -136,7 +136,7 @@ export async function createPersonalPlace(input: CreatePersonalPlaceInput): Prom
     return { error: "El nombre del lugar es obligatorio." };
   }
   if (!address) {
-    return { error: "La direccion del lugar es obligatoria." };
+    return { error: "La dirección del lugar es obligatoria." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -156,7 +156,7 @@ export async function createPersonalPlace(input: CreatePersonalPlaceInput): Prom
       return { error: existingByProviderError.message };
     }
     if (existingByProvider) {
-      return { error: "Ese sitio ya esta guardado en tu mapa." };
+      return { error: "Ese sitio ya está guardado en tu mapa." };
     }
   }
 
@@ -172,7 +172,7 @@ export async function createPersonalPlace(input: CreatePersonalPlaceInput): Prom
     return { error: existingByNameAddressError.message };
   }
   if (existingByNameAddress) {
-    return { error: "Ese sitio ya esta guardado en tu mapa." };
+    return { error: "Ese sitio ya está guardado en tu mapa." };
   }
 
   const { error } = await supabase.from("personal_places").insert({
@@ -199,7 +199,7 @@ export async function createPersonalPlace(input: CreatePersonalPlaceInput): Prom
 
   if (error) {
     if (error.code === "23505") {
-      return { error: "Ese sitio ya esta guardado en tu mapa." };
+      return { error: "Ese sitio ya está guardado en tu mapa." };
     }
     return { error: error.message };
   }

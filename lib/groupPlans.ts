@@ -272,7 +272,7 @@ async function insertPlaceIntoPlan(
 
   if (error) {
     if (error.code === "23505") {
-      return { error: "Ese lugar ya esta anadido al plan." };
+      return { error: "Ese lugar ya está añadido al plan." };
     }
 
     return { error: error.message };
@@ -432,7 +432,7 @@ export async function createGroupPlan(input: CreateGroupPlanInput): Promise<{ er
 
   if (input.plannedDate) {
     if (!extractPlanDatePart(input.plannedDate)) {
-      return { error: "Fecha invalida.", planId: null };
+      return { error: "Fecha inválida.", planId: null };
     }
 
     if (!isPlanDateTodayOrFuture(input.plannedDate)) {
@@ -495,7 +495,7 @@ export async function createGroupPlan(input: CreateGroupPlanInput): Promise<{ er
 export async function addPlaceToGroupPlan(input: AddPlaceToGroupPlanInput): Promise<{ error: string | null }> {
   const canEdit = await canEditPlaces(input.userId, input.groupId);
   if (!canEdit) {
-    return { error: "No tienes permisos para anadir lugares a planes en este grupo." };
+    return { error: "No tienes permisos para añadir lugares a planes en este grupo." };
   }
 
   const plan = await getPlanForGroup(input.groupId, input.planId);
@@ -514,7 +514,7 @@ export async function addPlaceToGroupPlan(input: AddPlaceToGroupPlanInput): Prom
 export async function addDraftPlaceToGroupPlan(input: AddDraftPlaceToGroupPlanInput): Promise<{ error: string | null }> {
   const canEdit = await canEditPlaces(input.userId, input.groupId);
   if (!canEdit) {
-    return { error: "No tienes permisos para anadir lugares a planes en este grupo." };
+    return { error: "No tienes permisos para añadir lugares a planes en este grupo." };
   }
 
   const plan = await getPlanForGroup(input.groupId, input.planId);
@@ -529,7 +529,7 @@ export async function addDraftPlaceToGroupPlan(input: AddDraftPlaceToGroupPlanIn
   const name = input.name.trim();
   const address = input.address.trim();
   if (!name || !address) {
-    return { error: "El lugar necesita nombre y direccion." };
+    return { error: "El lugar necesita nombre y dirección." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -631,7 +631,7 @@ export async function updateGroupPlanDate(input: UpdateGroupPlanDateInput): Prom
 
   if (input.plannedDate) {
     if (!extractPlanDatePart(input.plannedDate)) {
-      return { error: "Fecha invalida." };
+      return { error: "Fecha inválida." };
     }
 
     if (!isPlanDateTodayOrFuture(input.plannedDate)) {
@@ -679,7 +679,7 @@ export async function updateGroupPlanDetails(input: UpdateGroupPlanDetailsInput)
 
   if (input.plannedDate) {
     if (!extractPlanDatePart(input.plannedDate)) {
-      return { error: "Fecha invalida." };
+      return { error: "Fecha inválida." };
     }
 
     if (!isPlanDateTodayOrFuture(input.plannedDate)) {
@@ -788,7 +788,7 @@ export async function reorderGroupPlanPlaces(input: ReorderGroupPlanPlacesInput)
 
   const orderedIds = Array.from(new Set(input.orderedPlanPlaceIds));
   if (orderedIds.length === 0) {
-    return { error: "Orden invalido." };
+    return { error: "Orden inválido." };
   }
 
   const supabase = await createSupabaseServerClient();

@@ -52,7 +52,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/actions/serverAction", () => ({
   requireAuthenticatedUser: requireAuthenticatedUserMock,
-  getValidationErrorMessage: (error: { issues?: Array<{ message?: string }> }) => error.issues?.[0]?.message ?? "Datos invalidos."
+  getValidationErrorMessage: (error: { issues?: Array<{ message?: string }> }) => error.issues?.[0]?.message ?? "Datos inválidos."
 }));
 
 vi.mock("@/lib/supabase/server", () => ({

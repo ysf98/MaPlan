@@ -36,7 +36,7 @@ export function RegisterForm() {
     }
     if (!/^[a-z0-9_.-]{3,30}$/i.test(normalizedUsername)) {
       setIsLoading(false);
-      setErrorMessage("El @usuario debe tener 3-30 caracteres y solo letras, numeros, punto, guion o guion bajo.");
+      setErrorMessage("El @usuario debe tener 3-30 caracteres y solo letras, números, punto, guion o guion bajo.");
       return;
     }
 
@@ -122,7 +122,7 @@ export function RegisterForm() {
 
       <div className="space-y-1.5">
         <label className="ml-1 text-xs font-semibold text-zinc-600" htmlFor="register-email">
-          Correo electronico
+          Correo electrónico
         </label>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">
@@ -144,7 +144,7 @@ export function RegisterForm() {
 
       <div className="space-y-1.5">
         <label className="ml-1 text-xs font-semibold text-zinc-600" htmlFor="register-password">
-          Contrasena
+          Contraseña
         </label>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">
@@ -164,7 +164,7 @@ export function RegisterForm() {
             value={password}
           />
           <button
-            aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700"
             onClick={() => setShowPassword((value) => !value)}
             type="button"
@@ -205,9 +205,9 @@ export function RegisterForm() {
       <OAuthButtons />
 
       <p className="pt-1 text-center text-sm text-zinc-600">
-        Ya tienes cuenta?{" "}
+        ¿Ya tienes cuenta?{" "}
         <Link className="font-bold text-[rgb(var(--vc-coral))] hover:underline" href={ROUTES.login}>
-          Inicia sesion
+          Inicia sesión
         </Link>
       </p>
     </form>

@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const payload = await request.json().catch(() => null);
   const parsedPayload = googlePlaceDetailsSchema.safeParse(payload);
   if (!parsedPayload.success) {
-    return NextResponse.json({ error: "Payload invalido." }, { status: 400 });
+    return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
   }
 
   const { externalPlaceId } = parsedPayload.data;
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
   const cityFromComponents = pickCityFromComponents(result.address_components);
   const streetFromComponents = pickStreetFromComponents(result.address_components, parts.street || fullAddress);
   const name = (result.name || "").trim() || "Resultado";
-  const address = streetFromComponents || "Sin direccion";
+  const address = streetFromComponents || "Sin dirección";
   const city = cityFromComponents || parts.city || "";
 
   const place: GooglePlaceFeature = {

@@ -29,7 +29,7 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
           className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#c6283a] px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(198,40,58,0.24)] transition hover:bg-[#a91f31]"
           href={`${ROUTES.groups}/join`}
         >
-          Unirse con Codigo
+          Unirse con código
           <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
             <path d="M9 12h6M12 9v6M12 21s7-5.2 7-12A7 7 0 0 0 5 9c0 6.8 7 12 7 12Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
           </svg>
@@ -46,7 +46,7 @@ export function GroupsPageClient({ groups }: GroupsPageClientProps) {
         </ul>
       ) : (
         <EmptyState
-          title="Aun no tienes grupos"
+          title="Aún no tienes grupos"
           description="Crea tu primer grupo para empezar a guardar y compartir recomendaciones."
           action={
             <Link href={`${ROUTES.groups}/new`}>

@@ -72,7 +72,7 @@ export async function deletePersonalPlaceAction(
   const user = await requireAuthenticatedUser("/map");
   const placeId = String(formData.get("placeId") || "").trim();
   if (!placeId) {
-    return actionFailure("Lugar invalido.");
+    return actionFailure("Lugar inválido.");
   }
 
   const result = await deletePersonalPlace({
@@ -97,7 +97,7 @@ export async function updatePersonalPlaceNameAction(
   const name = String(formData.get("name") || "").trim();
 
   if (!placeId) {
-    return actionFailure("Lugar invalido.");
+    return actionFailure("Lugar inválido.");
   }
 
   const result = await updatePersonalPlaceName({

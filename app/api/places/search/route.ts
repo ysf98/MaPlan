@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const payload = await request.json().catch(() => null);
   const parsedPayload = googlePlacesSearchSchema.safeParse(payload);
   if (!parsedPayload.success) {
-    return NextResponse.json({ error: "Payload invalido." }, { status: 400 });
+    return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
   }
 
   const { query, center } = parsedPayload.data;
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
       const parts = splitAddressParts(fullAddress);
       const parsedCity = extractCityFromFormattedAddress(fullAddress);
       const parsedProvince = extractProvinceFromFormattedAddress(fullAddress);
-      const cleanAddress = stripPostalCodes(parts.street || fullAddress || "Sin direccion");
+      const cleanAddress = stripPostalCodes(parts.street || fullAddress || "Sin dirección");
       const name = (place.name || "").trim() || "Resultado";
       const city = stripPostalCodes(parsedCity || parts.city || "");
       return [

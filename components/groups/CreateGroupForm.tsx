@@ -43,7 +43,7 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.size > MAX_IMAGE_BYTES) {
-      setCoverError("La imagen es demasiado pesada. Maximo 2MB.");
+      setCoverError("La imagen es demasiado pesada. Máximo 2 MB.");
       return;
     }
     setCoverError(null);
@@ -90,7 +90,7 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
 
           <div>
             <GroupCoverPicker
-              helperText="Anadir foto de grupo"
+              helperText="Añadir foto de grupo"
               inputName="coverImage"
               onFileChange={handleCoverChange}
               placeholder={
@@ -126,9 +126,9 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
                     onChange={(event) => setJoinPolicy(event.target.value as GroupJoinPolicy)}
                     value={joinPolicy}
                   >
-                    <option value="invite_only">Solo por invitacion</option>
-                    <option value="request_to_join">Solicitud con codigo</option>
-                    <option value="open_by_code">Abierto con codigo</option>
+                    <option value="invite_only">Solo por invitación</option>
+                    <option value="request_to_join">Solicitud con código</option>
+                    <option value="open_by_code">Abierto con código</option>
                   </select>
                 </label>
               </div>
@@ -150,12 +150,12 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
         </label>
 
         <label className="block space-y-2">
-          <span className="text-[11px] font-bold text-zinc-800">Descripcion (opcional)</span>
+          <span className="text-[11px] font-bold text-zinc-800">Descripción (opcional)</span>
           <textarea
             className="min-h-[86px] w-full resize-none rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
             maxLength={300}
             name="description"
-            placeholder="Cual es el proposito de este grupo?"
+            placeholder="¿Cuál es el propósito de este grupo?"
           />
         </label>
 
@@ -164,7 +164,7 @@ export function CreateGroupForm({ friends }: CreateGroupFormProps) {
           mode="select"
           onToggleSelected={toggleFriend}
           selectedIds={selectedFriendIds}
-          title="Anadir Amigos"
+          title="Añadir amigos"
         />
 
         {createState.error ? <p className="text-sm text-rose-600">{createState.error}</p> : null}

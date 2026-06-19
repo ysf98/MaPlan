@@ -22,7 +22,7 @@ export default function RegisterPage() {
         <section className="relative z-10 p-1">
           <div className="text-center">
             <h1 className="text-4xl font-extrabold tracking-tight text-zinc-950">Crea tu cuenta</h1>
-            <p className="mt-2 text-sm text-zinc-600">Unete a la red social de exploracion mas vibrante.</p>
+            <p className="mt-2 text-sm text-zinc-600">Únete a la red social de exploración más vibrante.</p>
           </div>
 
           <RegisterForm />

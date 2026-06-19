@@ -51,7 +51,7 @@ export function PendingInvitationCard({ invitation }: PendingInvitationCardProps
           </svg>
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-semibold text-zinc-800">Invitacion pendiente</h2>
+          <h2 className="text-base font-semibold text-zinc-800">Invitación pendiente</h2>
           <p className="mt-3 text-sm font-semibold text-zinc-700">{invitation.groupName || "Grupo privado"}</p>
           <p className="mt-1 text-xs leading-5 text-zinc-500">
             @{invitation.invitedByUsername || "sin-username"} quiere que te unas a este grupo.
@@ -81,7 +81,7 @@ export function PendingInvitationCard({ invitation }: PendingInvitationCardProps
         </button>
       </form>
       {state.error ? <p className="mt-3 text-sm font-medium text-rose-700">{state.error}</p> : null}
-      {state.success ? <p className="mt-3 text-sm font-medium text-emerald-700">Invitacion actualizada.</p> : null}
+      {state.success ? <p className="mt-3 text-sm font-medium text-emerald-700">Invitación actualizada.</p> : null}
     </section>
   );
 }

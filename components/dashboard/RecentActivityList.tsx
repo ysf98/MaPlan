@@ -30,7 +30,7 @@ export function RecentActivityList({ activityFeed }: RecentActivityListProps) {
   if (activityFeed.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-rose-200 bg-white px-5 py-6 text-sm font-medium text-zinc-500">
-        Aun no hay actividad reciente en tus grupos.
+        Aún no hay actividad reciente en tus grupos.
       </div>
     );
   }

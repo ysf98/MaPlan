@@ -619,7 +619,7 @@ export function PersonalMap({
                   onSelectPlace?.(null);
                 }}
                 onDelete={() => {
-                  const confirmed = window.confirm("Estas seguro de que quieres eliminar este lugar?");
+                  const confirmed = window.confirm("¿Estás seguro de que quieres eliminar este lugar?");
                   if (!confirmed) return;
                   const payload = new FormData();
                   payload.set("placeId", selectedPlace.id);

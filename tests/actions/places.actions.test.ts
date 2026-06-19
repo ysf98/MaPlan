@@ -34,7 +34,7 @@ vi.mock("@/lib/auth/getCurrentUser", () => ({
 
 vi.mock("@/lib/actions/serverAction", () => ({
   requireAuthenticatedUser: requireAuthenticatedUserMock,
-  getValidationErrorMessage: (error: { issues?: Array<{ message?: string }> }) => error.issues?.[0]?.message ?? "Datos invalidos."
+  getValidationErrorMessage: (error: { issues?: Array<{ message?: string }> }) => error.issues?.[0]?.message ?? "Datos inválidos."
 }));
 
 vi.mock("@/lib/places", () => ({
@@ -68,7 +68,7 @@ describe("places server actions", () => {
 
     const result = await placesActions.addPlaceAction({ error: null, success: false }, formData);
     expect(result.success).toBe(false);
-    expect(result.error).toBe("Identificador invalido.");
+    expect(result.error).toBe("Identificador inválido.");
   });
 
   it("addPlaceAction creates new places without favorite state", async () => {

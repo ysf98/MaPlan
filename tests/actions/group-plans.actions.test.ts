@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const revalidatePathMock = vi.fn();
 const requireAuthenticatedUserMock = vi.fn();
-const getValidationErrorMessageMock = vi.fn(() => "Payload invalido.");
+const getValidationErrorMessageMock = vi.fn(() => "Payload inválido.");
 const createGroupPlanMock = vi.fn();
 const addDraftPlaceToGroupPlanMock = vi.fn();
 const voteGroupPlanMock = vi.fn();

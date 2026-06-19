@@ -162,7 +162,7 @@ export async function inviteFriendToGroup(userId: string, groupId: string, frien
     .maybeSingle();
 
   if (existingInvitation?.status === "pending") {
-    return { error: "Ya existe una invitacion pendiente para este usuario." };
+    return { error: "Ya existe una invitación pendiente para este usuario." };
   }
 
   if (existingInvitation) {
@@ -182,7 +182,7 @@ export async function inviteFriendToGroup(userId: string, groupId: string, frien
 
   if (error) {
     if (error.code === "23505") {
-      return { error: "Ya existe una invitacion para este usuario." };
+      return { error: "Ya existe una invitación para este usuario." };
     }
     return { error: error.message };
   }
@@ -203,15 +203,15 @@ export async function respondGroupInvitation(
     .maybeSingle();
 
   if (invitationError || !invitation) {
-    return { error: "Invitacion no encontrada.", groupId: null };
+    return { error: "Invitación no encontrada.", groupId: null };
   }
 
   if (invitation.invited_user_id !== userId) {
-    return { error: "No tienes permisos para responder esta invitacion.", groupId: null };
+    return { error: "No tienes permisos para responder esta invitación.", groupId: null };
   }
 
   if (invitation.status !== "pending") {
-    return { error: "Esta invitacion ya fue respondida.", groupId: null };
+    return { error: "Esta invitación ya fue respondida.", groupId: null };
   }
 
   if (decision === "accepted") {

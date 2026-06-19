@@ -13,27 +13,27 @@ export const FRIEND_REQUEST_DECISION_VALUES = ["accepted", "rejected"] as const;
 export const GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES = ["popular", "food", "coffee", "plans", "sports"] as const;
 export const GROUP_PLAN_VOTE_VALUES = ["attending", "maybe", "not_attending"] as const;
 export const GROUP_CHAT_MESSAGE_KIND_VALUES = ["message", "plan_suggestion", "place_comment"] as const;
-const uuidSchema = z.string().uuid("Identificador invalido.");
+const uuidSchema = z.string().uuid("Identificador inválido.");
 const nullableDateTimeSchema = z
   .string()
   .trim()
   .optional()
   .transform((value) => (value && value.length > 0 ? value : null))
-  .refine((value) => value === null || !Number.isNaN(new Date(value).getTime()), "Fecha invalida.");
+  .refine((value) => value === null || !Number.isNaN(new Date(value).getTime()), "Fecha inválida.");
 const nullablePlanDateSchema = z
   .string()
   .trim()
   .optional()
   .transform((value) => (value && value.length > 0 ? value : null))
-  .refine((value) => value === null || extractPlanDatePart(value) !== null, "Fecha invalida.")
+  .refine((value) => value === null || extractPlanDatePart(value) !== null, "Fecha inválida.")
   .refine((value) => value === null || isPlanDateTodayOrFuture(value), "La fecha del plan no puede ser anterior a hoy.");
 const nullableRatingSchema = z.preprocess(
   (value) => (value === "" || value === null || value === undefined ? null : value),
-  z.coerce.number().min(0, "La puntuacion no es valida.").max(5, "La puntuacion no es valida.").nullable()
+  z.coerce.number().min(0, "La puntuación no es válida.").max(5, "La puntuación no es válida.").nullable()
 );
 const nullableRatingsTotalSchema = z.preprocess(
   (value) => (value === "" || value === null || value === undefined ? null : value),
-  z.coerce.number().int("El numero de resenas no es valido.").min(0, "El numero de resenas no es valido.").nullable()
+  z.coerce.number().int("El número de reseñas no es válido.").min(0, "El número de reseñas no es válido.").nullable()
 );
 
 export const createGroupSchema = z.object({
@@ -45,41 +45,41 @@ export const createGroupSchema = z.object({
   description: z
     .string()
     .trim()
-    .max(300, "La descripcion no puede superar 300 caracteres.")
+    .max(300, "La descripción no puede superar 300 caracteres.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   coverImageUrl: z
     .string()
     .trim()
-    .max(3_000_000, "La imagen es demasiado pesada. Maximo 2MB.")
+    .max(3_000_000, "La imagen es demasiado pesada. Máximo 2 MB.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine(
       (value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(value),
-      "URL de imagen invalida."
+      "URL de imagen inválida."
     ),
   privacy: z
     .string()
     .optional()
     .transform((value) => value || "abierto")
-    .refine((value): value is (typeof GROUP_PRIVACY_VALUES)[number] => GROUP_PRIVACY_VALUES.includes(value as never), "Privacidad invalida."),
+    .refine((value): value is (typeof GROUP_PRIVACY_VALUES)[number] => GROUP_PRIVACY_VALUES.includes(value as never), "Privacidad inválida."),
   joinPolicy: z
     .string()
     .optional()
     .transform((value) => value || "invite_only")
     .refine((value): value is (typeof GROUP_JOIN_POLICY_VALUES)[number] => {
       return GROUP_JOIN_POLICY_VALUES.includes(value as never);
-    }, "Politica de acceso invalida.")
+    }, "Política de acceso inválida.")
 });
 
 export const joinGroupSchema = z.object({
   joinCode: z
     .string()
     .trim()
-    .min(1, "El codigo del grupo es obligatorio.")
-    .max(8, "El codigo del grupo no es valido.")
+    .min(1, "El código del grupo es obligatorio.")
+    .max(8, "El código del grupo no es válido.")
     .transform((value) => value.toUpperCase())
-    .refine((value) => /^[A-Z0-9]{8}$/.test(value), "El codigo del grupo debe tener 8 caracteres alfanumericos.")
+    .refine((value) => /^[A-Z0-9]{8}$/.test(value), "El código del grupo debe tener 8 caracteres alfanuméricos.")
 });
 
 export const createPlaceSchema = z.object({
@@ -88,8 +88,8 @@ export const createPlaceSchema = z.object({
   address: z
     .string()
     .trim()
-    .min(1, "La direccion del lugar es obligatoria.")
-    .max(220, "La direccion es demasiado larga."),
+    .min(1, "La dirección del lugar es obligatoria.")
+    .max(220, "La dirección es demasiado larga."),
   city: z
     .string()
     .trim()
@@ -105,7 +105,7 @@ export const createPlaceSchema = z.object({
   category: z
     .string()
     .trim()
-    .max(40, "La categoria no es valida.")
+    .max(40, "La categoría no es válida.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   originalUrl: z
@@ -114,25 +114,25 @@ export const createPlaceSchema = z.object({
     .max(500, "El enlace no puede superar 500 caracteres.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
-    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value), "El enlace debe ser una URL valida."),
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value), "El enlace debe ser una URL válida."),
   source: z
     .string()
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine((value): value is (typeof PLACE_SOURCE_VALUES)[number] | null => {
       return value === null || PLACE_SOURCE_VALUES.includes(value as never);
-    }, "Fuente invalida."),
+    }, "Fuente inválida."),
   provider: z
     .string()
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine((value): value is (typeof PLACE_PROVIDER_VALUES)[number] | null => {
       return value === null || PLACE_PROVIDER_VALUES.includes(value as never);
-    }, "Proveedor invalido."),
+    }, "Proveedor inválido."),
   externalPlaceId: z
     .string()
     .trim()
-    .max(255, "Identificador externo invalido.")
+    .max(255, "Identificador externo inválido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   googleMapsUrl: z
@@ -141,17 +141,17 @@ export const createPlaceSchema = z.object({
     .max(500, "El enlace de Google Maps es demasiado largo.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
-    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value), "URL de Google Maps invalida."),
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value), "URL de Google Maps inválida."),
   businessStatus: z
     .string()
     .trim()
-    .max(80, "El estado del negocio no es valido.")
+    .max(80, "El estado del negocio no es válido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   phoneNumber: z
     .string()
     .trim()
-    .max(40, "El telefono no es valido.")
+    .max(40, "El teléfono no es válido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   imageUrl: z
@@ -160,19 +160,19 @@ export const createPlaceSchema = z.object({
     .max(1500, "La URL de imagen es demasiado larga.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
-    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen invalida."),
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen inválida."),
   rating: nullableRatingSchema.optional(),
   userRatingsTotal: nullableRatingsTotalSchema.optional(),
   latitude: z
     .preprocess(
       (value) => (value === "" || value === null || value === undefined ? undefined : value),
-      z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida.")
+      z.coerce.number().min(-90, "La latitud no es válida.").max(90, "La latitud no es válida.")
     )
     .optional(),
   longitude: z
     .preprocess(
       (value) => (value === "" || value === null || value === undefined ? undefined : value),
-      z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
+      z.coerce.number().min(-180, "La longitud no es válida.").max(180, "La longitud no es válida.")
     )
     .optional()
 });
@@ -182,8 +182,8 @@ export const createPersonalPlaceSchema = z.object({
   address: z
     .string()
     .trim()
-    .min(1, "La direccion del lugar es obligatoria.")
-    .max(220, "La direccion es demasiado larga."),
+    .min(1, "La dirección del lugar es obligatoria.")
+    .max(220, "La dirección es demasiado larga."),
   city: z
     .string()
     .trim()
@@ -199,7 +199,7 @@ export const createPersonalPlaceSchema = z.object({
   category: z
     .string()
     .trim()
-    .max(40, "La categoria no es valida.")
+    .max(40, "La categoría no es válida.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   source: z
@@ -208,18 +208,18 @@ export const createPersonalPlaceSchema = z.object({
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine((value): value is (typeof PLACE_SOURCE_VALUES)[number] | null => {
       return value === null || PLACE_SOURCE_VALUES.includes(value as never);
-    }, "Fuente invalida."),
+    }, "Fuente inválida."),
   provider: z
     .string()
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine((value): value is (typeof PLACE_PROVIDER_VALUES)[number] | null => {
       return value === null || PLACE_PROVIDER_VALUES.includes(value as never);
-    }, "Proveedor invalido."),
+    }, "Proveedor inválido."),
   externalPlaceId: z
     .string()
     .trim()
-    .max(255, "Identificador externo invalido.")
+    .max(255, "Identificador externo inválido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   googleMapsUrl: z
@@ -228,17 +228,17 @@ export const createPersonalPlaceSchema = z.object({
     .max(500, "El enlace de Google Maps es demasiado largo.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
-    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value), "URL de Google Maps invalida."),
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value), "URL de Google Maps inválida."),
   businessStatus: z
     .string()
     .trim()
-    .max(80, "El estado del negocio no es valido.")
+    .max(80, "El estado del negocio no es válido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   phoneNumber: z
     .string()
     .trim()
-    .max(40, "El telefono no es valido.")
+    .max(40, "El teléfono no es válido.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   imageUrl: z
@@ -247,17 +247,17 @@ export const createPersonalPlaceSchema = z.object({
     .max(1500, "La URL de imagen es demasiado larga.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
-    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen invalida."),
+    .refine((value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^\/api\/places\/photo\?/i.test(value), "URL de imagen inválida."),
   rating: nullableRatingSchema.optional(),
   userRatingsTotal: nullableRatingsTotalSchema.optional(),
-  latitude: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
-  longitude: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
+  latitude: z.coerce.number().min(-90, "La latitud no es válida.").max(90, "La latitud no es válida."),
+  longitude: z.coerce.number().min(-180, "La longitud no es válida.").max(180, "La longitud no es válida.")
 });
 
 export const saveExploredPlaceSchema = createPersonalPlaceSchema.extend({
   destinationType: z
     .string()
-    .refine((value): value is "personal" | "group" => value === "personal" || value === "group", "Destino invalido."),
+    .refine((value): value is "personal" | "group" => value === "personal" || value === "group", "Destino inválido."),
   destinationId: z.string().trim().min(1, "El destino es obligatorio.")
 });
 
@@ -267,7 +267,7 @@ export const updatePlaceStatusSchema = z.object({
   status: z
     .string()
     .refine((value): value is (typeof PLACE_STATUS_VALUES)[number] => PLACE_STATUS_VALUES.includes(value as never), {
-      message: "Estado invalido."
+      message: "Estado inválido."
     })
 });
 
@@ -277,16 +277,16 @@ export const updatePlaceLocationSchema = z.object({
   address: z
     .string()
     .trim()
-    .min(1, "La direccion del lugar es obligatoria.")
-    .max(220, "La direccion es demasiado larga."),
+    .min(1, "La dirección del lugar es obligatoria.")
+    .max(220, "La dirección es demasiado larga."),
   city: z
     .string()
     .trim()
     .max(120, "La ciudad es demasiado larga.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
-  latitude: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
-  longitude: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
+  latitude: z.coerce.number().min(-90, "La latitud no es válida.").max(90, "La latitud no es válida."),
+  longitude: z.coerce.number().min(-180, "La longitud no es válida.").max(180, "La longitud no es válida.")
 });
 
 export const reviewJoinRequestSchema = z.object({
@@ -296,19 +296,19 @@ export const reviewJoinRequestSchema = z.object({
     .string()
     .refine((value): value is Exclude<(typeof GROUP_JOIN_REQUEST_STATUS_VALUES)[number], "pending"> => {
       return value === "approved" || value === "rejected";
-    }, "Decision invalida.")
+    }, "Decisión inválida.")
 });
 
 export const updateGroupSettingsSchema = z.object({
   groupId: uuidSchema,
   privacy: z
     .string()
-    .refine((value): value is (typeof GROUP_PRIVACY_VALUES)[number] => GROUP_PRIVACY_VALUES.includes(value as never), "Privacidad invalida."),
+    .refine((value): value is (typeof GROUP_PRIVACY_VALUES)[number] => GROUP_PRIVACY_VALUES.includes(value as never), "Privacidad inválida."),
   joinPolicy: z
     .string()
     .refine((value): value is (typeof GROUP_JOIN_POLICY_VALUES)[number] => {
       return GROUP_JOIN_POLICY_VALUES.includes(value as never);
-    }, "Politica de acceso invalida.")
+    }, "Política de acceso inválida.")
 });
 
 export const updateGroupDetailsSchema = z.object({
@@ -321,18 +321,18 @@ export const updateGroupDetailsSchema = z.object({
   description: z
     .string()
     .trim()
-    .max(300, "La descripcion no puede superar 300 caracteres.")
+    .max(300, "La descripción no puede superar 300 caracteres.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   coverImageUrl: z
     .string()
     .trim()
-    .max(3_000_000, "La imagen es demasiado pesada. Maximo 2MB.")
+    .max(3_000_000, "La imagen es demasiado pesada. Máximo 2 MB.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine(
       (value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(value),
-      "URL de imagen invalida."
+      "URL de imagen inválida."
     )
 });
 
@@ -346,7 +346,7 @@ export const createGroupPlanSchema = z.object({
   description: z
     .string()
     .trim()
-    .max(500, "La descripcion no puede superar 500 caracteres.")
+    .max(500, "La descripción no puede superar 500 caracteres.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
   plannedDate: nullablePlanDateSchema,
@@ -355,7 +355,7 @@ export const createGroupPlanSchema = z.object({
     .trim()
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
-    .refine((value) => value === null || !value || uuidSchema.safeParse(value).success, "Lugar invalido."),
+    .refine((value) => value === null || !value || uuidSchema.safeParse(value).success, "Lugar inválido."),
   initialPlacePlannedAt: nullableDateTimeSchema,
   initialPlaceNote: z
     .string()
@@ -383,7 +383,7 @@ export const voteGroupPlanSchema = z.object({
   planId: uuidSchema,
   vote: z
     .string()
-    .refine((value): value is (typeof GROUP_PLAN_VOTE_VALUES)[number] => GROUP_PLAN_VOTE_VALUES.includes(value as never), "Voto invalido.")
+    .refine((value): value is (typeof GROUP_PLAN_VOTE_VALUES)[number] => GROUP_PLAN_VOTE_VALUES.includes(value as never), "Voto inválido.")
 });
 
 export const deleteGroupPlanSchema = z.object({
@@ -424,7 +424,7 @@ export const updateGroupPlanPlaceTimeSchema = z.object({
 export const reorderGroupPlanPlacesSchema = z.object({
   groupId: uuidSchema,
   planId: uuidSchema,
-  orderedPlanPlaceIds: z.array(uuidSchema).min(1, "Orden invalido.")
+  orderedPlanPlaceIds: z.array(uuidSchema).min(1, "Orden inválido.")
 });
 
 const optionalUuidField = z
@@ -432,7 +432,7 @@ const optionalUuidField = z
   .trim()
   .optional()
   .transform((value) => (value && value.length > 0 ? value : null))
-  .refine((value) => value === null || uuidSchema.safeParse(value).success, "Identificador invalido.");
+  .refine((value) => value === null || uuidSchema.safeParse(value).success, "Identificador inválido.");
 
 export const createGroupChatMessageSchema = z.object({
   groupId: uuidSchema,
@@ -447,7 +447,7 @@ export const createGroupChatMessageSchema = z.object({
     .transform((value) => value || "message")
     .refine(
       (value): value is (typeof GROUP_CHAT_MESSAGE_KIND_VALUES)[number] => GROUP_CHAT_MESSAGE_KIND_VALUES.includes(value as never),
-      "Tipo de mensaje invalido."
+      "Tipo de mensaje inválido."
     ),
   planId: optionalUuidField,
   placeId: optionalUuidField,
@@ -474,7 +474,7 @@ export const respondFriendRequestSchema = z.object({
     .string()
     .refine((value): value is (typeof FRIEND_REQUEST_DECISION_VALUES)[number] => {
       return FRIEND_REQUEST_DECISION_VALUES.includes(value as never);
-    }, "Decision invalida.")
+    }, "Decisión inválida.")
 });
 
 export const removeFriendSchema = z.object({
@@ -492,19 +492,19 @@ export const respondGroupInvitationSchema = z.object({
     .string()
     .refine((value): value is (typeof FRIEND_REQUEST_DECISION_VALUES)[number] => {
       return FRIEND_REQUEST_DECISION_VALUES.includes(value as never);
-    }, "Decision invalida.")
+    }, "Decisión inválida.")
 });
 
 export const friendSearchQuerySchema = z.object({
-  q: z.string().trim().min(2, "La busqueda debe tener al menos 2 caracteres.").max(80, "La busqueda es demasiado larga.")
+  q: z.string().trim().min(2, "La búsqueda debe tener al menos 2 caracteres.").max(80, "La búsqueda es demasiado larga.")
 });
 
 export const googlePlacesSearchSchema = z.object({
-  query: z.string().trim().min(3, "La busqueda debe tener al menos 3 caracteres.").max(120, "La busqueda es demasiado larga."),
+  query: z.string().trim().min(3, "La búsqueda debe tener al menos 3 caracteres.").max(120, "La búsqueda es demasiado larga."),
   center: z
     .object({
-      lat: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
-      lng: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida.")
+      lat: z.coerce.number().min(-90, "La latitud no es válida.").max(90, "La latitud no es válida."),
+      lng: z.coerce.number().min(-180, "La longitud no es válida.").max(180, "La longitud no es válida.")
     })
     .nullable()
     .optional()
@@ -515,7 +515,7 @@ export const googlePlaceDetailsSchema = z.object({
     .string()
     .trim()
     .min(1, "Identificador externo obligatorio.")
-    .max(255, "Identificador externo invalido.")
+    .max(255, "Identificador externo inválido.")
 });
 
 export const updatePlaceFavoriteSchema = z.object({
@@ -524,7 +524,7 @@ export const updatePlaceFavoriteSchema = z.object({
   isFavorite: z
     .string()
     .refine((value): value is "true" | "false" => value === "true" || value === "false", {
-      message: "Favorito invalido."
+      message: "Favorito inválido."
     })
     .transform((value) => value === "true")
 });
@@ -534,7 +534,7 @@ export const updatePersonalPlaceStatusSchema = z.object({
   status: z
     .string()
     .refine((value): value is (typeof PLACE_STATUS_VALUES)[number] => PLACE_STATUS_VALUES.includes(value as never), {
-      message: "Estado invalido."
+      message: "Estado inválido."
     })
 });
 
@@ -543,14 +543,14 @@ export const updatePersonalPlaceFavoriteSchema = z.object({
   isFavorite: z
     .string()
     .refine((value): value is "true" | "false" => value === "true" || value === "false", {
-      message: "Favorito invalido."
+      message: "Favorito inválido."
     })
     .transform((value) => value === "true")
 });
 
 export const googlePlacesNearbySchema = z.object({
-  lat: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
-  lng: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida."),
+  lat: z.coerce.number().min(-90, "La latitud no es válida.").max(90, "La latitud no es válida."),
+  lng: z.coerce.number().min(-180, "La longitud no es válida.").max(180, "La longitud no es válida."),
   selectedName: z
     .string()
     .trim()
@@ -560,8 +560,8 @@ export const googlePlacesNearbySchema = z.object({
 });
 
 export const googlePlacesNearbyRecommendationsSchema = z.object({
-  lat: z.coerce.number().min(-90, "La latitud no es valida.").max(90, "La latitud no es valida."),
-  lng: z.coerce.number().min(-180, "La longitud no es valida.").max(180, "La longitud no es valida."),
+  lat: z.coerce.number().min(-90, "La latitud no es válida.").max(90, "La latitud no es válida."),
+  lng: z.coerce.number().min(-180, "La longitud no es válida.").max(180, "La longitud no es válida."),
   category: z
     .string()
     .optional()
@@ -569,9 +569,9 @@ export const googlePlacesNearbyRecommendationsSchema = z.object({
     .refine(
       (value): value is (typeof GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES)[number] =>
         GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES.includes(value as never),
-      "Categoria invalida."
+      "Categoría inválida."
     ),
-  radius: z.coerce.number().int().min(300, "Radio invalido.").max(5000, "Radio invalido.").optional().default(1800)
+  radius: z.coerce.number().int().min(300, "Radio inválido.").max(5000, "Radio inválido.").optional().default(1800)
 });
 
 export const updateProfileSchema = z.object({
@@ -585,16 +585,16 @@ export const updateProfileSchema = z.object({
     .trim()
     .min(3, "El @usuario debe tener al menos 3 caracteres.")
     .max(30, "El @usuario no puede superar 30 caracteres.")
-    .regex(/^[a-z0-9_.-]+$/i, "El @usuario solo puede contener letras, numeros, punto, guion y guion bajo."),
+    .regex(/^[a-z0-9_.-]+$/i, "El @usuario solo puede contener letras, números, punto, guion y guion bajo."),
   avatarUrl: z
     .string()
     .trim()
-    .max(3_000_000, "La imagen es demasiado pesada. Maximo 2MB.")
+    .max(3_000_000, "La imagen es demasiado pesada. Máximo 2 MB.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null))
     .refine(
       (value) => value === null || /^https?:\/\/\S+$/i.test(value) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(value),
-      "URL de imagen invalida."
+      "URL de imagen inválida."
     )
 });
 

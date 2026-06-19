@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   });
 
   if (!parsedQuery.success) {
-    return NextResponse.json({ error: "Payload invalido." }, { status: 400 });
+    return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
   }
 
   const results = await searchUsers(parsedQuery.data.q, user.id);

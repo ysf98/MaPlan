@@ -116,7 +116,7 @@ export function FriendsPageClient({
             {isSearching ? (
               <p className="px-4 py-3 text-sm font-semibold text-zinc-500">Buscando usuarios...</p>
             ) : liveResults.length === 0 ? (
-              <p className="px-4 py-3 text-sm font-semibold text-zinc-500">No encontramos usuarios para esa busqueda.</p>
+              <p className="px-4 py-3 text-sm font-semibold text-zinc-500">No encontramos usuarios para esa búsqueda.</p>
             ) : (
               <ul className="max-h-72 overflow-y-auto py-2">
                 {liveResults.map((user) => (
@@ -128,7 +128,7 @@ export function FriendsPageClient({
                       <div className="min-w-0">
                         <p className="truncate text-sm font-extrabold text-zinc-950">@{user.username || "sin-username"}</p>
                         <p className="text-xs font-medium text-zinc-500">
-                          {user.alreadyFriend ? "Ya sois amigos" : user.hasPendingRequest ? "Solicitud pendiente" : "Disponible para anadir"}
+                          {user.alreadyFriend ? "Ya sois amigos" : user.hasPendingRequest ? "Solicitud pendiente" : "Disponible para añadir"}
                         </p>
                       </div>
                     </div>
@@ -140,7 +140,7 @@ export function FriendsPageClient({
                       <form action={sendAction} className="shrink-0">
                         <input name="receiverId" type="hidden" value={user.id} />
                         <Button disabled={isSending} size="sm" type="submit" variant="secondary">
-                          {isSending ? "..." : "Anadir"}
+                          {isSending ? "..." : "Añadir"}
                         </Button>
                       </form>
                     )}
@@ -212,7 +212,7 @@ export function FriendsPageClient({
       <div className="space-y-2">
         <h2 className="text-xl font-bold text-zinc-950">Tus Amigos</h2>
         {friends.length === 0 ? (
-          <EmptyState description="Cuando aceptes solicitudes apareceran aqui." title="Aun no tienes amigos" />
+          <EmptyState description="Cuando aceptes solicitudes aparecerán aquí." title="Aún no tienes amigos" />
         ) : (
           <ul className="space-y-2">
             {friends.map((friend) => (
@@ -235,7 +235,7 @@ export function FriendsPageClient({
                 <form
                   action={removeAction}
                   onSubmit={(event) => {
-                    if (!window.confirm(`Seguro que quieres eliminar a @${friend.username || "sin-username"} de tus amigos?`)) {
+                    if (!window.confirm(`¿Seguro que quieres eliminar a @${friend.username || "sin-username"} de tus amigos?`)) {
                       event.preventDefault();
                     }
                   }}
@@ -260,8 +260,8 @@ export function FriendsPageClient({
             <path d="M16.8 8.2h4.4M19 6v4.4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
           </svg>
         </div>
-        <h3 className="mt-2 text-xl font-bold leading-tight">Encuentra mas exploradores</h3>
-        <p className="mt-2 text-sm text-white/90">Sincroniza tus contactos para ver quien mas esta planificando su proxima aventura en MaPlan.</p>
+        <h3 className="mt-2 text-xl font-bold leading-tight">Encuentra más exploradores</h3>
+        <p className="mt-2 text-sm text-white/90">Sincroniza tus contactos para ver quién más está planificando su próxima aventura en MaPlan.</p>
         <button className="mt-3 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#c6283a]" type="button">Sincronizar contactos</button>
       </div>
 

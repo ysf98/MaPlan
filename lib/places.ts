@@ -222,7 +222,7 @@ export async function createPlace(
     return { error: "El nombre del lugar es obligatorio.", placeId: null, duplicate: false };
   }
   if (!address) {
-    return { error: "La direccion del lugar es obligatoria.", placeId: null, duplicate: false };
+    return { error: "La dirección del lugar es obligatoria.", placeId: null, duplicate: false };
   }
 
   const category = normalizeCategory(input.category);
@@ -242,7 +242,7 @@ export async function createPlace(
       return { error: existingByProvider.error.message, placeId: null, duplicate: false };
     }
     if (existingByProvider.data) {
-      return { error: "Ese sitio ya esta guardado en este grupo.", placeId: existingByProvider.data.id, duplicate: true };
+      return { error: "Ese sitio ya está guardado en este grupo.", placeId: existingByProvider.data.id, duplicate: true };
     }
   }
 
@@ -261,7 +261,7 @@ export async function createPlace(
   }
 
   if (existingPlaceResult.data) {
-    return { error: "Ese sitio ya esta guardado en este grupo.", placeId: existingPlaceResult.data.id, duplicate: true };
+    return { error: "Ese sitio ya está guardado en este grupo.", placeId: existingPlaceResult.data.id, duplicate: true };
   }
 
   const insertedPlace = await supabase
@@ -294,7 +294,7 @@ export async function createPlace(
 
   if (insertedPlace.error) {
     if (insertedPlace.error.code === "23505") {
-      return { error: "Ese sitio ya esta guardado en este grupo.", placeId: null, duplicate: true };
+      return { error: "Ese sitio ya está guardado en este grupo.", placeId: null, duplicate: true };
     }
     return { error: insertedPlace.error.message, placeId: null, duplicate: false };
   }
@@ -398,7 +398,7 @@ export async function updatePlaceLocation(input: UpdatePlaceLocationInput): Prom
   const address = input.address.trim();
   const city = input.city?.trim() || null;
   if (!address) {
-    return { error: "La direccion del lugar es obligatoria." };
+    return { error: "La dirección del lugar es obligatoria." };
   }
 
   const supabase = await createSupabaseServerClient();

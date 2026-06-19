@@ -57,7 +57,7 @@ function buildActivityMessage(input: {
     return `${actor} ha creado ${plan}${groupSuffix}.`;
   }
 
-  return `${actor} hizo una accion${groupSuffix}.`;
+  return `${actor} hizo una acción${groupSuffix}.`;
 }
 
 function buildActivityHref(input: {

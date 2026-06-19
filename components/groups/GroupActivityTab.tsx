@@ -33,7 +33,7 @@ export function GroupActivityTab({ events, joinRequests }: GroupActivityTabProps
         />
       ) : null}
       {events.length === 0 ? (
-        <EmptyState description="Cuando alguien anada lugares, aparecera aqui." title="Sin actividad" />
+        <EmptyState description="Cuando alguien añada lugares, aparecerá aquí." title="Sin actividad" />
       ) : (
         <div>
           <h3 className="text-base font-bold text-zinc-950">Actividad reciente</h3>

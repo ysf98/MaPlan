@@ -55,7 +55,7 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
     <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-1.5">
         <label className="ml-1 text-xs font-semibold text-zinc-600" htmlFor="login-email">
-          Correo electronico
+          Correo electrónico
         </label>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">
@@ -78,7 +78,7 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
 
       <div className="space-y-1.5">
         <label className="ml-1 text-xs font-semibold text-zinc-600" htmlFor="login-password">
-          Contrasena
+          Contraseña
         </label>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">
@@ -97,7 +97,7 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
             type={showPassword ? "text" : "password"}
           />
           <button
-            aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700"
             disabled={isLoading}
             onClick={() => setShowPassword((value) => !value)}
@@ -113,7 +113,7 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
 
       <div className="flex justify-end">
         <a className="text-xs font-semibold text-[rgb(var(--vc-coral))] hover:underline" href="#">
-          Olvide mi contrasena
+          Olvidé mi contraseña
         </a>
       </div>
 
@@ -132,9 +132,9 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
       <OAuthButtons nextPath={safeNextPath} />
 
       <p className="pt-8 text-center text-sm text-zinc-600">
-        No tienes cuenta?{" "}
+        ¿No tienes cuenta?{" "}
         <Link className="font-bold text-[rgb(var(--vc-coral))] hover:underline" href={ROUTES.register}>
-          Registrate
+          Regístrate
         </Link>
       </p>
     </form>

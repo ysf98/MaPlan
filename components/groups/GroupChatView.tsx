@@ -412,7 +412,7 @@ export function GroupChatView({
                       action={deleteAction}
                       className="mt-2 text-right"
                       onSubmit={(event) => {
-                        if (!window.confirm("Eliminar este mensaje?")) {
+                        if (!window.confirm("¿Eliminar este mensaje?")) {
                           event.preventDefault();
                         }
                       }}

@@ -12,19 +12,19 @@ type ProfilePlacesViewProps = {
 
 const emptyCopy: Record<ProfilePlacesFilter, { title: string; description: string }> = {
   all: {
-    title: "Todavia no tienes lugares guardados.",
+    title: "Todavía no tienes lugares guardados.",
     description: "Guarda sitios en tu mapa personal o en tus grupos para verlos aqui."
   },
   favorites: {
-    title: "Todavia no tienes favoritos.",
+    title: "Todavía no tienes favoritos.",
     description: "Marca sitios como favoritos para tenerlos siempre a mano."
   },
   pending: {
     title: "No tienes lugares pendientes.",
-    description: "Cuando guardes sitios por visitar apareceran en esta lista."
+    description: "Cuando guardes sitios por visitar aparecerán en esta lista."
   },
   visited: {
-    title: "Todavia no tienes lugares visitados.",
+    title: "Todavía no tienes lugares visitados.",
     description: "Marca lugares como visitados para crear tu historial."
   }
 };

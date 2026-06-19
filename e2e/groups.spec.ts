@@ -8,6 +8,6 @@ test.describe("groups", () => {
     await loginWithEnvUser(page);
     await page.goto("/groups");
     await expect(page.getByRole("link", { name: /Crear Grupo/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Unirse con Codigo/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Unirse con código/i })).toBeVisible();
   });
 });

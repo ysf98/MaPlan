@@ -104,7 +104,7 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
     <>
       <div className="flex flex-wrap gap-2">
         <Button className="h-8 rounded-full px-3 text-[11px]" onClick={() => setMode("add")} size="sm" type="button" variant="secondary">
-          Anadir a plan
+          Añadir a plan
         </Button>
         <Button className="h-8 rounded-full px-3 text-[11px]" onClick={() => setMode("create")} size="sm" type="button" variant="primary">
           Crear plan
@@ -145,8 +145,8 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
             ) : (
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-bold text-zinc-950">Anadir busqueda a un plan</h3>
-                  <p className="mt-1 text-sm text-zinc-600">El lugar se anadira solo a este plan. Podras guardarlo en Lugares aparte si lo necesitas.</p>
+                  <h3 className="text-lg font-bold text-zinc-950">Añadir búsqueda a un plan</h3>
+                  <p className="mt-1 text-sm text-zinc-600">El lugar se añadirá solo a este plan. Podrás guardarlo en Lugares aparte si lo necesitas.</p>
                 </div>
                 <button
                   aria-label="Cerrar"
@@ -237,7 +237,7 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
                   <p className="text-sm text-rose-600">La fecha del plan no puede ser anterior a hoy.</p>
                 ) : null}
                 <label className="block space-y-2">
-                  <span className="text-sm font-semibold text-zinc-700">Descripcion</span>
+                  <span className="text-sm font-semibold text-zinc-700">Descripción</span>
                   <textarea
                     className="min-h-[110px] w-full rounded-[22px] border border-transparent bg-[#fff4f3] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-[#ff5a5f]"
                     maxLength={500}

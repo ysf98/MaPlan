@@ -18,7 +18,7 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/actions/serverAction", () => ({
   requireAuthenticatedUser: requireAuthenticatedUserMock,
-  getValidationErrorMessage: (error: { issues?: Array<{ message?: string }> }) => error.issues?.[0]?.message ?? "Datos invalidos."
+  getValidationErrorMessage: (error: { issues?: Array<{ message?: string }> }) => error.issues?.[0]?.message ?? "Datos inválidos."
 }));
 
 vi.mock("@/lib/personalPlaces", () => ({
@@ -123,7 +123,7 @@ describe("explore server actions", () => {
       })
     );
 
-    expect(result).toEqual({ error: "Destino invalido.", success: false });
+    expect(result).toEqual({ error: "Destino inválido.", success: false });
     expect(createPersonalPlaceMock).not.toHaveBeenCalled();
     expect(createPlaceMock).not.toHaveBeenCalled();
   });

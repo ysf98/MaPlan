@@ -182,7 +182,7 @@ export function getProfileAchievements(places: ProfilePlaceItem[]): ProfileAchie
   return [
     buildAchievement({
       id: "cartographer",
-      title: "Cartografo",
+      title: "Cartógrafo",
       description: "Cualquier lugar guardado",
       iconLetter: "C",
       count: places.length

@@ -105,9 +105,9 @@ export function GroupPlacesTab({
         description={
           canEditPlaces
             ? "Empieza agregando el primer sitio recomendado para el grupo."
-            : "Aun no hay lugares. Solo usuarios con permisos pueden anadir lugares."
+            : "Aún no hay lugares. Solo los usuarios con permisos pueden añadir lugares."
         }
-        title="Todavia no hay lugares"
+        title="Todavía no hay lugares"
       />
     );
   }

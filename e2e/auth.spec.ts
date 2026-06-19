@@ -10,7 +10,7 @@ test.describe("authentication", () => {
     await page.goto("/register");
     await page.getByLabel("Nombre").fill("E2E User");
     await page.getByLabel("Email").fill(uniqueEmail);
-    await page.getByLabel("Contrasena").fill(password);
+    await page.getByLabel("Contraseña").fill(password);
     await page.getByRole("button", { name: "Registrarme" }).click();
 
     await expect(
@@ -22,8 +22,8 @@ test.describe("authentication", () => {
     test.skip(!HAS_E2E_CREDENTIALS, "Set E2E_EMAIL and E2E_PASSWORD to run authenticated tests.");
 
     await loginWithEnvUser(page);
-    await expect(page.getByRole("button", { name: "Cerrar sesion" })).toBeVisible();
-    await page.getByRole("button", { name: "Cerrar sesion" }).click();
+    await expect(page.getByRole("button", { name: "Cerrar sesión" })).toBeVisible();
+    await page.getByRole("button", { name: "Cerrar sesión" }).click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole("link", { name: "Login" })).toBeVisible();
   });

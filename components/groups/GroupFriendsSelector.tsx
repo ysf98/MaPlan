@@ -28,7 +28,7 @@ function getFriendChipColor(index: number): string {
 
 export function GroupFriendsSelector({
   friends,
-  title = "Anadir Amigos",
+  title = "Añadir amigos",
   mode,
   selectedIds = [],
   onToggleSelected,
@@ -68,7 +68,7 @@ export function GroupFriendsSelector({
 
       {friends.length === 0 ? (
         <p className="rounded-2xl bg-white px-4 py-3 text-sm text-zinc-500 shadow-[0_8px_20px_rgba(198,40,58,0.08)]">
-          {emptyMessage || "Tus amigos apareceran aqui cuando tengas contactos."}
+          {emptyMessage || "Tus amigos aparecerán aquí cuando tengas contactos."}
         </p>
       ) : filteredFriends.length === 0 ? (
         <p className="rounded-2xl bg-white px-4 py-3 text-sm text-zinc-500 shadow-[0_8px_20px_rgba(198,40,58,0.08)]">No encontramos amigos con ese nombre.</p>

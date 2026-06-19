@@ -28,18 +28,18 @@ function createUserLocationElement(): HTMLDivElement {
 
 function getGeolocationErrorMessage(error: GeolocationPositionError): string {
   if (error.code === error.PERMISSION_DENIED) {
-    return "No podemos mostrar tu ubicacion sin permiso del navegador.";
+    return "No podemos mostrar tu ubicación sin permiso del navegador.";
   }
 
   if (error.code === error.POSITION_UNAVAILABLE) {
-    return "No se pudo obtener tu ubicacion actual.";
+    return "No se pudo obtener tu ubicación actual.";
   }
 
   if (error.code === error.TIMEOUT) {
-    return "La ubicacion esta tardando demasiado. Intentalo otra vez.";
+    return "La ubicación está tardando demasiado. Inténtalo otra vez.";
   }
 
-  return "No se pudo obtener tu ubicacion.";
+  return "No se pudo obtener tu ubicación.";
 }
 
 export function useUserLocationMarker(mapRef: RefObject<mapboxgl.Map | null>): UseUserLocationMarkerResult {
@@ -58,12 +58,12 @@ export function useUserLocationMarker(mapRef: RefObject<mapboxgl.Map | null>): U
   const requestLocation = useCallback(() => {
     const map = mapRef.current;
     if (!map) {
-      setError("El mapa aun no esta listo.");
+      setError("El mapa aún no está listo.");
       return;
     }
 
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setError("Tu navegador no permite obtener la ubicacion.");
+      setError("Tu navegador no permite obtener la ubicación.");
       return;
     }
 

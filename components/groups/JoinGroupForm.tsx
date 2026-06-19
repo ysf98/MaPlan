@@ -19,13 +19,13 @@ export function JoinGroupForm() {
     <form action={joinFormAction} className="space-y-4">
       <fieldset className="space-y-4" disabled={isJoinPending}>
         <Input
-          label="Codigo del grupo"
+          label="Código del grupo"
           maxLength={8}
           name="joinCode"
           pattern="[A-Za-z0-9]{8}"
           placeholder="Ej. A1B2C3D4"
           required
-          title="El codigo debe tener 8 caracteres alfanumericos."
+          title="El código debe tener 8 caracteres alfanuméricos."
         />
         {joinState.error ? <p className="text-sm text-rose-600">{joinState.error}</p> : null}
         {joinState.success && joinState.mode === "joined" ? (

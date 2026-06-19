@@ -17,7 +17,7 @@ export default async function JoinGroupPage() {
       <section className="space-y-4">
         <Card className="rounded-3xl">
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">Unirse a un grupo</h1>
-          <p className="mt-1 text-sm text-zinc-500">Introduce el codigo para unirte o enviar solicitud.</p>
+          <p className="mt-1 text-sm text-zinc-500">Introduce el código para unirte o enviar una solicitud.</p>
         </Card>
         <Card className="rounded-3xl">
           <JoinGroupForm />

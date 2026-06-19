@@ -74,7 +74,7 @@ export async function createGroupAction(
 
   const supabase = await createSupabaseServerClient();
   let createdGroupId: string | null = null;
-  let lastErrorMessage = "No se pudo crear el grupo. Intentalo otra vez.";
+  let lastErrorMessage = "No se pudo crear el grupo. Inténtalo otra vez.";
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const joinCode = createJoinCode();
@@ -164,13 +164,13 @@ export async function joinGroupAction(
   const { data: group, error: groupError } = groupResult;
 
   if (groupError || !group) {
-    return { error: "No existe ningun grupo con ese codigo.", success: false, groupId: null, mode: null };
+    return { error: "No existe ningún grupo con ese código.", success: false, groupId: null, mode: null };
   }
 
   const joinPolicy = group.join_policy as GroupJoinPolicy;
 
   if (joinPolicy === "invite_only") {
-    return { error: "Este grupo solo permite acceso por invitacion.", success: false, groupId: null, mode: null };
+    return { error: "Este grupo solo permite acceso por invitación.", success: false, groupId: null, mode: null };
   }
 
   if (joinPolicy === "request_to_join") {

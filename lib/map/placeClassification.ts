@@ -34,8 +34,8 @@ function getDirectLabelFromPrimaryType(primaryType: string): string | null {
     { match: "museum", label: "Museo" },
     { match: "tourist_attraction", label: "Lugar turistico" },
     { match: "locality", label: "Localidad" },
-    { match: "route", label: "Direccion" },
-    { match: "street_address", label: "Direccion" },
+    { match: "route", label: "Dirección" },
+    { match: "street_address", label: "Dirección" },
     { match: "store", label: "Comercio" }
   ];
 
@@ -130,7 +130,7 @@ export function getPlaceTypeLabel(primaryType: string | null, placeName: string,
   if (best[0] === "comercio") return "Comercio";
   if (best[0] === "deporte") return "Deporte";
   if (best[0] === "localidad") return "Localidad";
-  if (best[0] === "direccion") return "Direccion";
+  if (best[0] === "direccion") return "Dirección";
   return "Sitio";
 }
 

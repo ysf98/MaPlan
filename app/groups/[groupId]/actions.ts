@@ -610,7 +610,7 @@ export async function deletePlaceAction(
   const groupId = String(formData.get("groupId") || "");
   const placeId = String(formData.get("placeId") || "");
   if (!groupId || !placeId) {
-    return { error: "Lugar invalido.", success: false };
+    return { error: "Lugar inválido.", success: false };
   }
 
   const result = await deletePlace({
@@ -655,7 +655,7 @@ export async function createGroupPlanAction(
     .filter(Boolean);
 
   if (initialPlaceIds.some((placeId) => !UUID_PATTERN.test(placeId))) {
-    return { error: "Lugar invalido.", planId: null, requestId, success: false };
+    return { error: "Lugar inválido.", planId: null, requestId, success: false };
   }
 
   const result = await createGroupPlan({
@@ -966,7 +966,7 @@ export async function updatePlaceNameAction(
   const name = String(formData.get("name") || "").trim();
 
   if (!groupId || !placeId) {
-    return { error: "Lugar invalido.", success: false };
+    return { error: "Lugar inválido.", success: false };
   }
 
   const result = await updatePlaceName({
@@ -1138,7 +1138,7 @@ export async function leaveGroupAction(
 
   const groupId = String(formData.get("groupId") || "").trim();
   if (!groupId) {
-    return { error: "Grupo invalido.", success: false };
+    return { error: "Grupo inválido.", success: false };
   }
 
   const owner = await isGroupOwner(user.id, groupId);
@@ -1167,7 +1167,7 @@ export async function deleteGroupAction(
 
   const groupId = String(formData.get("groupId") || "").trim();
   if (!groupId) {
-    return { error: "Grupo invalido.", success: false };
+    return { error: "Grupo inválido.", success: false };
   }
 
   const owner = await isGroupOwner(user.id, groupId);

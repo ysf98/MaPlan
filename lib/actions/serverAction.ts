@@ -10,6 +10,6 @@ export async function requireAuthenticatedUser(loginNextPath: string) {
   return user;
 }
 
-export function getValidationErrorMessage(error: ZodError, fallback = "Datos invalidos.") {
+export function getValidationErrorMessage(error: ZodError, fallback = "Datos inválidos.") {
   return error.issues[0]?.message ?? fallback;
 }

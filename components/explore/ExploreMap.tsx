@@ -380,7 +380,7 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
     async (category: GoogleNearbyRecommendationCategory, location = userLocation.location) => {
       if (!location) {
         setPendingRecommendationFilter(category);
-        setRecommendationsError("Activa tu ubicacion para ver recomendaciones cerca.");
+        setRecommendationsError("Activa tu ubicación para ver recomendaciones cerca.");
         userLocation.requestLocation();
         return;
       }

@@ -141,7 +141,7 @@ describe("group invitations domain", () => {
     );
 
     expect(result).toEqual({
-      error: "No tienes permisos para responder esta invitacion.",
+      error: "No tienes permisos para responder esta invitación.",
       groupId: null
     });
   });

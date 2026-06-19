@@ -58,7 +58,7 @@ export function getRateLimitHeaders(result: RateLimitResult): HeadersInit {
 
 export function rateLimitExceededResponse(result: RateLimitResult) {
   return NextResponse.json(
-    { error: "Has hecho demasiadas solicitudes. Intentalo de nuevo en unos segundos." },
+    { error: "Has hecho demasiadas solicitudes. Inténtalo de nuevo en unos segundos." },
     { status: 429, headers: getRateLimitHeaders(result) }
   );
 }

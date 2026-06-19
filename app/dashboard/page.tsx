@@ -72,7 +72,7 @@ export default async function DashboardPage() {
         <section className="space-y-7">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#c6283a]">Bienvenido de nuevo</p>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-zinc-950 sm:text-5xl">Hola, {shortName}!</h1>
+            <h1 className="mt-2 text-4xl font-bold tracking-tight text-zinc-950 sm:text-5xl">¡Hola, {shortName}!</h1>
             <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-zinc-600">
               Tienes {notifications.pendingInvitations.length} invitaciones pendientes y {placeStats.pendingPlaceCount} lugares pendientes por visitar.
             </p>
@@ -94,7 +94,7 @@ export default async function DashboardPage() {
             />
           ) : (
             <section className="rounded-[28px] border border-zinc-100 bg-white px-5 py-5 shadow-[0_12px_30px_rgba(24,24,27,0.08)]">
-              <p className="text-sm font-semibold text-zinc-800">Todo al dia</p>
+              <p className="text-sm font-semibold text-zinc-800">Todo al día</p>
               <p className="mt-1 text-sm leading-6 text-zinc-500">
                 No tienes invitaciones pendientes ahora mismo. Puedes seguir explorando sitios para tus planes.
               </p>
@@ -119,7 +119,7 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="rounded-3xl border border-dashed border-rose-200 bg-white/70 px-5 py-6">
-                <p className="text-sm font-semibold text-zinc-800">Todavia no tienes grupos</p>
+                <p className="text-sm font-semibold text-zinc-800">Todavía no tienes grupos</p>
                 <p className="mt-1 text-sm leading-6 text-zinc-500">Crea tu primer grupo para empezar a guardar sitios con amigos.</p>
                 <Link
                   className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-[#c6283a] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#a91f31]"

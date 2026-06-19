@@ -207,7 +207,7 @@ describe("group server actions", () => {
     createSupabaseServerClientMock.mockResolvedValue(
       createGroupsActionClient({ createdGroupId: "88888888-8888-4888-8888-888888888888" })
     );
-    inviteFriendToGroupMock.mockResolvedValue({ error: "No se pudo enviar la invitacion." });
+    inviteFriendToGroupMock.mockResolvedValue({ error: "No se pudo enviar la invitación." });
 
     const formData = new FormData();
     formData.set("name", "My Group");
@@ -274,7 +274,7 @@ describe("group server actions", () => {
     const result = await joinGroupAction({ error: null, success: false, groupId: null, mode: null }, formData);
 
     expect(result).toEqual({
-      error: "Este grupo solo permite acceso por invitacion.",
+      error: "Este grupo solo permite acceso por invitación.",
       success: false,
       groupId: null,
       mode: null

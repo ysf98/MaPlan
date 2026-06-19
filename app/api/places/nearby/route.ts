@@ -234,7 +234,7 @@ function normalizeRecommendationFromNearby(
 
   const rawAddress = (result.formatted_address || result.vicinity || "").trim();
   const parts = splitAddressParts(rawAddress);
-  const address = parts.street || rawAddress || "Sin direccion";
+  const address = parts.street || rawAddress || "Sin dirección";
   const city = parts.city || "";
   const primaryType = result.types?.[0] || null;
   const photoReference = result.photos?.[0]?.photo_reference || null;
@@ -319,7 +319,7 @@ function normalizePlaceFromDetails(
   const streetFromComponents = pickStreetFromComponents(details.address_components, parts.street || fullAddress);
   const photoReference = details.photos?.[0]?.photo_reference || selected.photoReference;
   const name = (details.name || "").trim() || "Resultado";
-  const address = streetFromComponents || "Sin direccion";
+  const address = streetFromComponents || "Sin dirección";
   const city = cityFromComponents || parts.city || "";
 
   return {
@@ -351,7 +351,7 @@ function normalizePlaceFromNearby(result: GoogleNearbyResult, selected: NearbySe
   const rawAddress = (result.formatted_address || result.vicinity || "").trim();
   const parts = splitAddressParts(rawAddress);
   const name = (result.name || "").trim() || "Resultado";
-  const address = parts.street || rawAddress || "Sin direccion";
+  const address = parts.street || rawAddress || "Sin dirección";
   const city = parts.city || "";
   return {
     externalPlaceId: selected.placeId,
@@ -382,7 +382,7 @@ function normalizePlaceFromRecord(record: CandidateSourceRecord, selected: Nearb
   const rawAddress = record.address;
   const parts = splitAddressParts(rawAddress);
   const name = record.name || "Resultado";
-  const address = parts.street || rawAddress || "Sin direccion";
+  const address = parts.street || rawAddress || "Sin dirección";
   const city = parts.city || "";
   return {
     externalPlaceId: selected.placeId,
@@ -463,7 +463,7 @@ export async function POST(request: Request) {
   const payload = await request.json().catch(() => null);
   const parsedPayload = googlePlacesNearbySchema.safeParse(payload);
   if (!parsedPayload.success) {
-    return NextResponse.json({ error: "Payload invalido." }, { status: 400 });
+    return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
   }
 
   return resolveNearbyFromCoordinates(parsedPayload.data.lat, parsedPayload.data.lng, parsedPayload.data.selectedName, apiKey);
@@ -495,7 +495,7 @@ export async function GET(request: Request) {
     });
 
     if (!parsedRecommendationsPayload.success) {
-      return NextResponse.json({ error: "Payload invalido." }, { status: 400 });
+      return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
     }
 
     return resolveNearbyRecommendations(parsedRecommendationsPayload.data, apiKey);
@@ -507,7 +507,7 @@ export async function GET(request: Request) {
     selectedName: url.searchParams.get("selectedName")
   });
   if (!parsedPayload.success) {
-    return NextResponse.json({ error: "Payload invalido." }, { status: 400 });
+    return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
   }
 
   return resolveNearbyFromCoordinates(parsedPayload.data.lat, parsedPayload.data.lng, parsedPayload.data.selectedName, apiKey);

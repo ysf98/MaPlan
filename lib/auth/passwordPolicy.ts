@@ -1,9 +1,9 @@
 export const PASSWORD_REQUIREMENTS: string[] = [
-  "Minimo 9 caracteres",
-  "Al menos una letra mayuscula",
-  "Al menos una letra minuscula",
-  "Al menos un numero",
-  "Recomendado: al menos un simbolo (por ejemplo: !@#$%)"
+  "Mínimo 9 caracteres",
+  "Al menos una letra mayúscula",
+  "Al menos una letra minúscula",
+  "Al menos un número",
+  "Recomendado: al menos un símbolo (por ejemplo: !@#$%)"
 ];
 
 const UPPERCASE_REGEX = /[A-Z]/;
@@ -31,16 +31,16 @@ export function validatePassword(password: string): string | null {
   const checks = getPasswordRequirementChecks(password);
 
   if (!checks.minLength) {
-    return "La contrasena debe tener al menos 9 caracteres.";
+    return "La contraseña debe tener al menos 9 caracteres.";
   }
   if (!checks.hasUppercase) {
-    return "La contrasena debe incluir al menos una letra mayuscula.";
+    return "La contraseña debe incluir al menos una letra mayúscula.";
   }
   if (!checks.hasLowercase) {
-    return "La contrasena debe incluir al menos una letra minuscula.";
+    return "La contraseña debe incluir al menos una letra minúscula.";
   }
   if (!checks.hasNumber) {
-    return "La contrasena debe incluir al menos un numero.";
+    return "La contraseña debe incluir al menos un número.";
   }
 
   return null;

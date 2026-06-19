@@ -141,7 +141,7 @@ export function GroupOwnerControls({
     const file = event.target.files?.[0];
     if (!file) return;
     if (file.size > MAX_IMAGE_BYTES) {
-      setCoverError("La imagen es demasiado pesada. Maximo 2MB.");
+      setCoverError("La imagen es demasiado pesada. Máximo 2 MB.");
       return;
     }
     setCoverError(null);
@@ -230,13 +230,13 @@ export function GroupOwnerControls({
                         disabled={!isOwner}
                         name="settings_joinPolicy"
                       >
-                        <option value="invite_only">Solo por invitacion</option>
-                        <option value="request_to_join">Solicitud con codigo</option>
-                        <option value="open_by_code">Abierto con codigo</option>
+                        <option value="invite_only">Solo por invitación</option>
+                        <option value="request_to_join">Solicitud con código</option>
+                        <option value="open_by_code">Abierto con código</option>
                       </select>
                     </label>
                     <div className="rounded-xl border border-zinc-100 bg-white p-3">
-                      <p className="text-xs font-medium text-zinc-700">Codigo de invitacion</p>
+                      <p className="text-xs font-medium text-zinc-700">Código de invitación</p>
                       <p className="mt-1 text-sm font-semibold tracking-wide text-zinc-950">{joinCode}</p>
                     </div>
                     {settingsState.error ? <p className="text-xs text-rose-600">{settingsState.error}</p> : null}
@@ -263,7 +263,7 @@ export function GroupOwnerControls({
                           className="w-full"
                           disabled={isDeleting}
                           onClick={() => {
-                            const confirmed = window.confirm("Estas seguro de que quieres eliminar este grupo?");
+                            const confirmed = window.confirm("¿Estás seguro de que quieres eliminar este grupo?");
                             if (!confirmed) return;
                             const formData = new FormData();
                             formData.set("groupId", groupId);
@@ -282,7 +282,7 @@ export function GroupOwnerControls({
                           className="w-full"
                           disabled={isLeaving}
                           onClick={() => {
-                            const confirmed = window.confirm("Estas seguro de que quieres salir del grupo?");
+                            const confirmed = window.confirm("¿Estás seguro de que quieres salir del grupo?");
                             if (!confirmed) return;
                             const formData = new FormData();
                             formData.set("groupId", groupId);
@@ -319,14 +319,14 @@ export function GroupOwnerControls({
                 </label>
 
                 <label className="block space-y-2">
-                  <span className="text-[11px] font-bold text-zinc-800">Descripcion (opcional)</span>
+                  <span className="text-[11px] font-bold text-zinc-800">Descripción (opcional)</span>
                   <textarea
                     className="min-h-[86px] w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 placeholder:text-zinc-400 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-100"
                     defaultValue={groupDescription || ""}
                     disabled={!canEditGroup}
                     maxLength={300}
                     name="description"
-                    placeholder="Cual es el proposito de este grupo?"
+                    placeholder="¿Cuál es el propósito de este grupo?"
                   />
                 </label>
 
@@ -336,7 +336,7 @@ export function GroupOwnerControls({
                       emptyMessage={
                         totalFriendsCount === 0
                           ? "Anade amigos primero para poder invitarlos al grupo."
-                          : "Todos tus amigos ya estan invitados o ya son miembros de este grupo."
+                          : "Todos tus amigos ya están invitados o ya son miembros de este grupo."
                       }
                       friends={invitableFriends}
                       invitingFriendId={isInviting ? invitingFriendId : null}
@@ -345,7 +345,7 @@ export function GroupOwnerControls({
                       title="Invitar amigos"
                     />
                     {inviteState.error ? <p className="text-xs text-rose-600">{inviteState.error}</p> : null}
-                    {inviteState.success ? <p className="text-xs text-emerald-600">Invitacion enviada.</p> : null}
+                    {inviteState.success ? <p className="text-xs text-emerald-600">Invitación enviada.</p> : null}
                   </>
                 ) : (
                   <p className="text-xs text-zinc-500">Solo puedes consultar la configuracion del grupo.</p>

@@ -79,7 +79,7 @@ describe("personal places domain", () => {
       externalPlaceId: "abc123"
     });
 
-    expect(result).toEqual({ error: "Ese sitio ya esta guardado en tu mapa." });
+    expect(result).toEqual({ error: "Ese sitio ya está guardado en tu mapa." });
   });
 
   it("elimina solo por user_id e id", async () => {

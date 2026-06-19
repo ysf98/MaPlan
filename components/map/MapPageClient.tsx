@@ -329,7 +329,7 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
             ) : (
               <EmptyState
                 description="Busca un sitio en el mapa para crear tu primer lugar personal."
-                title="Todavia no tienes lugares personales"
+                title="Todavía no tienes lugares personales"
               />
             )}
           </div>

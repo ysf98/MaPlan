@@ -287,7 +287,7 @@ export function ProfileView({ achievements, initialAvatarUrl, initialFullName, h
   function onAvatarChange(file?: File) {
     if (!file) return;
     if (file.size > MAX_IMAGE_BYTES) {
-      setAvatarError("La imagen es demasiado pesada. Maximo 2MB.");
+      setAvatarError("La imagen es demasiado pesada. Máximo 2 MB.");
       return;
     }
     setAvatarError(null);
@@ -386,7 +386,7 @@ export function ProfileView({ achievements, initialAvatarUrl, initialFullName, h
       </Card>
 
       <Card className="rounded-3xl">
-        <p className="text-sm text-zinc-500">Sesion</p>
+        <p className="text-sm text-zinc-500">Sesión</p>
         <div className="mt-2 space-y-3">
           <SignOutButton />
           <Button
@@ -498,9 +498,9 @@ export function ProfileView({ achievements, initialAvatarUrl, initialFullName, h
             </div>
 
             <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-4">
-              <p className="text-sm font-semibold text-rose-700">Esta accion es irreversible.</p>
+              <p className="text-sm font-semibold text-rose-700">Esta acción es irreversible.</p>
               <p className="mt-1 text-sm leading-6 text-zinc-600">
-                Tu perfil se anonimizara y se cerrara la sesion. Los grupos, lugares y actividad compartida se conservaran para no romper el historial.
+                Tu perfil se anonimizará y se cerrará la sesión. Los grupos, lugares y la actividad compartida se conservarán para no romper el historial.
               </p>
             </div>
 

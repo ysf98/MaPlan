@@ -16,7 +16,7 @@ export function UserLocationButton({ className, error, isLocating, onClick }: Us
       data-map-control=""
     >
       <button
-        aria-label="Mostrar mi ubicacion"
+        aria-label="Mostrar mi ubicación"
         className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-rose-100/80 bg-white/92 text-[#c6283a] shadow-[0_10px_24px_rgba(181,35,48,0.18)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-rose-50 active:translate-y-0 disabled:cursor-wait disabled:opacity-75"
         data-map-control=""
         disabled={isLocating}

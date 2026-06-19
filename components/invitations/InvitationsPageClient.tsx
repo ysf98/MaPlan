@@ -46,7 +46,7 @@ export function InvitationsPageClient({ invitations }: InvitationsPageClientProp
   return (
     <section className="space-y-4">
       {pendingInvitations.length === 0 && reviewedInvitations.length === 0 ? (
-        <EmptyState title="Sin invitaciones pendientes" description="Cuando te inviten a un grupo aparecera aqui." />
+        <EmptyState title="Sin invitaciones pendientes" description="Cuando te inviten a un grupo aparecerá aquí." />
       ) : (
         <>
           <Card className="rounded-3xl">
@@ -73,7 +73,7 @@ export function InvitationsPageClient({ invitations }: InvitationsPageClientProp
               </ul>
             )}
             {state.error ? <p className="mt-2 text-sm text-rose-600">{state.error}</p> : null}
-            {state.success ? <p className="mt-2 text-sm text-emerald-600">Invitacion actualizada.</p> : null}
+            {state.success ? <p className="mt-2 text-sm text-emerald-600">Invitación actualizada.</p> : null}
           </Card>
 
           {reviewedInvitations.length > 0 ? (

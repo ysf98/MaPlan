@@ -106,7 +106,7 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
           ) : isSelecting ? (
             <p className="px-3 py-2 text-xs text-zinc-500">Cargando lugar...</p>
           ) : searchResults.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-zinc-500">No encontramos sitios con esa busqueda cerca de esta zona.</p>
+            <p className="px-3 py-2 text-xs text-zinc-500">No encontramos sitios con esa búsqueda cerca de esta zona.</p>
           ) : (
             <ul className="max-h-72 overflow-y-auto">
               {searchResults.map((result) => (
@@ -194,7 +194,7 @@ export function MapSearchBox({ getMapContext, onSelectResult, onManualCreate, cl
                 <input
                   className="h-9 w-full rounded-lg border border-zinc-200 px-2 text-xs text-zinc-950"
                   onChange={(event) => setManualAddress(event.target.value)}
-                  placeholder="Direccion"
+                  placeholder="Dirección"
                   required
                   value={manualAddress}
                 />

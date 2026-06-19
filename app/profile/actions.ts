@@ -115,7 +115,7 @@ export async function updateProfileAction(
 
   if (error) {
     if ((error as { code?: string }).code === "23505") {
-      return { error: "Ese @usuario ya esta en uso. Elige otro distinto.", success: false };
+      return { error: "Ese @usuario ya está en uso. Elige otro distinto.", success: false };
     }
     return { error: error.message, success: false };
   }

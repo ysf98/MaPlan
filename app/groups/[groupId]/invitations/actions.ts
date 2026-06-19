@@ -31,7 +31,7 @@ export async function inviteFriendToGroupAction(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Datos invalidos.", success: false };
+    return { error: parsed.error.issues[0]?.message ?? "Datos inválidos.", success: false };
   }
 
   const result = await inviteFriendToGroup(user.id, parsed.data.groupId, parsed.data.friendUserId);
@@ -44,4 +44,3 @@ export async function inviteFriendToGroupAction(
   revalidatePath("/dashboard");
   return { error: null, success: true };
 }
-
