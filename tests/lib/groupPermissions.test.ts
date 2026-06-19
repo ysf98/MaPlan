@@ -90,6 +90,27 @@ describe("group permissions", () => {
     await expect(canEditPlaces("user", "group")).resolves.toBe(false);
   });
 
+  it("miembro puede editar planes en grupo abierto", async () => {
+    createSupabaseServerClientMock.mockResolvedValue(createMembershipClient("member", "abierto"));
+    const { canEditGroupDetails } = await import("@/lib/groupPermissions");
+
+    await expect(canEditGroupDetails("user", "group")).resolves.toBe(true);
+  });
+
+  it("miembro no puede editar planes en grupo privado", async () => {
+    createSupabaseServerClientMock.mockResolvedValue(createMembershipClient("member", "privado"));
+    const { canEditGroupDetails } = await import("@/lib/groupPermissions");
+
+    await expect(canEditGroupDetails("user", "group")).resolves.toBe(false);
+  });
+
+  it("owner puede editar planes en grupo privado", async () => {
+    createSupabaseServerClientMock.mockResolvedValue(createMembershipClient("owner", "privado"));
+    const { canEditGroupDetails } = await import("@/lib/groupPermissions");
+
+    await expect(canEditGroupDetails("user", "group")).resolves.toBe(true);
+  });
+
   it("solo owner puede cambiar privacidad", async () => {
     createSupabaseServerClientMock.mockResolvedValue(createMembershipClient("member", "abierto"));
     const { canChangeGroupPrivacy } = await import("@/lib/groupPermissions");

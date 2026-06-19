@@ -348,7 +348,8 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
   const mapUrl = buildMapboxStaticUrl(sortedPlaces, mapboxToken);
   const markerPoints = getMarkerPoints(sortedPlaces);
   const backHref = `/groups/${groupId}?tab=planes`;
-  const canEditPlan = localPlan.isCreator;
+  const canEditPlan = localPlan.canEdit;
+  const canDeletePlan = localPlan.canDelete;
 
   useEffect(() => {
     setLocalPlan(plan);
@@ -633,7 +634,7 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
 
         <section className="relative z-10 -mt-12 px-5">
           <div className="relative rounded-[32px] bg-white p-6 shadow-[0_18px_48px_rgba(181,35,48,0.12)]">
-            {canEditPlan && !isEditing ? (
+            {(canEditPlan || canDeletePlan) && !isEditing ? (
               <div className="absolute right-5 top-5">
                 <button
                   aria-hidden="true"
@@ -658,8 +659,8 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
                   <option disabled value="">
                     Opciones del plan
                   </option>
-                  <option value="edit">Editar plan</option>
-                  <option value="delete">Eliminar plan</option>
+                  {canEditPlan ? <option value="edit">Editar plan</option> : null}
+                  {canDeletePlan ? <option value="delete">Eliminar plan</option> : null}
                 </select>
               </div>
             ) : null}

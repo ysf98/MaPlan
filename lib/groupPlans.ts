@@ -1,4 +1,4 @@
-import { canEditPlaces, isGroupMember } from "@/lib/groupPermissions";
+import { canEditPlaces, isGroupMember, isGroupOwner } from "@/lib/groupPermissions";
 import { recordPlanCreatedGroupActivity } from "@/lib/groupActivity";
 import { canPlanAcceptNewPlaces, extractPlanDatePart, isPlanDateTodayOrFuture, normalizePlanDateInput } from "@/lib/groupPlansShared";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -171,6 +171,8 @@ export type GroupPlanItem = {
   notAttendingCount: number;
   currentUserVote: GroupPlanVote | null;
   acceptsNewPlaces: boolean;
+  canDelete: boolean;
+  canEdit: boolean;
   isCreator: boolean;
 };
 
@@ -285,6 +287,10 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
     return [];
   }
 
+  const [canEditPlans, isOwner] = await Promise.all([
+    canEditPlaces(userId, groupId),
+    isGroupOwner(userId, groupId)
+  ]);
   const supabase = await createSupabaseServerClient();
   const plansResult = await supabase
     .from("group_plans")
@@ -402,9 +408,15 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
       notAttendingCount: votes.filter((vote) => vote.vote === "not_attending").length,
       currentUserVote: votes.find((vote) => vote.userId === userId)?.vote ?? null,
       acceptsNewPlaces: canPlanAcceptNewPlaces(plan.planned_date),
+      canDelete: isOwner || plan.created_by === userId,
+      canEdit: canEditPlans,
       isCreator: plan.created_by === userId
     };
   });
+}
+
+async function canEditPlanContent(userId: string, groupId: string): Promise<boolean> {
+  return canEditPlaces(userId, groupId);
 }
 
 export async function createGroupPlan(input: CreateGroupPlanInput): Promise<{ error: string | null; planId: string | null }> {
@@ -592,8 +604,9 @@ export async function deleteGroupPlan(input: DeleteGroupPlanInput): Promise<{ er
     return { error: "No se encontro el plan." };
   }
 
-  if (plan.created_by !== input.userId) {
-    return { error: "Solo la persona creadora puede eliminar este plan." };
+  const canDelete = plan.created_by === input.userId || (await isGroupOwner(input.userId, input.groupId));
+  if (!canDelete) {
+    return { error: "Solo la persona creadora o propietaria del grupo puede eliminar este plan." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -612,8 +625,8 @@ export async function updateGroupPlanDate(input: UpdateGroupPlanDateInput): Prom
     return { error: "No se encontro el plan." };
   }
 
-  if (plan.created_by !== input.userId) {
-    return { error: "Solo la persona creadora puede cambiar la fecha de este plan." };
+  if (!(await canEditPlanContent(input.userId, input.groupId))) {
+    return { error: "No tienes permisos para cambiar la fecha de este plan." };
   }
 
   if (input.plannedDate) {
@@ -655,8 +668,8 @@ export async function updateGroupPlanDetails(input: UpdateGroupPlanDetailsInput)
     return { error: "No se encontro el plan." };
   }
 
-  if (plan.created_by !== input.userId) {
-    return { error: "Solo la persona creadora puede editar este plan." };
+  if (!(await canEditPlanContent(input.userId, input.groupId))) {
+    return { error: "No tienes permisos para editar este plan." };
   }
 
   const title = input.title.trim();
@@ -704,8 +717,8 @@ export async function removePlaceFromGroupPlan(input: RemoveGroupPlanPlaceInput)
     return { error: "No se encontro el plan." };
   }
 
-  if (plan.created_by !== input.userId) {
-    return { error: "Solo la persona creadora puede eliminar lugares de este plan." };
+  if (!(await canEditPlanContent(input.userId, input.groupId))) {
+    return { error: "No tienes permisos para eliminar lugares de este plan." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -734,8 +747,8 @@ export async function updateGroupPlanPlaceTime(input: UpdateGroupPlanPlaceTimeIn
     return { error: "No se encontro el plan." };
   }
 
-  if (plan.created_by !== input.userId) {
-    return { error: "Solo la persona creadora puede cambiar la hora de esta parada." };
+  if (!(await canEditPlanContent(input.userId, input.groupId))) {
+    return { error: "No tienes permisos para cambiar la hora de esta parada." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -769,8 +782,8 @@ export async function reorderGroupPlanPlaces(input: ReorderGroupPlanPlacesInput)
     return { error: "No se encontro el plan." };
   }
 
-  if (plan.created_by !== input.userId) {
-    return { error: "Solo la persona creadora puede reordenar este plan." };
+  if (!(await canEditPlanContent(input.userId, input.groupId))) {
+    return { error: "No tienes permisos para reordenar este plan." };
   }
 
   const orderedIds = Array.from(new Set(input.orderedPlanPlaceIds));

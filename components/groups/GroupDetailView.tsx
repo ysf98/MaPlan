@@ -9,6 +9,7 @@ import { GroupOverviewHeader } from "@/components/groups/GroupOverviewHeader";
 import { GroupOwnerControls } from "@/components/groups/GroupOwnerControls";
 import { GroupPlansTab } from "@/components/groups/GroupPlansTab";
 import { GroupPlacesTab } from "@/components/groups/GroupPlacesTab";
+import { GroupRealtimeSync } from "@/components/groups/GroupRealtimeSync";
 import { cn } from "@/lib/cn";
 import type { GroupActivityFeedItem } from "@/lib/groupActivity";
 import type { GroupPlanItem } from "@/lib/groupPlans";
@@ -184,6 +185,7 @@ export function GroupDetailView({
 
   return (
     <section className="space-y-5">
+      <GroupRealtimeSync currentUserId={currentUserId} groupId={groupId} />
       <div className="relative">
         <div className="absolute right-4 top-4 z-10">
           <GroupOwnerControls

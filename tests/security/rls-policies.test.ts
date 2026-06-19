@@ -119,8 +119,19 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("check (vote in ('attending', 'maybe', 'not_attending'))");
     expect(sql).toContain("create policy group_plans_select_group_member");
     expect(sql).toContain("create policy group_plan_places_insert_editor_only");
-    expect(sql).toContain("create policy group_plan_places_update_creator_only");
-    expect(sql).toContain("create policy group_plans_update_creator_only");
+    expect(sql).toContain("create policy group_plan_places_update_editor");
+    expect(sql).toContain("create policy group_plan_places_delete_editor");
+    expect(sql).toContain("create policy group_plans_update_editor");
+    expect(sql).toContain("create policy group_plans_delete_creator_or_owner");
+    expect(sql).toContain("public.can_edit_group_shared_content(group_id, auth.uid())");
+    expect(sql).toContain("public.can_edit_group_shared_content(gp.group_id, auth.uid())");
+    expect(sql).toContain("create or replace function public.enforce_group_plan_protected_updates");
+    expect(sql).toContain("new.group_id is distinct from old.group_id");
+    expect(sql).toContain("new.created_by is distinct from old.created_by");
+    expect(sql).toContain("create or replace function public.enforce_group_plan_place_protected_updates");
+    expect(sql).toContain("new.plan_id is distinct from old.plan_id");
+    expect(sql).toContain("new.added_by is distinct from old.added_by");
+    expect(sql).toContain("create trigger trg_group_plan_places_touch_plan");
     expect(sql).toContain("create policy group_plan_votes_update_self_member");
     expect(sql).toContain("planned_date::date >= timezone('Europe/Madrid', now())::date");
     expect(sql).toContain("gp.planned_date is null or gp.planned_date::date >= timezone('Europe/Madrid', now())::date");
@@ -157,7 +168,9 @@ describe("RLS policies baseline", () => {
       "group_invitations",
       "group_activity_events",
       "group_chat_messages",
-      "group_join_requests"
+      "group_join_requests",
+      "places",
+      "group_plans"
     ]) {
       expect(sql).toContain(`tablename = '${table}'`);
       expect(sql).toContain(`alter publication supabase_realtime add table public.${table}`);

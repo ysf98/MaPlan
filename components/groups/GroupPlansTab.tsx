@@ -497,6 +497,8 @@ export function GroupPlansTab({
       notAttendingCount: 0,
       currentUserVote: null,
       acceptsNewPlaces: canPlanAcceptNewPlaces(pendingCreatePlan.plannedDate),
+      canDelete: true,
+      canEdit: true,
       isCreator: true
     };
     setDisplayPlans((current) => [createdPlan, ...current.filter((plan) => plan.id !== createdPlan.id)]);
@@ -708,7 +710,7 @@ export function GroupPlansTab({
   }
 
   function renderPlanMenu(plan: GroupPlanItem) {
-    if (!plan.isCreator) {
+    if (!plan.canEdit && !plan.canDelete) {
       return null;
     }
 
@@ -727,29 +729,33 @@ export function GroupPlansTab({
         </button>
         {menuPlanId === plan.id ? (
           <div className="absolute right-0 top-11 z-20 w-44 rounded-2xl border border-rose-100 bg-white p-2 shadow-[0_16px_40px_rgba(181,35,48,0.14)]">
-            <button
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-zinc-700 transition hover:bg-rose-50 hover:text-[#c6283a]"
-              onClick={(event) => {
-                event.stopPropagation();
-                openEditDate(plan);
-              }}
-              type="button"
-            >
-              <CalendarSmallIcon />
-              Cambiar fecha
-            </button>
-            <button
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
-              onClick={(event) => {
-                event.stopPropagation();
-                setPlanToDelete(plan);
-                setMenuPlanId(null);
-              }}
-              type="button"
-            >
-              <TrashIcon />
-              Eliminar plan
-            </button>
+            {plan.canEdit ? (
+              <button
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-zinc-700 transition hover:bg-rose-50 hover:text-[#c6283a]"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openEditDate(plan);
+                }}
+                type="button"
+              >
+                <CalendarSmallIcon />
+                Cambiar fecha
+              </button>
+            ) : null}
+            {plan.canDelete ? (
+              <button
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setPlanToDelete(plan);
+                  setMenuPlanId(null);
+                }}
+                type="button"
+              >
+                <TrashIcon />
+                Eliminar plan
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -950,7 +956,7 @@ export function GroupPlansTab({
             >
               <BackIcon />
             </button>
-            {selectedPlan.isCreator ? (
+            {selectedPlan.canEdit ? (
               <button
                 className="inline-flex h-9 items-center gap-2 rounded-full bg-white px-3 text-sm font-semibold text-[#c6283a] shadow-[0_8px_18px_rgba(24,24,27,0.08)] transition hover:bg-rose-50"
                 onClick={() => {
@@ -1054,7 +1060,7 @@ export function GroupPlansTab({
                           </span>
                         ) : null}
                       </div>
-                      {selectedPlan.isCreator && !place.id.startsWith("optimistic-") ? (
+                      {selectedPlan.canEdit && !place.id.startsWith("optimistic-") ? (
                         <button
                           className="rounded-full p-2 text-zinc-300 transition hover:text-rose-500"
                           onClick={() => setPlanPlaceToDeleteId(place.id)}
@@ -1067,7 +1073,7 @@ export function GroupPlansTab({
                   </div>
                 ))}
 
-                {selectedPlan.isCreator && selectedPlan.acceptsNewPlaces && recommendedPlaces.length ? (
+                {selectedPlan.canEdit && selectedPlan.acceptsNewPlaces && recommendedPlaces.length ? (
                   <>
                     {recommendedPlaces.map((place) => {
                       const isPendingThisPlace =
@@ -1133,17 +1139,19 @@ export function GroupPlansTab({
                   </>
                 ) : null}
 
-                <div className="relative">
-                  <div className="absolute left-[-1.65rem] top-6 h-4 w-4 rounded-full border-2 border-rose-200 bg-[#fff8f7]" />
-                  <button
-                    className="flex h-16 w-full items-center justify-center gap-2 rounded-[24px] border-2 border-dashed border-rose-200 bg-transparent text-sm font-semibold text-zinc-600 transition hover:border-[#ff5a5f] hover:text-[#c6283a]"
-                    onClick={onNavigateToPlaces}
-                    type="button"
-                  >
-                    <PlusIcon />
-                    Anadir Lugar
-                  </button>
-                </div>
+                {selectedPlan.canEdit ? (
+                  <div className="relative">
+                    <div className="absolute left-[-1.65rem] top-6 h-4 w-4 rounded-full border-2 border-rose-200 bg-[#fff8f7]" />
+                    <button
+                      className="flex h-16 w-full items-center justify-center gap-2 rounded-[24px] border-2 border-dashed border-rose-200 bg-transparent text-sm font-semibold text-zinc-600 transition hover:border-[#ff5a5f] hover:text-[#c6283a]"
+                      onClick={onNavigateToPlaces}
+                      type="button"
+                    >
+                      <PlusIcon />
+                      Anadir Lugar
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -1248,7 +1256,7 @@ export function GroupPlansTab({
               }}
               type="button"
             >
-              {isEditingSelectedPlan ? (isUpdatingPlanDetails ? "Guardando..." : "Guardar cambios") : selectedPlan.isCreator ? "Guardar Plan" : "Ver Plan"}
+              {isEditingSelectedPlan ? (isUpdatingPlanDetails ? "Guardando..." : "Guardar cambios") : selectedPlan.canEdit ? "Guardar Plan" : "Ver Plan"}
             </Button>
           </div>
         </div>
@@ -1322,7 +1330,7 @@ export function GroupPlansTab({
         ))}
       </div>
       {!canCreatePlans ? (
-        <p className="text-sm text-zinc-500">Solo se pueden crear planes en grupos abiertos.</p>
+        <p className="text-sm text-zinc-500">No tienes permisos para crear planes en este grupo.</p>
       ) : null}
 
       {isCreateOpen ? (

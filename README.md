@@ -14,6 +14,7 @@ MaPlan es una app social de mapas para guardar, organizar y compartir lugares co
 - Chat grupal para comentar planes, lugares e ideas del grupo.
 - Mapa de grupo con búsqueda, guardado y filtros.
 - Planes de grupo con ruta, paradas ordenadas por hora, reordenación manual, votos de asistencia y edición inline.
+- Lugares y planes sincronizados entre miembros mediante Supabase Realtime, sin polling continuo.
 - Mapa personal con pestañas `Lugares` y `Mapa`.
 - Selector de mapas en `/maps` para acceder a mapas grupales o mapa personal.
 - Explorador principal en `/explore` para buscar lugares y guardarlos en distintos destinos.
@@ -188,6 +189,15 @@ La vista de planes dentro de un grupo permite:
 - votar asistencia con `Iré`, `Quizás` y `No`;
 - eliminar el plan desde el menú de opciones de la tarjeta de detalle.
 
+Permisos de edición:
+
+- En grupos `abierto`, propietarios y miembros pueden crear planes, editar nombre y fecha, añadir o eliminar paradas, cambiar horas y reordenar el itinerario.
+- En grupos `privado`, solo el propietario puede crear o editar planes; los miembros conservan lectura y voto.
+- El plan completo solo puede eliminarlo su creador o el propietario real del grupo.
+- Las columnas estructurales `group_id`, `created_by`, `plan_id` y `added_by` están protegidas mediante triggers SQL.
+
+La vista principal del grupo mantiene una única suscripción Realtime filtrada por `group_id` para `places` y `group_plans`. Los cambios en paradas actualizan `group_plans.updated_at`, de modo que también refrescan las tarjetas de planes sin suscribirse individualmente a cada ruta.
+
 `group_plan_places` guarda una instantánea de los datos importantes del lugar (`place_name`, dirección, imagen, coordenadas, enlaces y metadata principal) y un `position` para mantener el orden manual. Esto permite que una parada siga apareciendo en un plan aunque el lugar original se borre de `places`.
 
 Los lugares añadidos a un plan desde Explore o desde el mapa pueden quedar solo como paradas del plan mediante snapshot, sin guardarse automáticamente como lugar del grupo.
@@ -318,7 +328,7 @@ Notas:
 - `rls_group_activity.sql` crea la actividad de grupo y el estado de actividad vista por usuario.
 - `group_plans.sql` crea planes, paradas con snapshot, votos de asistencia y sus políticas RLS.
 - `group_chat.sql` crea el chat grupal y debe ejecutarse después de `group_plans.sql`.
-- `notifications_realtime.sql` activa al final las tablas que alimentan la campana y el listado de notificaciones en tiempo real.
+- `notifications_realtime.sql` activa al final las tablas que alimentan la campana, el listado de notificaciones y la sincronización de lugares y planes de grupo.
 - Si cambia el retorno de una función SQL, Postgres puede fallar con `cannot change return type of existing function`.
 
 Solución habitual:

@@ -207,6 +207,81 @@ create trigger trg_group_plan_votes_updated_at
 before update on public.group_plan_votes
 for each row execute function public.set_group_plans_updated_at();
 
+create or replace function public.enforce_group_plan_protected_updates()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.group_id is distinct from old.group_id then
+    raise exception 'No se puede mover un plan a otro grupo.';
+  end if;
+
+  if new.created_by is distinct from old.created_by then
+    raise exception 'No se puede cambiar la persona creadora del plan.';
+  end if;
+
+  return new;
+end;
+$$;
+
+create or replace function public.enforce_group_plan_place_protected_updates()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.plan_id is distinct from old.plan_id then
+    raise exception 'No se puede mover una parada a otro plan.';
+  end if;
+
+  if new.added_by is distinct from old.added_by then
+    raise exception 'No se puede cambiar quien anadio la parada.';
+  end if;
+
+  return new;
+end;
+$$;
+
+create or replace function public.touch_group_plan_from_place()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if tg_op = 'DELETE' then
+    update public.group_plans
+    set updated_at = now()
+    where id = old.plan_id;
+
+    return old;
+  end if;
+
+  update public.group_plans
+  set updated_at = now()
+  where id = new.plan_id;
+
+  return new;
+end;
+$$;
+
+revoke execute on function public.touch_group_plan_from_place() from public;
+revoke execute on function public.touch_group_plan_from_place() from authenticated;
+
+drop trigger if exists trg_group_plans_protected_updates on public.group_plans;
+create trigger trg_group_plans_protected_updates
+before update on public.group_plans
+for each row execute function public.enforce_group_plan_protected_updates();
+
+drop trigger if exists trg_group_plan_places_protected_updates on public.group_plan_places;
+create trigger trg_group_plan_places_protected_updates
+before update on public.group_plan_places
+for each row execute function public.enforce_group_plan_place_protected_updates();
+
+drop trigger if exists trg_group_plan_places_touch_plan on public.group_plan_places;
+create trigger trg_group_plan_places_touch_plan
+after insert or update or delete on public.group_plan_places
+for each row execute function public.touch_group_plan_from_place();
+
 grant select, insert, update, delete on table public.group_plans to authenticated;
 grant select, insert, update, delete on table public.group_plan_places to authenticated;
 grant select, insert, update, delete on table public.group_plan_votes to authenticated;
@@ -219,11 +294,15 @@ drop policy if exists group_plans_select_group_member on public.group_plans;
 drop policy if exists group_plans_insert_editor_only on public.group_plans;
 drop policy if exists group_plans_update_creator_only on public.group_plans;
 drop policy if exists group_plans_delete_creator_only on public.group_plans;
+drop policy if exists group_plans_update_editor on public.group_plans;
+drop policy if exists group_plans_delete_creator_or_owner on public.group_plans;
 
 drop policy if exists group_plan_places_select_group_member on public.group_plan_places;
 drop policy if exists group_plan_places_insert_editor_only on public.group_plan_places;
 drop policy if exists group_plan_places_update_creator_only on public.group_plan_places;
 drop policy if exists group_plan_places_delete_creator_only on public.group_plan_places;
+drop policy if exists group_plan_places_update_editor on public.group_plan_places;
+drop policy if exists group_plan_places_delete_editor on public.group_plan_places;
 
 drop policy if exists group_plan_votes_select_group_member on public.group_plan_votes;
 drop policy if exists group_plan_votes_insert_self_member on public.group_plan_votes;
@@ -246,23 +325,37 @@ with check (
   and public.can_edit_group_shared_content(group_id, auth.uid())
 );
 
-create policy group_plans_update_creator_only
+create policy group_plans_update_editor
 on public.group_plans
 for update to authenticated
 using (
-  created_by = auth.uid()
+  public.can_edit_group_shared_content(group_id, auth.uid())
 )
 with check (
-  created_by = auth.uid()
-  and (planned_date is null or planned_date::date >= timezone('Europe/Madrid', now())::date)
-  and public.can_access_group(group_id, auth.uid())
+  (planned_date is null or planned_date::date >= timezone('Europe/Madrid', now())::date)
+  and public.can_edit_group_shared_content(group_id, auth.uid())
 );
 
-create policy group_plans_delete_creator_only
+create policy group_plans_delete_creator_or_owner
 on public.group_plans
 for delete to authenticated
 using (
   created_by = auth.uid()
+  or exists (
+    select 1
+    from public.groups g
+    where g.id = group_plans.group_id
+      and (
+        g.created_by = auth.uid()
+        or exists (
+          select 1
+          from public.group_members gm
+          where gm.group_id = group_plans.group_id
+            and gm.user_id = auth.uid()
+            and gm.role = 'owner'
+        )
+      )
+  )
 );
 
 create policy group_plan_places_select_group_member
@@ -300,7 +393,7 @@ with check (
   )
 );
 
-create policy group_plan_places_update_creator_only
+create policy group_plan_places_update_editor
 on public.group_plan_places
 for update to authenticated
 using (
@@ -308,7 +401,7 @@ using (
     select 1
     from public.group_plans gp
     where gp.id = group_plan_places.plan_id
-      and gp.created_by = auth.uid()
+      and public.can_edit_group_shared_content(gp.group_id, auth.uid())
   )
 )
 with check (
@@ -316,7 +409,7 @@ with check (
     select 1
     from public.group_plans gp
     where gp.id = group_plan_places.plan_id
-      and gp.created_by = auth.uid()
+      and public.can_edit_group_shared_content(gp.group_id, auth.uid())
       and (gp.planned_date is null or gp.planned_date::date >= timezone('Europe/Madrid', now())::date)
       and (
         group_plan_places.place_id is null
@@ -330,7 +423,7 @@ with check (
   )
 );
 
-create policy group_plan_places_delete_creator_only
+create policy group_plan_places_delete_editor
 on public.group_plan_places
 for delete to authenticated
 using (
@@ -338,7 +431,7 @@ using (
     select 1
     from public.group_plans gp
     where gp.id = group_plan_places.plan_id
-      and gp.created_by = auth.uid()
+      and public.can_edit_group_shared_content(gp.group_id, auth.uid())
   )
 );
 
