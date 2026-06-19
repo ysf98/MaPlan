@@ -51,8 +51,9 @@ export async function AppShell({ backHref, children, currentUser, fullBleed = fa
         <DashboardHeader
           avatarUrl={profile?.avatar_url || null}
           backHref={backHref}
+          currentUserId={user.id}
           displayName={displayName}
-          hasNotifications={pendingNotificationsCount > 0}
+          notificationsCount={pendingNotificationsCount}
         />
       ) : !fullBleed ? (
         <Navbar />

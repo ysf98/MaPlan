@@ -63,8 +63,9 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-white text-zinc-950">
       <DashboardHeader
         avatarUrl={profile?.avatar_url || null}
+        currentUserId={user.id}
         displayName={displayName}
-        hasNotifications={notifications.total > 0}
+        notificationsCount={notifications.total}
       />
 
       <main className="mx-auto w-full max-w-3xl px-5 pb-32 pt-6">

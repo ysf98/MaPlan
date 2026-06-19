@@ -22,6 +22,7 @@ export default async function NotificationsPage() {
       <NotificationsPageClient
         friendRequests={pending.friendRequests}
         groupActivities={pending.groupActivities}
+        groupJoinRequests={pending.groupJoinRequests}
         pendingInvitations={pending.pendingInvitations}
         reviewedInvitations={pending.reviewedInvitations}
         unreadChats={pending.unreadChats}

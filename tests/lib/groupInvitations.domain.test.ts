@@ -20,6 +20,21 @@ describe("group invitations domain", () => {
   it("aceptar invitacion usa RPC atomica", async () => {
     const rpcMock = vi.fn().mockResolvedValue({ error: null });
     createSupabaseServerClientMock.mockResolvedValue({
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: {
+                group_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+                id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                invited_user_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                status: "pending"
+              },
+              error: null
+            })
+          }))
+        }))
+      })),
       rpc: rpcMock
     });
 
@@ -30,7 +45,10 @@ describe("group invitations domain", () => {
       "accepted"
     );
 
-    expect(result).toEqual({ error: null });
+    expect(result).toEqual({
+      error: null,
+      groupId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+    });
     expect(rpcMock).toHaveBeenCalledWith("accept_group_invitation", {
       invitation_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
     });
@@ -122,6 +140,9 @@ describe("group invitations domain", () => {
       "rejected"
     );
 
-    expect(result).toEqual({ error: "No tienes permisos para responder esta invitacion." });
+    expect(result).toEqual({
+      error: "No tienes permisos para responder esta invitacion.",
+      groupId: null
+    });
   });
 });

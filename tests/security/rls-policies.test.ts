@@ -88,6 +88,11 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("event_type in ('place_added', 'plan_created')");
   });
 
+  it("lets the real group creator review join requests even without a legacy membership row", () => {
+    const sql = readFileSync(resolve(process.cwd(), "supabase/rls_groups.sql"), "utf8");
+    expect(sql).toContain("public.is_group_creator(group_join_requests.group_id, auth.uid())");
+  });
+
   it("stores group place state per user with own-member RLS policies", () => {
     const sql = readFileSync(resolve(process.cwd(), "supabase/group_place_user_states.sql"), "utf8");
     expect(sql).toContain("create table if not exists public.group_place_user_states");
@@ -143,5 +148,20 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("p.group_id = group_chat_messages.group_id");
     expect(sql).toContain("alter table public.group_chat_messages replica identity full");
     expect(sql).toContain("alter publication supabase_realtime add table public.group_chat_messages");
+  });
+
+  it("publishes notification source tables to Realtime idempotently", () => {
+    const sql = readFileSync(resolve(process.cwd(), "supabase/notifications_realtime.sql"), "utf8");
+    for (const table of [
+      "friend_requests",
+      "group_invitations",
+      "group_activity_events",
+      "group_chat_messages",
+      "group_join_requests"
+    ]) {
+      expect(sql).toContain(`tablename = '${table}'`);
+      expect(sql).toContain(`alter publication supabase_realtime add table public.${table}`);
+      expect(sql).toContain(`alter table public.${table} replica identity full`);
+    }
   });
 });

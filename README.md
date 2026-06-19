@@ -25,6 +25,7 @@ MaPlan es una app social de mapas para guardar, organizar y compartir lugares co
 - Imágenes de lugares desde Google Places o guardado manual.
 - Enlaces de Google Maps compatibles con web y móvil.
 - Notificaciones de grupo con estado visto, mensajes no leídos y actividad de otros usuarios.
+- Campana y listado de notificaciones actualizados mediante Supabase Realtime, sin polling continuo.
 - RLS y validaciones server-side para proteger datos.
 
 ## Stack
@@ -307,6 +308,7 @@ Ejecutar en Supabase SQL Editor en este orden:
 17. `supabase/places_google_metadata.sql`
 18. `supabase/group_plans.sql`
 19. `supabase/group_chat.sql`
+20. `supabase/notifications_realtime.sql`
 
 Notas:
 
@@ -316,6 +318,7 @@ Notas:
 - `rls_group_activity.sql` crea la actividad de grupo y el estado de actividad vista por usuario.
 - `group_plans.sql` crea planes, paradas con snapshot, votos de asistencia y sus políticas RLS.
 - `group_chat.sql` crea el chat grupal y debe ejecutarse después de `group_plans.sql`.
+- `notifications_realtime.sql` activa al final las tablas que alimentan la campana y el listado de notificaciones en tiempo real.
 - Si cambia el retorno de una función SQL, Postgres puede fallar con `cannot change return type of existing function`.
 
 Solución habitual:

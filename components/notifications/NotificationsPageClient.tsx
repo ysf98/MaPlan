@@ -1,24 +1,30 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { respondFriendRequestAction, type FriendActionState } from "@/app/friends/actions";
 import { respondGroupInvitationAction, type RespondGroupInvitationActionState } from "@/app/invitations/actions";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { NotificationItem } from "@/lib/notifications";
+import { getAcceptedGroupHref } from "@/lib/groupInvitationNavigation";
+import { NOTIFICATIONS_CHANGED_EVENT, NOTIFICATIONS_SYNC_EVENT } from "@/lib/notificationsRealtime";
 
 type NotificationsPageClientProps = {
   groupActivities: NotificationItem[];
   pendingInvitations: NotificationItem[];
   reviewedInvitations: NotificationItem[];
   friendRequests: NotificationItem[];
+  groupJoinRequests: NotificationItem[];
   unreadChats: NotificationItem[];
   total: number;
 };
 
 const invitationsInitialState: RespondGroupInvitationActionState = {
+  decision: null,
   error: null,
+  groupId: null,
   success: false
 };
 
@@ -29,17 +35,69 @@ const friendRequestsInitialState: FriendActionState = {
 
 export function NotificationsPageClient({
   groupActivities,
+  groupJoinRequests,
   pendingInvitations,
   reviewedInvitations,
   friendRequests,
   unreadChats,
   total
 }: NotificationsPageClientProps) {
+  const router = useRouter();
   const [invitationState, invitationFormAction, isInvitationPending] = useActionState(
     respondGroupInvitationAction,
     invitationsInitialState
   );
   const [friendState, friendFormAction, isFriendPending] = useActionState(respondFriendRequestAction, friendRequestsInitialState);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(NOTIFICATIONS_SYNC_EVENT));
+
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    let syncTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleNotificationsChanged = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      if (syncTimer) clearTimeout(syncTimer);
+      refreshTimer = setTimeout(() => {
+        router.refresh();
+        syncTimer = setTimeout(() => {
+          window.dispatchEvent(new CustomEvent(NOTIFICATIONS_SYNC_EVENT));
+        }, 500);
+      }, 250);
+    };
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, handleNotificationsChanged);
+
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      if (syncTimer) clearTimeout(syncTimer);
+      window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, handleNotificationsChanged);
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (!invitationState.success) return;
+    window.dispatchEvent(new CustomEvent(NOTIFICATIONS_SYNC_EVENT));
+    const acceptedGroupHref = getAcceptedGroupHref({
+      decision: invitationState.decision,
+      groupId: invitationState.groupId,
+      success: invitationState.success
+    });
+    if (acceptedGroupHref) {
+      router.push(acceptedGroupHref);
+      return;
+    }
+    router.refresh();
+  }, [
+    invitationState.decision,
+    invitationState.groupId,
+    invitationState.success,
+    router
+  ]);
+
+  useEffect(() => {
+    if (!friendState.success) return;
+    window.dispatchEvent(new CustomEvent(NOTIFICATIONS_SYNC_EVENT));
+    router.refresh();
+  }, [friendState.success, router]);
 
   return (
     <section className="space-y-4">
@@ -124,6 +182,27 @@ export function NotificationsPageClient({
                 })}
               </ul>
               {invitationState.error ? <p className="mt-2 text-sm text-rose-600">{invitationState.error}</p> : null}
+            </Card>
+          ) : null}
+
+          {groupJoinRequests.length > 0 ? (
+            <Card className="rounded-3xl">
+              <h2 className="text-lg font-semibold text-zinc-950">Solicitudes para entrar</h2>
+              <ul className="mt-3 space-y-2">
+                {groupJoinRequests.map((notification) => {
+                  if (notification.kind !== "group_join_request") return null;
+                  return (
+                    <li className="rounded-xl border border-zinc-100 p-3" key={notification.id}>
+                      <Link className="block" href={notification.href}>
+                        <p className="text-sm font-medium text-zinc-950">
+                          @{notification.requesterUsername || "sin-username"} ha solicitado unirse a {notification.groupName}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-500">Revisar solicitud</p>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
             </Card>
           ) : null}
 

@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { respondGroupInvitationAction } from "@/app/invitations/actions";
 import type { RespondGroupInvitationActionState } from "@/app/invitations/actions";
 import type { GroupInvitationItem } from "@/lib/groupInvitations";
+import { getAcceptedGroupHref } from "@/lib/groupInvitationNavigation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -15,14 +17,31 @@ type InvitationsPageClientProps = {
 };
 
 const initialState: RespondGroupInvitationActionState = {
+  decision: null,
   error: null,
+  groupId: null,
   success: false
 };
 
 export function InvitationsPageClient({ invitations }: InvitationsPageClientProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(respondGroupInvitationAction, initialState);
   const pendingInvitations = invitations.filter((invitation) => invitation.status === "pending");
   const reviewedInvitations = invitations.filter((invitation) => invitation.status !== "pending");
+
+  useEffect(() => {
+    if (!state.success) return;
+    const acceptedGroupHref = getAcceptedGroupHref({
+      decision: state.decision,
+      groupId: state.groupId,
+      success: state.success
+    });
+    if (acceptedGroupHref) {
+      router.push(acceptedGroupHref);
+      return;
+    }
+    router.refresh();
+  }, [router, state.decision, state.groupId, state.success]);
 
   return (
     <section className="space-y-4">

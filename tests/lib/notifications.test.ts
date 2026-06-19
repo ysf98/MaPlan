@@ -5,6 +5,7 @@ const getFriendRequestsMock = vi.fn();
 const getGroupActivityFeedForUserMock = vi.fn();
 const getGroupActivityLastSeenAtForUserMock = vi.fn();
 const getGroupChatUnreadSummariesForUserMock = vi.fn();
+const getUserGroupsMock = vi.fn();
 const createSupabaseServerClientMock = vi.fn();
 
 vi.mock("@/lib/groupInvitations", () => ({
@@ -24,6 +25,10 @@ vi.mock("@/lib/groupChat", () => ({
   getGroupChatUnreadSummariesForUser: getGroupChatUnreadSummariesForUserMock
 }));
 
+vi.mock("@/lib/groups", () => ({
+  getUserGroups: getUserGroupsMock
+}));
+
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: createSupabaseServerClientMock
 }));
@@ -32,6 +37,7 @@ describe("notifications lib", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getGroupActivityLastSeenAtForUserMock.mockResolvedValue(null);
+    getUserGroupsMock.mockResolvedValue([]);
   });
 
   it("builds pending notifications and total count", async () => {
@@ -185,7 +191,74 @@ describe("notifications lib", () => {
     const count = await getPendingNotificationsCountForUser("user-me");
 
     expect(pending.groupActivities).toHaveLength(1);
+    expect(pending.groupJoinRequests).toHaveLength(0);
     expect(pending.total).toBe(0);
     expect(count).toBe(0);
+  });
+
+  it("adds pending group join requests only for groups managed by the user", async () => {
+    getGroupInvitationsForUserMock.mockResolvedValue([]);
+    getFriendRequestsMock.mockResolvedValue({ received: [], sent: [] });
+    getGroupChatUnreadSummariesForUserMock.mockResolvedValue([]);
+    getGroupActivityFeedForUserMock.mockResolvedValue([]);
+    getUserGroupsMock.mockResolvedValue([
+      {
+        id: "group-owned",
+        name: "Grupo Valencia",
+        description: null,
+        coverImageUrl: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        role: "owner",
+        privacy: "privado",
+        joinPolicy: "request_to_join"
+      },
+      {
+        id: "group-member",
+        name: "Grupo ajeno",
+        description: null,
+        coverImageUrl: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        role: "member",
+        privacy: "abierto",
+        joinPolicy: "request_to_join"
+      }
+    ]);
+
+    const orderMock = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: "join-1",
+          group_id: "group-owned",
+          user_id: "user-requester",
+          created_at: "2026-01-02T00:00:00.000Z"
+        }
+      ],
+      error: null
+    });
+    const neqMock = vi.fn().mockReturnValue({ order: orderMock });
+    const eqMock = vi.fn().mockReturnValue({ neq: neqMock });
+    const inMock = vi.fn().mockReturnValue({ eq: eqMock });
+    const selectMock = vi.fn().mockReturnValue({ in: inMock });
+    createSupabaseServerClientMock.mockResolvedValue({
+      from: vi.fn().mockReturnValue({ select: selectMock }),
+      rpc: vi.fn().mockResolvedValue({
+        data: [{ id: "user-requester", username: "laura" }],
+        error: null
+      })
+    });
+
+    const { getPendingNotificationsForUser } = await import("@/lib/notifications");
+    const pending = await getPendingNotificationsForUser("user-owner");
+
+    expect(inMock).toHaveBeenCalledWith("group_id", ["group-owned"]);
+    expect(pending.groupJoinRequests).toEqual([
+      expect.objectContaining({
+        groupId: "group-owned",
+        groupName: "Grupo Valencia",
+        kind: "group_join_request",
+        requesterUsername: "laura"
+      })
+    ]);
+    expect(pending.total).toBe(1);
   });
 });

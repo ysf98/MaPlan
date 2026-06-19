@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { respondGroupInvitationAction, type RespondGroupInvitationActionState } from "@/app/invitations/actions";
+import { getAcceptedGroupHref } from "@/lib/groupInvitationNavigation";
 import type { GroupInvitationItem } from "@/lib/groupInvitations";
 
 type PendingInvitationCardProps = {
@@ -9,12 +11,29 @@ type PendingInvitationCardProps = {
 };
 
 const initialState: RespondGroupInvitationActionState = {
+  decision: null,
   error: null,
+  groupId: null,
   success: false
 };
 
 export function PendingInvitationCard({ invitation }: PendingInvitationCardProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(respondGroupInvitationAction, initialState);
+
+  useEffect(() => {
+    if (!state.success) return;
+    const acceptedGroupHref = getAcceptedGroupHref({
+      decision: state.decision,
+      groupId: state.groupId,
+      success: state.success
+    });
+    if (acceptedGroupHref) {
+      router.push(acceptedGroupHref);
+      return;
+    }
+    router.refresh();
+  }, [router, state.decision, state.groupId, state.success]);
 
   return (
     <section className="rounded-[28px] border border-rose-200 bg-white px-5 py-5 shadow-[0_14px_35px_rgba(198,40,58,0.12)]">

@@ -194,38 +194,38 @@ export async function respondGroupInvitation(
   userId: string,
   invitationId: string,
   decision: "accepted" | "rejected"
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; groupId: string | null }> {
   const supabase = await createSupabaseServerClient();
-  if (decision === "accepted") {
-    const { error } = await supabase.rpc("accept_group_invitation", { invitation_id: invitationId });
-    if (error) {
-      return { error: error.message };
-    }
-    return { error: null };
-  }
-
   const { data: invitation, error: invitationError } = await supabase
     .from("group_invitations")
-    .select("id, invited_user_id, status")
+    .select("id, group_id, invited_user_id, status")
     .eq("id", invitationId)
     .maybeSingle();
 
   if (invitationError || !invitation) {
-    return { error: "Invitacion no encontrada." };
+    return { error: "Invitacion no encontrada.", groupId: null };
   }
 
   if (invitation.invited_user_id !== userId) {
-    return { error: "No tienes permisos para responder esta invitacion." };
+    return { error: "No tienes permisos para responder esta invitacion.", groupId: null };
   }
 
   if (invitation.status !== "pending") {
-    return { error: "Esta invitacion ya fue respondida." };
+    return { error: "Esta invitacion ya fue respondida.", groupId: null };
+  }
+
+  if (decision === "accepted") {
+    const { error } = await supabase.rpc("accept_group_invitation", { invitation_id: invitationId });
+    if (error) {
+      return { error: error.message, groupId: null };
+    }
+    return { error: null, groupId: invitation.group_id };
   }
 
   const { error: updateError } = await supabase.from("group_invitations").update({ status: "rejected" }).eq("id", invitationId);
   if (updateError) {
-    return { error: updateError.message };
+    return { error: updateError.message, groupId: null };
   }
 
-  return { error: null };
+  return { error: null, groupId: invitation.group_id };
 }

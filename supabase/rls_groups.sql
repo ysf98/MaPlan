@@ -375,6 +375,7 @@ on public.group_join_requests
 for select to authenticated
 using (
   user_id = auth.uid()
+  or public.is_group_creator(group_join_requests.group_id, auth.uid())
   or exists (
     select 1 from public.group_members gm
     where gm.group_id = group_join_requests.group_id
@@ -395,7 +396,8 @@ create policy group_join_requests_update_owner_review
 on public.group_join_requests
 for update to authenticated
 using (
-  exists (
+  public.is_group_creator(group_join_requests.group_id, auth.uid())
+  or exists (
     select 1 from public.group_members gm
     where gm.group_id = group_join_requests.group_id
       and gm.user_id = auth.uid()
@@ -403,11 +405,14 @@ using (
   )
 )
 with check (
-  exists (
-    select 1 from public.group_members gm
-    where gm.group_id = group_join_requests.group_id
-      and gm.user_id = auth.uid()
-      and gm.role = 'owner'
+  (
+    public.is_group_creator(group_join_requests.group_id, auth.uid())
+    or exists (
+      select 1 from public.group_members gm
+      where gm.group_id = group_join_requests.group_id
+        and gm.user_id = auth.uid()
+        and gm.role = 'owner'
+    )
   )
   and status in ('approved', 'rejected')
 );
