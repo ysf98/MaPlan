@@ -160,20 +160,13 @@ export function GroupPlacesTab({
           </button>
         )}
           renderMetaAccessory={(place) => {
-            const planNames = planNamesByPlaceId.get(place.id) ?? [];
-            if (!canEditPlaces && planNames.length === 0) {
+            if (!canEditPlaces) {
               return null;
             }
 
             return (
               <div className="flex flex-wrap items-center gap-2">
-                {planNames.length ? (
-                  <span className="rounded-full bg-[#fff0ef] px-3 py-1.5 text-[11px] font-extrabold text-[#c6283a]">
-                    En {planNames[0]}
-                    {planNames.length > 1 ? ` +${planNames.length - 1}` : ""}
-                  </span>
-                ) : null}
-                {canEditPlaces ? <PlacePlanDialog canManagePlans compact groupId={groupId} placeId={place.id} plans={plans} /> : null}
+                <PlacePlanDialog canManagePlans compact groupId={groupId} placeId={place.id} plans={plans} />
               </div>
             );
           }}

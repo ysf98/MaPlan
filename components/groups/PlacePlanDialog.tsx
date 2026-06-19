@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { GroupPlanItem } from "@/lib/groupPlans";
-import { extractPlanDatePart, getTodayPlanDatePart, isPlanDateOnOrAfter } from "@/lib/groupPlansShared";
+import { getTodayPlanDatePart, isPlanDateOnOrAfter } from "@/lib/groupPlansShared";
 import type { GroupPlace } from "@/lib/places/shared";
 
 type PlacePlanDialogProps = {
@@ -34,10 +34,8 @@ export function PlacePlanDialog({
   places = [],
   compact = false
 }: PlacePlanDialogProps) {
-  const [mode, setMode] = useState<"add" | "create" | null>(null);
+  const [mode, setMode] = useState<"create" | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState("");
-  const [placePlannedAt, setPlacePlannedAt] = useState("");
-  const [placeNote, setPlaceNote] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [plannedDate, setPlannedDate] = useState("");
@@ -47,12 +45,14 @@ export function PlacePlanDialog({
   const [createState, createAction, isCreating] = useActionState(createGroupPlanAction, createInitialState);
   const [addState, addAction, isAdding] = useActionState(addPlaceToGroupPlanAction, addInitialState);
 
-  const availablePlans = useMemo(() => plans.filter((plan) => plan.acceptsNewPlaces), [plans]);
-  const triggerClass = compact ? "h-8 rounded-full px-3 text-[11px]" : "h-10 rounded-2xl px-4 text-sm";
-  const selectedPlan = useMemo(
-    () => availablePlans.find((plan) => plan.id === selectedPlanId) ?? null,
-    [availablePlans, selectedPlanId]
+  const availablePlans = useMemo(
+    () =>
+      plans.filter(
+        (plan) => plan.acceptsNewPlaces && !plan.places.some((place) => place.placeId === placeId)
+      ),
+    [placeId, plans]
   );
+  const triggerClass = compact ? "h-8 rounded-full px-3 text-[11px]" : "h-10 rounded-2xl px-4 text-sm";
   const routePlaces = useMemo(
     () => routePlaceIds.map((id) => places.find((place) => place.id === id)).filter((place): place is GroupPlace => Boolean(place)),
     [places, routePlaceIds]
@@ -64,19 +64,6 @@ export function PlacePlanDialog({
         .slice(0, 6),
     [dismissedRecommendationIds, places, routePlaceIds]
   );
-
-  function buildPlanPlaceDateTime(planDate: string | null, timeValue: string): string {
-    if (!planDate || !timeValue) {
-      return "";
-    }
-
-    const datePart = extractPlanDatePart(planDate);
-    if (!datePart) {
-      return "";
-    }
-
-    return `${datePart}T${timeValue}`;
-  }
 
   function isOptionalPlanDateAllowed(value: string): boolean {
     const trimmed = value.trim();
@@ -90,14 +77,18 @@ export function PlacePlanDialog({
 
     setMode(null);
     setSelectedPlanId("");
-    setPlacePlannedAt("");
-    setPlaceNote("");
     setTitle("");
     setDescription("");
     setPlannedDate("");
     setRoutePlaceIds([]);
     setDismissedRecommendationIds({});
   }, [addState.success, createState.success]);
+
+  useEffect(() => {
+    if (addState.error) {
+      setSelectedPlanId("");
+    }
+  }, [addState.error]);
 
   useEffect(() => {
     if (mode === "create") {
@@ -112,112 +103,26 @@ export function PlacePlanDialog({
 
   const isCreatePlanDateAllowed = isOptionalPlanDateAllowed(plannedDate);
 
-  const modal = mode ? (
-    <div
-      className={
-        mode === "create"
-          ? "fixed inset-0 z-[120] overflow-y-auto bg-[#fff8f7] px-5 py-4"
-          : "fixed inset-0 z-[120] flex items-end justify-center bg-zinc-950/45 p-4 sm:items-center"
-      }
-      onClick={() => setMode(null)}
-    >
+  const modal = mode === "create" ? (
+    <div className="fixed inset-0 z-[120] overflow-y-auto bg-[#fff8f7] px-5 py-4" onClick={() => setMode(null)}>
       <div
-        className={
-          mode === "create"
-            ? "mx-auto w-full max-w-xl bg-[#fff8f7]"
-            : "w-full max-w-lg rounded-[28px] border border-rose-100 bg-[#fff8f7] p-5 shadow-[0_18px_45px_rgba(24,24,27,0.22)]"
-        }
+        className="mx-auto w-full max-w-xl bg-[#fff8f7]"
         onClick={(event) => event.stopPropagation()}
       >
-        {mode === "create" ? (
-          <div className="flex items-center justify-between gap-3">
-            <button
-              aria-label="Volver"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-700 transition hover:bg-white/80 hover:text-[#c6283a]"
-              onClick={() => setMode(null)}
-              type="button"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                <path d="m15 18-6-6 6-6" />
-              </svg>
-            </button>
-            <div className="h-9 w-9" aria-hidden="true" />
-          </div>
-        ) : (
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-bold text-zinc-950">Anadir lugar a un plan</h3>
-              <p className="mt-1 text-sm text-zinc-600">Elige un plan abierto del grupo y, si quieres, deja una hora o una nota.</p>
-            </div>
-            <button
-              aria-label="Cerrar"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-rose-100 bg-white text-zinc-500"
-              onClick={() => setMode(null)}
-              type="button"
-            >
-              <span className="text-lg leading-none">x</span>
-            </button>
-          </div>
-        )}
+        <div className="flex items-center justify-between gap-3">
+          <button
+            aria-label="Volver"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-700 transition hover:bg-white/80 hover:text-[#c6283a]"
+            onClick={() => setMode(null)}
+            type="button"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <div className="h-9 w-9" aria-hidden="true" />
+        </div>
 
-        {mode === "add" ? (
-          <div className="mt-5 space-y-4">
-            <label className="block space-y-2">
-              <span className="text-sm font-semibold text-zinc-700">Plan abierto</span>
-              <select
-                className="h-12 w-full rounded-2xl border border-transparent bg-white px-4 text-sm text-zinc-900 outline-none ring-0 focus:border-[#ff5a5f]"
-                onChange={(event) => setSelectedPlanId(event.target.value)}
-                value={selectedPlanId}
-              >
-                <option value="">Selecciona un plan</option>
-                {availablePlans.map((plan) => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Input label="Hora del lugar" onChange={(event) => setPlacePlannedAt(event.target.value)} type="time" value={placePlannedAt} />
-            {selectedPlan && !selectedPlan.plannedDate ? (
-              <p className="text-xs text-zinc-500">Este plan no tiene fecha cerrada, asi que la hora del lugar es opcional.</p>
-            ) : null}
-            <label className="block space-y-2">
-              <span className="text-sm font-semibold text-zinc-700">Nota breve</span>
-              <textarea
-                className="min-h-[96px] w-full rounded-2xl border border-transparent bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-[#ff5a5f]"
-                maxLength={280}
-                onChange={(event) => setPlaceNote(event.target.value)}
-                placeholder="Por ejemplo: mejor llegar sobre las 21:00"
-                value={placeNote}
-              />
-            </label>
-            {addState.error ? <p className="text-sm text-rose-600">{addState.error}</p> : null}
-            {!availablePlans.length ? (
-              <p className="text-sm text-zinc-600">Todavia no hay planes abiertos disponibles.</p>
-            ) : null}
-            <div className="flex justify-end gap-2">
-              <Button onClick={() => setMode(null)} size="sm" type="button" variant="ghost">
-                Cancelar
-              </Button>
-              <Button
-                disabled={!selectedPlanId || isAdding || availablePlans.length === 0}
-                onClick={() => {
-                  const payload = new FormData();
-                  payload.set("groupId", groupId);
-                  payload.set("planId", selectedPlanId);
-                  payload.set("placeId", placeId);
-                  payload.set("plannedAt", buildPlanPlaceDateTime(selectedPlan?.plannedDate ?? null, placePlannedAt));
-                  payload.set("note", placeNote);
-                  startTransition(() => addAction(payload));
-                }}
-                size="sm"
-                type="button"
-              >
-                {isAdding ? "Guardando..." : "Guardar en plan"}
-              </Button>
-            </div>
-          </div>
-        ) : (
           <div className="mt-7 space-y-4">
             <label className="block space-y-2">
               <span className="text-sm font-semibold text-zinc-700">Nombre del Plan</span>
@@ -356,8 +261,8 @@ export function PlacePlanDialog({
                   payload.set("plannedDate", plannedDate);
                   payload.set("initialPlaceId", routePlaceIds[0] ?? placeId);
                   routePlaceIds.forEach((id) => payload.append("initialPlaceIds", id));
-                  payload.set("initialPlacePlannedAt", buildPlanPlaceDateTime(plannedDate, placePlannedAt));
-                  payload.set("initialPlaceNote", placeNote);
+                  payload.set("initialPlacePlannedAt", "");
+                  payload.set("initialPlaceNote", "");
                   startTransition(() => createAction(payload));
                 }}
                 size="sm"
@@ -367,7 +272,6 @@ export function PlacePlanDialog({
               </Button>
             </div>
           </div>
-        )}
       </div>
     </div>
   ) : null;
@@ -375,13 +279,44 @@ export function PlacePlanDialog({
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        <Button className={triggerClass} onClick={() => setMode("add")} size="sm" type="button" variant="secondary">
-          Anadir a plan
-        </Button>
+        <label className={`relative inline-flex ${isAdding ? "opacity-60" : ""}`}>
+          <span
+            className={`inline-flex items-center justify-center bg-[#fff0ef] font-semibold text-[#c6283a] transition hover:bg-[#fde2e0] ${triggerClass}`}
+          >
+            {isAdding ? "Anadiendo..." : "Anadir a plan"}
+          </span>
+          <select
+            aria-label="Anadir lugar a un plan"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            disabled={isAdding || availablePlans.length === 0}
+            onChange={(event) => {
+              const planId = event.target.value;
+              setSelectedPlanId(planId);
+              if (!planId) return;
+
+              const payload = new FormData();
+              payload.set("groupId", groupId);
+              payload.set("planId", planId);
+              payload.set("placeId", placeId);
+              payload.set("plannedAt", "");
+              payload.set("note", "");
+              startTransition(() => addAction(payload));
+            }}
+            value={selectedPlanId}
+          >
+            <option value="">{availablePlans.length ? "Selecciona un plan" : "No hay planes disponibles"}</option>
+            {availablePlans.map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {plan.title}
+              </option>
+            ))}
+          </select>
+        </label>
         <Button className={triggerClass} onClick={() => setMode("create")} size="sm" type="button" variant="primary">
           Crear plan
         </Button>
       </div>
+      {addState.error ? <p className="mt-1 text-xs font-medium text-rose-600">{addState.error}</p> : null}
       {typeof document !== "undefined" && modal ? createPortal(modal, document.body) : null}
     </>
   );
