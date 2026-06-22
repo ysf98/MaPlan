@@ -23,6 +23,7 @@ import {
 import { MapSearchBox } from "@/components/map/MapSearchBox";
 import { MapMobileTabs } from "@/components/map/MapMobileTabs";
 import { MapPlaceCard } from "@/components/map/MapPlaceCard";
+import { MAP_CARD_OVERLAY_CLASS } from "@/components/map/mapCardOverlay";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { UserLocationButton } from "@/components/map/UserLocationButton";
 import { resizeMapboxAfterLayout, useMapboxResizeOnVisible } from "@/components/map/useMapboxResize";
@@ -104,8 +105,7 @@ export function GroupMap({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const selectedPlaceCardRef = useRef<HTMLDivElement | null>(null);
-  const draftCardMobileRef = useRef<HTMLDivElement | null>(null);
-  const draftCardDesktopRef = useRef<HTMLDivElement | null>(null);
+  const draftCardRef = useRef<HTMLDivElement | null>(null);
   const selectedSearchMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const markerByPlaceIdRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const skipNextMapClickRef = useRef(false);
@@ -443,18 +443,17 @@ export function GroupMap({
       if (targetElement?.closest("[data-map-control]")) {
         return;
       }
-      const isInsideMobile = Boolean(draftCardMobileRef.current && target && draftCardMobileRef.current.contains(target));
-      const isInsideDesktop = Boolean(draftCardDesktopRef.current && target && draftCardDesktopRef.current.contains(target));
+      const isInsideDraftCard = Boolean(draftCardRef.current && target && draftCardRef.current.contains(target));
 
-        if (isInsideMobile || isInsideDesktop) {
-          return;
-        }
+      if (isInsideDraftCard) {
+        return;
+      }
 
-        skipNextMapClickRef.current = true;
-        setDraftSelection(null);
-        setResolveHint(null);
-        selectedSearchMarkerRef.current?.remove();
-        selectedSearchMarkerRef.current = null;
+      skipNextMapClickRef.current = true;
+      setDraftSelection(null);
+      setResolveHint(null);
+      selectedSearchMarkerRef.current?.remove();
+      selectedSearchMarkerRef.current = null;
     };
 
     document.addEventListener("pointerdown", handlePointerDown);
@@ -665,7 +664,7 @@ export function GroupMap({
         ) : null}
 
         {shouldRenderSelectedPlaceOverlay && internalSelectedPlace ? (
-          <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-30 sm:bottom-4">
+          <div className={`${MAP_CARD_OVERLAY_CLASS} z-30`}>
             <div className="pointer-events-auto" ref={selectedPlaceCardRef}>
               <MapPlaceCard
                 capabilities={{
@@ -749,8 +748,8 @@ export function GroupMap({
           </div>
         ) : null}
         {shouldRenderDraftOverlay && draftSelection ? (
-          <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-40 sm:bottom-4">
-            <div className="pointer-events-auto" ref={draftCardMobileRef}>
+          <div className={`${MAP_CARD_OVERLAY_CLASS} z-40`}>
+            <div className="pointer-events-auto" ref={draftCardRef}>
               <MapSaveDraftCard
                 canSave={canEdit}
                 distanceLabel={draftDistanceLabel}
@@ -773,7 +772,6 @@ export function GroupMap({
         ) : null}
       </div>
 
-      {shouldRenderDraftOverlay ? <div className="hidden" ref={draftCardDesktopRef} /> : null}
     </div>
   );
 }

@@ -131,7 +131,7 @@ export function MapPlaceCard({
   const statusLabel = place.status === "visited" ? "Visitado" : "Pendiente";
 
   return (
-    <Card className="pointer-events-auto mx-auto w-full max-w-[430px] rounded-[28px] border-rose-100/80 bg-[#fff8f7]/95 p-3 shadow-[0_-16px_40px_rgba(181,35,48,0.18)] backdrop-blur-xl sm:max-w-[380px] sm:rounded-2xl sm:p-1 sm:shadow-xl">
+    <Card className="pointer-events-auto mx-auto w-full max-w-[430px] rounded-[28px] border-rose-100/80 bg-[#fff8f7]/95 p-3 shadow-[0_-16px_40px_rgba(181,35,48,0.18)] backdrop-blur-xl min-[480px]:p-4 sm:rounded-2xl sm:shadow-xl">
       {mode === "edit" ? (
         <PlaceNameEditor
           error={error}

@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MapMobileTabs } from "@/components/map/MapMobileTabs";
 import { MapPlaceCard } from "@/components/map/MapPlaceCard";
+import { MAP_CARD_OVERLAY_CLASS } from "@/components/map/mapCardOverlay";
 import { MapSaveDraftCard } from "@/components/map/MapSaveDraftCard";
 import { MapSearchBox } from "@/components/map/MapSearchBox";
 import { UserLocationButton } from "@/components/map/UserLocationButton";
@@ -95,8 +96,7 @@ export function PersonalMap({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const selectedPlaceCardRef = useRef<HTMLDivElement | null>(null);
-  const draftCardMobileRef = useRef<HTMLDivElement | null>(null);
-  const draftCardDesktopRef = useRef<HTMLDivElement | null>(null);
+  const draftCardRef = useRef<HTMLDivElement | null>(null);
   const selectedSearchMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const markerByPlaceIdRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const skipNextMapClickRef = useRef(false);
@@ -400,18 +400,17 @@ export function PersonalMap({
       if (targetElement?.closest("[data-map-control]")) {
         return;
       }
-      const isInsideMobile = Boolean(draftCardMobileRef.current && target && draftCardMobileRef.current.contains(target));
-      const isInsideDesktop = Boolean(draftCardDesktopRef.current && target && draftCardDesktopRef.current.contains(target));
+      const isInsideDraftCard = Boolean(draftCardRef.current && target && draftCardRef.current.contains(target));
 
-        if (isInsideMobile || isInsideDesktop) {
-          return;
-        }
+      if (isInsideDraftCard) {
+        return;
+      }
 
-        skipNextMapClickRef.current = true;
-        setDraftSelection(null);
-        setResolveHint(null);
-        selectedSearchMarkerRef.current?.remove();
-        selectedSearchMarkerRef.current = null;
+      skipNextMapClickRef.current = true;
+      setDraftSelection(null);
+      setResolveHint(null);
+      selectedSearchMarkerRef.current?.remove();
+      selectedSearchMarkerRef.current = null;
     };
 
     document.addEventListener("pointerdown", handlePointerDown);
@@ -595,7 +594,7 @@ export function PersonalMap({
         ) : null}
 
         {selectedPlace ? (
-          <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-30 sm:bottom-4">
+          <div className={`${MAP_CARD_OVERLAY_CLASS} z-30`}>
             <div className="pointer-events-auto" ref={selectedPlaceCardRef}>
               <MapPlaceCard
                 capabilities={{
@@ -680,8 +679,8 @@ export function PersonalMap({
           </div>
         ) : null}
         {draftSelection ? (
-          <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-40 md:hidden">
-            <div className="pointer-events-auto" ref={draftCardMobileRef}>
+          <div className={`${MAP_CARD_OVERLAY_CLASS} z-40`}>
+            <div className="pointer-events-auto" ref={draftCardRef}>
               <MapSaveDraftCard
                 distanceLabel={draftDistanceLabel}
                 draft={draftSelection}
@@ -702,25 +701,6 @@ export function PersonalMap({
         ) : null}
       </div>
 
-      {draftSelection ? (
-        <div className="hidden md:block" ref={draftCardDesktopRef}>
-          <MapSaveDraftCard
-            distanceLabel={draftDistanceLabel}
-            draft={draftSelection}
-            formAction={addPlaceFormAction}
-            isPending={isAddPlacePending}
-            onCancel={() => {
-              setDraftSelection(null);
-              setResolveHint(null);
-              selectedSearchMarkerRef.current?.remove();
-              selectedSearchMarkerRef.current = null;
-            }}
-            scopeIdName="scope"
-            scopeIdValue="personal"
-            state={addPlaceState}
-          />
-        </div>
-      ) : null}
     </div>
   );
 }

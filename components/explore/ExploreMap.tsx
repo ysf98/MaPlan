@@ -4,6 +4,7 @@ import { startTransition, useActionState, useCallback, useEffect, useMemo, useRe
 import mapboxgl from "mapbox-gl";
 import { saveExploredPlaceAction, type SaveExploredPlaceActionState } from "@/app/explore/actions";
 import { MapSearchBox } from "@/components/map/MapSearchBox";
+import { MAP_CARD_OVERLAY_CLASS } from "@/components/map/mapCardOverlay";
 import { BackButton } from "@/components/navigation/BackButton";
 import { UserLocationButton } from "@/components/map/UserLocationButton";
 import { PlaceRatingBadge } from "@/components/places/PlaceRatingBadge";
@@ -693,7 +694,7 @@ export function ExploreMap({ destinations }: ExploreMapProps) {
       ) : null}
 
       {draftSelection ? (
-        <div className="pointer-events-none absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-40 sm:bottom-4">
+        <div className={`${MAP_CARD_OVERLAY_CLASS} z-40`}>
           <div className="pointer-events-auto" ref={draftCardRef}>
             <ExploreSaveCard
               destinations={destinations}
