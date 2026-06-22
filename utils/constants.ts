@@ -2,6 +2,8 @@ export const APP_NAME = "MaPlan";
 
 export const ROUTES = {
   home: "/",
+  terms: "/terms",
+  privacy: "/privacy",
   login: "/login",
   register: "/register",
   dashboard: "/dashboard",
