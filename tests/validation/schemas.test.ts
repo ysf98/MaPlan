@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addPlaceToGroupPlanSchema,
   createGroupPlanSchema,
+  createGroupPollSchema,
   createGroupSchema,
   deleteAccountSchema,
   createGroupChatMessageSchema,
@@ -76,6 +77,72 @@ describe("createGroupSchema", () => {
     });
 
     expect(result.privacy).toBe("abierto");
+  });
+});
+
+describe("createGroupPollSchema", () => {
+  const groupId = "11111111-1111-4111-8111-111111111111";
+  const placeId = "22222222-2222-4222-8222-222222222222";
+  const otherPlaceId = "33333333-3333-4333-8333-333333333333";
+
+  it("acepta una encuesta de lugares con dos opciones", () => {
+    expect(
+      createGroupPollSchema.safeParse({
+        groupId,
+        kind: "poll",
+        pollType: "place",
+        title: "¿Dónde cenamos?",
+        planId: "",
+        closesAt: "",
+        options: [
+          { label: "Centro", placeId },
+          { label: "Playa", placeId: otherPlaceId }
+        ]
+      }).success
+    ).toBe(true);
+  });
+
+  it("rechaza disponibilidad, fecha, hora y opciones personalizadas", () => {
+    expect(
+      createGroupPollSchema.safeParse({
+        groupId,
+        kind: "availability",
+        pollType: "date",
+        title: "¿Cuándo quedamos?",
+        options: [
+          { label: "Centro", placeId },
+          { label: "Playa", placeId: otherPlaceId }
+        ]
+      }).success
+    ).toBe(false);
+
+    expect(
+      createGroupPollSchema.safeParse({
+        groupId,
+        kind: "poll",
+        pollType: "time",
+        title: "¿A qué hora?",
+        options: [
+          { label: "Centro", placeId },
+          { label: "Playa", placeId: otherPlaceId }
+        ]
+      }).success
+    ).toBe(false);
+  });
+
+  it("exige lugares válidos y rechaza lugares duplicados", () => {
+    expect(
+      createGroupPollSchema.safeParse({
+        groupId,
+        kind: "poll",
+        pollType: "place",
+        title: "Elige un lugar",
+        options: [
+          { label: "Sitio", placeId },
+          { label: "sitio", placeId }
+        ]
+      }).success
+    ).toBe(false);
   });
 });
 

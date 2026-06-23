@@ -12,7 +12,10 @@ export const PLACE_PROVIDER_VALUES = ["manual", "mapbox", "google_places"] as co
 export const FRIEND_REQUEST_DECISION_VALUES = ["accepted", "rejected"] as const;
 export const GOOGLE_NEARBY_RECOMMENDATION_CATEGORY_VALUES = ["popular", "food", "coffee", "plans", "sports"] as const;
 export const GROUP_PLAN_VOTE_VALUES = ["attending", "maybe", "not_attending"] as const;
-export const GROUP_CHAT_MESSAGE_KIND_VALUES = ["message", "plan_suggestion", "place_comment"] as const;
+export const GROUP_CHAT_MESSAGE_KIND_VALUES = ["message", "plan_suggestion", "place_comment", "poll"] as const;
+export const GROUP_POLL_KIND_VALUES = ["poll", "availability"] as const;
+export const GROUP_POLL_TYPE_VALUES = ["place", "date", "time", "custom"] as const;
+export const GROUP_AVAILABILITY_RESPONSE_VALUES = ["available", "maybe", "unavailable"] as const;
 const uuidSchema = z.string().uuid("Identificador inválido.");
 const nullableDateTimeSchema = z
   .string()
@@ -427,6 +430,138 @@ export const reorderGroupPlanPlacesSchema = z.object({
   orderedPlanPlaceIds: z.array(uuidSchema).min(1, "Orden inválido.")
 });
 
+const legacyGroupPollOptionSchema = z.object({
+  label: z.string().trim().min(1, "Cada opción necesita un nombre.").max(120, "La opción es demasiado larga."),
+  placeId: z.string().uuid("Lugar inválido.").nullable().optional(),
+  optionDate: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida.")
+    .nullable()
+    .optional(),
+  startTime: z
+    .string()
+    .trim()
+    .regex(/^\d{2}:\d{2}$/, "Hora inválida.")
+    .nullable()
+    .optional(),
+  endTime: z
+    .string()
+    .trim()
+    .regex(/^\d{2}:\d{2}$/, "Hora final inválida.")
+    .nullable()
+    .optional()
+}).superRefine((option, context) => {
+  if (option.startTime && option.endTime && option.endTime <= option.startTime) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "La hora final debe ser posterior a la inicial.",
+      path: ["endTime"]
+    });
+  }
+});
+
+const groupPollOptionSchema = legacyGroupPollOptionSchema;
+
+const _legacyCreateGroupPollSchema = z
+  .object({
+    groupId: uuidSchema,
+    title: z.string().trim().min(1, "La pregunta es obligatoria.").max(140, "La pregunta es demasiado larga."),
+    kind: z.string().refine(
+      (value): value is (typeof GROUP_POLL_KIND_VALUES)[number] => GROUP_POLL_KIND_VALUES.includes(value as never),
+      "Tipo de decisión inválido."
+    ),
+    pollType: z.string().refine(
+      (value): value is (typeof GROUP_POLL_TYPE_VALUES)[number] => GROUP_POLL_TYPE_VALUES.includes(value as never),
+      "Tipo de encuesta inválido."
+    ),
+    planId: z
+      .string()
+      .trim()
+      .optional()
+      .transform((value) => (value && value.length > 0 ? value : null))
+      .refine((value) => value === null || uuidSchema.safeParse(value).success, "Plan inválido."),
+    closesAt: nullableDateTimeSchema,
+    options: z.array(groupPollOptionSchema).min(2, "Añade al menos dos opciones.").max(12, "Puedes añadir hasta 12 opciones.")
+  })
+  .superRefine((input, context) => {
+    if (input.kind === "availability" && input.pollType !== "date") {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "La disponibilidad debe usar propuestas de fecha.", path: ["pollType"] });
+    }
+
+    const normalizedLabels = input.options.map((option) => option.label.trim().toLocaleLowerCase("es"));
+    if (new Set(normalizedLabels).size !== normalizedLabels.length) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "No puede haber opciones duplicadas.", path: ["options"] });
+    }
+
+    input.options.forEach((option, index) => {
+      if ((input.kind === "availability" || input.pollType === "date") && !option.optionDate) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: "Selecciona una fecha.", path: ["options", index, "optionDate"] });
+      }
+      if (input.pollType === "time" && !option.startTime) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: "Selecciona una hora.", path: ["options", index, "startTime"] });
+      }
+      if (input.pollType === "place" && !option.placeId) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: "Selecciona un lugar.", path: ["options", index, "placeId"] });
+      }
+    });
+  });
+
+const placePollOptionSchema = z.object({
+  label: z.string().trim().min(1, "Cada opción necesita un nombre.").max(120, "La opción es demasiado larga."),
+  placeId: uuidSchema
+});
+
+export const createGroupPollSchema = z
+  .object({
+    groupId: uuidSchema,
+    title: z.string().trim().min(1, "La pregunta es obligatoria.").max(140, "La pregunta es demasiado larga."),
+    kind: z.literal("poll", { message: "Las encuestas solo pueden ser de lugares." }),
+    pollType: z.literal("place", { message: "Las encuestas solo pueden ser de lugares." }),
+    planId: z
+      .string()
+      .trim()
+      .optional()
+      .transform((value) => (value && value.length > 0 ? value : null))
+      .refine((value) => value === null || uuidSchema.safeParse(value).success, "Plan inválido."),
+    closesAt: nullableDateTimeSchema,
+    options: z.array(placePollOptionSchema).min(2, "Añade al menos dos lugares.").max(12, "Puedes añadir hasta 12 lugares.")
+  })
+  .superRefine((input, context) => {
+    const placeIds = input.options.map((option) => option.placeId);
+    if (new Set(placeIds).size !== placeIds.length) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "No puede haber lugares duplicados.", path: ["options"] });
+    }
+  });
+
+export const voteGroupPollSchema = z.object({
+  groupId: uuidSchema,
+  pollId: uuidSchema,
+  optionId: uuidSchema
+});
+
+export const respondGroupAvailabilitySchema = z.object({
+  groupId: uuidSchema,
+  pollId: uuidSchema,
+  optionId: uuidSchema,
+  response: z.string().refine(
+    (value): value is (typeof GROUP_AVAILABILITY_RESPONSE_VALUES)[number] =>
+      GROUP_AVAILABILITY_RESPONSE_VALUES.includes(value as never),
+    "Respuesta de disponibilidad inválida."
+  )
+});
+
+export const closeGroupPollSchema = z.object({
+  groupId: uuidSchema,
+  pollId: uuidSchema
+});
+
+export const convertGroupPollToPlanSchema = z.object({
+  groupId: uuidSchema,
+  pollId: uuidSchema,
+  title: z.string().trim().min(1, "El nombre del plan es obligatorio.").max(100, "El nombre del plan es demasiado largo.")
+});
+
 const optionalUuidField = z
   .string()
   .trim()
@@ -450,6 +585,7 @@ export const createGroupChatMessageSchema = z.object({
       "Tipo de mensaje inválido."
     ),
   planId: optionalUuidField,
+  pollId: optionalUuidField,
   placeId: optionalUuidField,
   planPlaceId: optionalUuidField
 });
@@ -627,6 +763,11 @@ export type UpdateGroupPlanDetailsInput = z.infer<typeof updateGroupPlanDetailsS
 export type RemoveGroupPlanPlaceInput = z.infer<typeof removeGroupPlanPlaceSchema>;
 export type UpdateGroupPlanPlaceTimeInput = z.infer<typeof updateGroupPlanPlaceTimeSchema>;
 export type ReorderGroupPlanPlacesInput = z.infer<typeof reorderGroupPlanPlacesSchema>;
+export type CreateGroupPollInput = z.infer<typeof createGroupPollSchema>;
+export type VoteGroupPollInput = z.infer<typeof voteGroupPollSchema>;
+export type RespondGroupAvailabilityInput = z.infer<typeof respondGroupAvailabilitySchema>;
+export type CloseGroupPollInput = z.infer<typeof closeGroupPollSchema>;
+export type ConvertGroupPollToPlanInput = z.infer<typeof convertGroupPollToPlanSchema>;
 export type CreateGroupChatMessageInput = z.infer<typeof createGroupChatMessageSchema>;
 export type DeleteGroupChatMessageInput = z.infer<typeof deleteGroupChatMessageSchema>;
 export type RemoveGroupMemberInput = z.infer<typeof removeGroupMemberSchema>;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/getCurrentUser";
 import { getGroupPlansForUser } from "@/lib/groupPlans";
+import { getGroupPollsForUser } from "@/lib/groupPolls";
 import { getGroupPlacesForUser } from "@/lib/places";
 import { checkRateLimit, rateLimitExceededResponse } from "@/lib/security/rateLimit";
 
@@ -22,7 +23,11 @@ export async function GET(_request: Request, { params }: ChatContextRouteProps) 
     return rateLimitExceededResponse(rateLimit);
   }
 
-  const [plans, places] = await Promise.all([getGroupPlansForUser(user.id, groupId), getGroupPlacesForUser(user.id, groupId)]);
+  const [plans, places, polls] = await Promise.all([
+    getGroupPlansForUser(user.id, groupId),
+    getGroupPlacesForUser(user.id, groupId),
+    getGroupPollsForUser(user.id, groupId)
+  ]);
 
   return NextResponse.json({
     places: places.map((place) => ({
@@ -36,6 +41,15 @@ export async function GET(_request: Request, { params }: ChatContextRouteProps) 
       kind: "plan",
       subtitle: plan.plannedDate,
       title: plan.title
+    })),
+    polls: polls.map((poll) => ({
+      id: poll.id,
+      kind: "poll",
+      options: poll.options,
+      subtitle: poll.status === "open" ? "Abierta" : "Cerrada",
+      status: poll.status,
+      totalResponses: poll.totalResponses,
+      title: poll.title
     }))
   });
 }

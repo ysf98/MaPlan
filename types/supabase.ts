@@ -162,6 +162,7 @@ export type Database = {
           kind: string
           place_id: string | null
           plan_id: string | null
+          poll_id: string | null
           plan_place_id: string | null
           sender_id: string
           updated_at: string
@@ -174,6 +175,7 @@ export type Database = {
           kind?: string
           place_id?: string | null
           plan_id?: string | null
+          poll_id?: string | null
           plan_place_id?: string | null
           sender_id: string
           updated_at?: string
@@ -186,6 +188,7 @@ export type Database = {
           kind?: string
           place_id?: string | null
           plan_id?: string | null
+          poll_id?: string | null
           plan_place_id?: string | null
           sender_id?: string
           updated_at?: string
@@ -328,6 +331,218 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_availability_responses: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          response: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          response: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          response?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_availability_responses_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "group_poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_chat_messages_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "group_polls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_availability_responses_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "group_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_poll_options: {
+        Row: {
+          created_at: string
+          end_time: string | null
+          id: string
+          label: string
+          option_date: string | null
+          place_id: string | null
+          poll_id: string
+          position: number
+          start_time: string | null
+        }
+        Insert: {
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          label: string
+          option_date?: string | null
+          place_id?: string | null
+          poll_id: string
+          position?: number
+          start_time?: string | null
+        }
+        Update: {
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          label?: string
+          option_date?: string | null
+          place_id?: string | null
+          poll_id?: string
+          position?: number
+          start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_poll_options_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "group_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "group_poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "group_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_polls: {
+        Row: {
+          closes_at: string | null
+          converted_plan_id: string | null
+          created_at: string
+          created_by: string
+          group_id: string
+          id: string
+          kind: string
+          plan_id: string | null
+          poll_type: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          closes_at?: string | null
+          converted_plan_id?: string | null
+          created_at?: string
+          created_by: string
+          group_id: string
+          id?: string
+          kind?: string
+          plan_id?: string | null
+          poll_type?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          closes_at?: string | null
+          converted_plan_id?: string | null
+          created_at?: string
+          created_by?: string
+          group_id?: string
+          id?: string
+          kind?: string
+          plan_id?: string | null
+          poll_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_polls_converted_plan_id_fkey"
+            columns: ["converted_plan_id"]
+            isOneToOne: false
+            referencedRelation: "group_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_polls_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_polls_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "group_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -892,7 +1107,11 @@ export type GroupJoinPolicy = "invite_only" | "open_by_code" | "request_to_join"
 export type GroupJoinRequestStatus = "pending" | "approved" | "rejected"
 export type GroupPrivacy = "privado" | "abierto"
 export type GroupPlanVote = "attending" | "maybe" | "not_attending"
-export type GroupChatMessageKind = "message" | "plan_suggestion" | "place_comment"
+export type GroupChatMessageKind = "message" | "plan_suggestion" | "place_comment" | "poll"
+export type GroupPollKind = "poll" | "availability"
+export type GroupPollType = "place" | "date" | "time" | "custom"
+export type GroupPollStatus = "open" | "closed"
+export type GroupAvailabilityResponse = "available" | "maybe" | "unavailable"
 export type FriendRequestStatus = "pending" | "accepted" | "rejected"
 export type GroupInvitationStatus = "pending" | "accepted" | "rejected"
 

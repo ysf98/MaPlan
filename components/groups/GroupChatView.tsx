@@ -10,9 +10,10 @@ import {
   type CreateGroupChatMessageActionState,
   type DeleteGroupChatMessageActionState
 } from "@/app/groups/[groupId]/chat/actions";
-import { MaplanMinimalIcon } from "@/components/branding/MaplanMinimalIcon";
+import { voteGroupPollAction, type GroupDecisionActionState } from "@/app/groups/[groupId]/decisions/actions";
 import { Button } from "@/components/ui/Button";
 import type { GroupChatMessageItem } from "@/lib/groupChat";
+import type { GroupPollItem } from "@/lib/groupPolls";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type GroupChatViewProps = {
@@ -27,6 +28,7 @@ type GroupChatViewProps = {
 
 const createInitialState: CreateGroupChatMessageActionState = { error: null, success: false };
 const deleteInitialState: DeleteGroupChatMessageActionState = { error: null, success: false };
+const voteInitialState: GroupDecisionActionState = { error: null, success: false };
 
 type LocalChatMessage = GroupChatMessageItem & {
   deliveryStatus?: "sending";
@@ -44,11 +46,19 @@ type ChatContext =
       kind: "plan";
       subtitle: string | null;
       title: string;
+    }
+  | {
+      id: string;
+      kind: "poll";
+      poll?: GroupPollItem;
+      subtitle: string | null;
+      title: string;
     };
 
 type ChatContextResponse = {
   places?: ChatContext[];
   plans?: ChatContext[];
+  polls?: ChatContext[];
 };
 
 function getInitial(username: string | null): string {
@@ -87,10 +97,23 @@ function PlusIcon() {
 }
 
 function getContextLabel(kind: ChatContext["kind"]): string {
-  return kind === "plan" ? "Plan" : "Lugar";
+  if (kind === "plan") return "Plan";
+  if (kind === "poll") return "Encuesta";
+  return "Lugar";
 }
 
-function buildMessageContext(message: GroupChatMessageItem): ChatContext | null {
+function buildMessageContext(message: GroupChatMessageItem, pollById: Map<string, GroupPollItem>): ChatContext | null {
+  if (message.pollId) {
+    const poll = pollById.get(message.pollId);
+    return {
+      id: message.pollId,
+      kind: "poll",
+      poll,
+      subtitle: poll ? `${poll.totalResponses} votos` : null,
+      title: poll?.title || message.pollTitle || "Encuesta"
+    };
+  }
+
   if (message.planId) {
     return {
       id: message.planId,
@@ -112,9 +135,84 @@ function buildMessageContext(message: GroupChatMessageItem): ChatContext | null 
   return null;
 }
 
+function PollChatCard({
+  context,
+  groupId,
+  isMine
+}: {
+  context: Extract<ChatContext, { kind: "poll" }>;
+  groupId: string;
+  isMine: boolean;
+}) {
+  const router = useRouter();
+  const [state, voteAction, isVoting] = useActionState(voteGroupPollAction, voteInitialState);
+  const poll = context.poll;
+
+  useEffect(() => {
+    if (state.success) {
+      router.refresh();
+    }
+  }, [router, state.success]);
+
+  return (
+    <div
+      className={`mt-3 rounded-[18px] border px-3 py-3 ${
+        isMine ? "border-white/20 bg-white/12" : "border-rose-100 bg-[#fff4f3]"
+      }`}
+    >
+      <Link className="block" href={`/groups/${groupId}/decisions`}>
+        <p className={`text-[11px] font-extrabold uppercase ${isMine ? "text-white/70" : "text-[#c6283a]"}`}>Encuesta</p>
+        <p className="mt-0.5 truncate text-sm font-extrabold">{context.title}</p>
+      </Link>
+      {poll ? (
+        <div className="mt-3 space-y-2">
+          {poll.options.map((option) => {
+            const title = option.placeName || option.label;
+            return (
+              <form action={voteAction} key={option.id}>
+                <input name="groupId" type="hidden" value={groupId} />
+                <input name="pollId" type="hidden" value={poll.id} />
+                <input name="optionId" type="hidden" value={option.id} />
+                <button
+                  className={`flex w-full items-center justify-between gap-2 rounded-2xl px-3 py-2 text-left text-xs font-bold transition ${
+                    poll.status !== "open"
+                      ? isMine ? "bg-white/10 text-white/75" : "bg-white text-zinc-500"
+                      : option.isCurrentUserVote
+                        ? "bg-[#c6283a] text-white"
+                        : isMine
+                          ? "bg-white/15 text-white hover:bg-white/20"
+                          : "bg-white text-zinc-800 hover:bg-[#fff0ef]"
+                  }`}
+                  disabled={poll.status !== "open" || isVoting}
+                  type="submit"
+                >
+                  <span className="min-w-0 truncate">{title}</span>
+                  <span className="shrink-0">{option.voteCount}</span>
+                </button>
+              </form>
+            );
+          })}
+          {poll.status === "closed" ? (
+            <p className={`text-[11px] font-bold ${isMine ? "text-white/70" : "text-zinc-500"}`}>
+              Encuesta cerrada. Abre decisiones para ver el resultado completo.
+            </p>
+          ) : null}
+          {state.error ? <p className={`text-[11px] font-bold ${isMine ? "text-white" : "text-rose-600"}`}>{state.error}</p> : null}
+        </div>
+      ) : (
+        <p className={`mt-2 text-xs ${isMine ? "text-white/70" : "text-zinc-500"}`}>Abre decisiones para votar.</p>
+      )}
+    </div>
+  );
+}
+
 function getContextHref(groupId: string, context: ChatContext): string {
   if (context.kind === "plan") {
     return `/groups/${groupId}/plans/${context.id}`;
+  }
+
+  if (context.kind === "poll") {
+    return `/groups/${groupId}/decisions`;
   }
 
   return `/groups/${groupId}?tab=mapa&placeId=${context.id}`;
@@ -138,6 +236,7 @@ export function GroupChatView({
   const [selectedContext, setSelectedContext] = useState<ChatContext | null>(null);
   const [planContextOptions, setPlanContextOptions] = useState<ChatContext[]>([]);
   const [placeContextOptions, setPlaceContextOptions] = useState<ChatContext[]>([]);
+  const [pollContextOptions, setPollContextOptions] = useState<ChatContext[]>([]);
   const [hasLoadedContext, setHasLoadedContext] = useState(false);
   const [isLoadingContext, setIsLoadingContext] = useState(false);
   const [contextError, setContextError] = useState<string | null>(null);
@@ -152,6 +251,13 @@ export function GroupChatView({
     [currentUserId, messages]
   );
   const visibleMessages = useMemo<LocalChatMessage[]>(() => [...messages, ...optimisticMessages], [messages, optimisticMessages]);
+  const pollById = useMemo(() => {
+    const entries = pollContextOptions.flatMap((context) =>
+      context.kind === "poll" && context.poll ? [[context.id, context.poll] as const] : []
+    );
+    return new Map(entries);
+  }, [pollContextOptions]);
+  const hasPollMessages = useMemo(() => visibleMessages.some((message) => Boolean(message.pollId)), [visibleMessages]);
   const loadChatContext = useCallback(async () => {
     if (hasLoadedContext || isLoadingContext) {
       return;
@@ -167,13 +273,20 @@ export function GroupChatView({
       const data = (await response.json()) as ChatContextResponse;
       setPlanContextOptions((data.plans || []).filter((option) => option.kind === "plan"));
       setPlaceContextOptions((data.places || []).filter((option) => option.kind === "place"));
+      setPollContextOptions((data.polls || []).filter((option) => option.kind === "poll"));
       setHasLoadedContext(true);
     } catch {
-      setContextError("No se pudieron cargar planes y lugares.");
+      setContextError("No se pudieron cargar planes, lugares y encuestas.");
     } finally {
       setIsLoadingContext(false);
     }
   }, [groupId, hasLoadedContext, isLoadingContext]);
+
+  useEffect(() => {
+    if (hasPollMessages && !hasLoadedContext) {
+      void loadChatContext();
+    }
+  }, [hasLoadedContext, hasPollMessages, loadChatContext]);
 
   useEffect(() => {
     if ((initialSelectedPlanId || initialSelectedPlaceId) && !hasLoadedContext) {
@@ -289,15 +402,28 @@ export function GroupChatView({
       formData.set("kind", "place_comment");
       formData.set("placeId", selectedContext.id);
     }
+    if (selectedContext?.kind === "poll") {
+      formData.set("kind", "poll");
+      formData.set("pollId", selectedContext.id);
+    }
     const optimisticMessage: LocalChatMessage = {
       content,
       createdAt: new Date().toISOString(),
       deliveryStatus: "sending",
       groupId,
       id: `pending-${crypto.randomUUID()}`,
-      kind: selectedContext?.kind === "plan" ? "plan_suggestion" : selectedContext?.kind === "place" ? "place_comment" : "message",
+      kind:
+        selectedContext?.kind === "plan"
+          ? "plan_suggestion"
+          : selectedContext?.kind === "place"
+            ? "place_comment"
+            : selectedContext?.kind === "poll"
+              ? "poll"
+              : "message",
       planId: selectedContext?.kind === "plan" ? selectedContext.id : null,
       planTitle: selectedContext?.kind === "plan" ? selectedContext.title : null,
+      pollId: selectedContext?.kind === "poll" ? selectedContext.id : null,
+      pollTitle: selectedContext?.kind === "poll" ? selectedContext.title : null,
       placeAddress: selectedContext?.kind === "place" ? selectedContext.subtitle : null,
       placeId: selectedContext?.kind === "place" ? selectedContext.id : null,
       placeImageUrl: null,
@@ -342,23 +468,18 @@ export function GroupChatView({
           >
             <BackIcon />
           </button>
-          <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
-            <MaplanMinimalIcon size="sm" />
-            <span className="text-xl font-bold text-[#c6283a]">MaPlan</span>
+          <div className="pointer-events-none absolute left-1/2 min-w-0 max-w-[calc(100%-6rem)] -translate-x-1/2">
+            <span className="block truncate text-center text-xl font-bold text-[#c6283a]">{groupName}</span>
           </div>
           <div className="h-10 w-10" />
         </div>
       </header>
 
       <main className="mx-auto flex min-h-dvh max-w-3xl flex-col px-4 pb-36 pt-20">
-        <section className="mb-5 rounded-[28px] border border-rose-100 bg-white p-4 shadow-[0_12px_36px_rgba(181,35,48,0.08)]">
-          <h1 className="text-2xl font-extrabold text-zinc-950">Chat de {groupName}</h1>
-        </section>
-
         <section className="flex-1 space-y-3">
           {visibleMessages.map((message) => {
             const isMine = message.senderId === currentUserId;
-            const messageContext = buildMessageContext(message);
+            const messageContext = buildMessageContext(message, pollById);
             return (
               <article className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`} key={message.id}>
                 <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#fde2e0]">
@@ -388,7 +509,9 @@ export function GroupChatView({
                       {message.deliveryStatus === "sending" ? "Ahora" : formatMessageTime(message.createdAt)}
                     </time>
                   </div>
-                  {messageContext ? (
+                  {messageContext?.kind === "poll" ? (
+                    <PollChatCard context={messageContext} groupId={groupId} isMine={isMine} />
+                  ) : messageContext ? (
                     <Link
                       className={`mt-3 block rounded-[18px] border px-3 py-2 transition ${
                         isMine ? "border-white/20 bg-white/12 hover:bg-white/18" : "border-rose-100 bg-[#fff4f3] hover:bg-[#fff0ef]"
@@ -463,7 +586,7 @@ export function GroupChatView({
           ) : null}
           {isAttachMenuOpen ? (
             <div className="mb-2 rounded-[24px] border border-rose-100 bg-white p-3 shadow-[0_16px_38px_rgba(181,35,48,0.14)]">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   className={`h-11 rounded-[18px] text-sm font-extrabold ${attachMode === "place" ? "bg-[#c6283a] text-white" : "bg-[#fff4f3] text-[#c6283a]"}`}
                   onClick={() => setAttachMode((current) => (current === "place" ? null : "place"))}
@@ -478,6 +601,13 @@ export function GroupChatView({
                 >
                   Planes
                 </button>
+                <button
+                  className={`h-11 rounded-[18px] text-sm font-extrabold ${attachMode === "poll" ? "bg-[#c6283a] text-white" : "bg-[#fff4f3] text-[#c6283a]"}`}
+                  onClick={() => setAttachMode((current) => (current === "poll" ? null : "poll"))}
+                  type="button"
+                >
+                  Encuesta
+                </button>
               </div>
               {attachMode ? (
                 <div className="mt-3 max-h-52 space-y-2 overflow-y-auto pr-1">
@@ -485,7 +615,9 @@ export function GroupChatView({
                     <p className="px-2 py-3 text-sm font-semibold text-zinc-500">Cargando opciones...</p>
                   ) : null}
                   {!isLoadingContext && contextError ? <p className="px-2 py-3 text-sm font-semibold text-rose-600">{contextError}</p> : null}
-                  {!isLoadingContext && (attachMode === "plan" ? planContextOptions : placeContextOptions).map((option) => (
+                  {!isLoadingContext && (
+                    attachMode === "plan" ? planContextOptions : attachMode === "poll" ? pollContextOptions : placeContextOptions
+                  ).map((option) => (
                     <button
                       className="flex w-full min-w-0 items-center justify-between gap-3 rounded-[18px] bg-[#fff8f7] px-3 py-2 text-left transition hover:bg-[#fff0ef]"
                       key={`${option.kind}:${option.id}`}
@@ -503,10 +635,25 @@ export function GroupChatView({
                       <span className="shrink-0 text-xs font-bold text-[#c6283a]">Seleccionar</span>
                     </button>
                   ))}
-                  {!isLoadingContext && !contextError && (attachMode === "plan" ? planContextOptions : placeContextOptions).length === 0 ? (
+                  {!isLoadingContext && !contextError && (
+                    attachMode === "plan" ? planContextOptions : attachMode === "poll" ? pollContextOptions : placeContextOptions
+                  ).length === 0 ? (
                     <p className="px-2 py-3 text-sm font-semibold text-zinc-500">
-                      {attachMode === "plan" ? "No hay planes en este grupo." : "No hay lugares guardados en este grupo."}
+                      {attachMode === "plan"
+                        ? "No hay planes en este grupo."
+                        : attachMode === "poll"
+                          ? "No hay encuestas en este grupo."
+                          : "No hay lugares guardados en este grupo."}
                     </p>
+                  ) : null}
+                  {attachMode === "poll" ? (
+                    <button
+                      className="h-10 w-full rounded-2xl border border-dashed border-rose-300 text-xs font-extrabold text-[#c6283a]"
+                      onClick={() => router.push(`/groups/${groupId}/decisions?create=1`)}
+                      type="button"
+                    >
+                      Crear nueva encuesta
+                    </button>
                   ) : null}
                 </div>
               ) : null}

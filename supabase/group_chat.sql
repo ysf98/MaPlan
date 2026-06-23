@@ -8,6 +8,7 @@ create table if not exists public.group_chat_messages (
   content text not null,
   kind text not null default 'message',
   plan_id uuid null references public.group_plans(id) on delete set null,
+  poll_id uuid null references public.group_polls(id) on delete set null,
   place_id uuid null references public.places(id) on delete set null,
   plan_place_id uuid null references public.group_plan_places(id) on delete set null,
   created_at timestamptz not null default now(),
@@ -26,18 +27,24 @@ do $$
 begin
   alter table public.group_chat_messages add column if not exists kind text not null default 'message';
   alter table public.group_chat_messages add column if not exists plan_id uuid null;
+  alter table public.group_chat_messages add column if not exists poll_id uuid null;
   alter table public.group_chat_messages add column if not exists place_id uuid null;
   alter table public.group_chat_messages add column if not exists plan_place_id uuid null;
 
-  if not exists (select 1 from pg_constraint where conname = 'group_chat_messages_kind_check') then
-    alter table public.group_chat_messages
-      add constraint group_chat_messages_kind_check check (kind in ('message', 'plan_suggestion', 'place_comment'));
-  end if;
+  alter table public.group_chat_messages drop constraint if exists group_chat_messages_kind_check;
+  alter table public.group_chat_messages
+    add constraint group_chat_messages_kind_check check (kind in ('message', 'plan_suggestion', 'place_comment', 'poll'));
 
   if not exists (select 1 from pg_constraint where conname = 'group_chat_messages_plan_id_fkey') then
     alter table public.group_chat_messages
       add constraint group_chat_messages_plan_id_fkey
       foreign key (plan_id) references public.group_plans(id) on delete set null;
+  end if;
+
+  if not exists (select 1 from pg_constraint where conname = 'group_chat_messages_poll_id_fkey') then
+    alter table public.group_chat_messages
+      add constraint group_chat_messages_poll_id_fkey
+      foreign key (poll_id) references public.group_polls(id) on delete set null;
   end if;
 
   if not exists (select 1 from pg_constraint where conname = 'group_chat_messages_place_id_fkey') then
@@ -143,6 +150,15 @@ with check (
       from public.group_plans gp
       where gp.id = group_chat_messages.plan_id
         and gp.group_id = group_chat_messages.group_id
+    )
+  )
+  and (
+    poll_id is null
+    or exists (
+      select 1
+      from public.group_polls poll
+      where poll.id = group_chat_messages.poll_id
+        and poll.group_id = group_chat_messages.group_id
     )
   )
   and (

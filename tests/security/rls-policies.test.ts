@@ -78,14 +78,14 @@ describe("RLS policies baseline", () => {
     const sql = readFileSync(resolve(process.cwd(), "supabase/rls_group_activity.sql"), "utf8");
     expect(sql).toContain("create table if not exists public.group_activity_events");
     expect(sql).toContain("create table if not exists public.group_activity_reads");
-    expect(sql).toContain("check (event_type in ('place_added', 'plan_created'))");
+    expect(sql).toContain("check (event_type in ('place_added', 'plan_created', 'poll_created', 'poll_closed', 'poll_converted'))");
     expect(sql).toContain("create policy group_activity_select_group_member");
     expect(sql).toContain("create policy group_activity_insert_editor_only");
     expect(sql).toContain("create policy group_activity_reads_select_self");
     expect(sql).toContain("create policy group_activity_reads_insert_self");
     expect(sql).toContain("create policy group_activity_reads_update_self");
     expect(sql).toContain("user_id = auth.uid()");
-    expect(sql).toContain("event_type in ('place_added', 'plan_created')");
+    expect(sql).toContain("event_type in ('place_added', 'plan_created', 'poll_created', 'poll_closed', 'poll_converted')");
   });
 
   it("lets the real group creator review join requests even without a legacy membership row", () => {
@@ -142,10 +142,11 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("create table if not exists public.group_chat_messages");
     expect(sql).toContain("create table if not exists public.group_chat_reads");
     expect(sql).toContain("constraint group_chat_reads_group_user_pk primary key (group_id, user_id)");
-    expect(sql).toContain("group_chat_messages_kind_check check (kind in ('message', 'plan_suggestion', 'place_comment'))");
+    expect(sql).toContain("group_chat_messages_kind_check check (kind in ('message', 'plan_suggestion', 'place_comment', 'poll'))");
     expect(sql).toContain("references public.group_plans(id) on delete set null");
     expect(sql).toContain("references public.places(id) on delete set null");
     expect(sql).toContain("references public.group_plan_places(id) on delete set null");
+    expect(sql).toContain("references public.group_polls(id) on delete set null");
     expect(sql).toContain("create policy group_chat_messages_select_group_member");
     expect(sql).toContain("create policy group_chat_messages_insert_group_member");
     expect(sql).toContain("create policy group_chat_messages_delete_sender");
@@ -157,8 +158,34 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("public.can_access_group(group_id, auth.uid())");
     expect(sql).toContain("gp.group_id = group_chat_messages.group_id");
     expect(sql).toContain("p.group_id = group_chat_messages.group_id");
+    expect(sql).toContain("poll.group_id = group_chat_messages.group_id");
     expect(sql).toContain("alter table public.group_chat_messages replica identity full");
     expect(sql).toContain("alter publication supabase_realtime add table public.group_chat_messages");
+  });
+
+  it("protects group polls, votes and availability with RLS", () => {
+    const sql = readFileSync(resolve(process.cwd(), "supabase/group_polls.sql"), "utf8");
+    for (const table of [
+      "group_polls",
+      "group_poll_options",
+      "group_poll_votes",
+      "group_availability_responses"
+    ]) {
+      expect(sql).toContain(`create table if not exists public.${table}`);
+      expect(sql).toContain(`alter table public.${table} enable row level security`);
+      expect(sql).toContain(`alter table public.${table} replica identity full`);
+    }
+    expect(sql).toContain("constraint group_poll_votes_poll_user_unique unique (poll_id, user_id)");
+    expect(sql).toContain("constraint group_availability_option_user_unique unique (option_id, user_id)");
+    expect(sql).toContain("create policy group_polls_select_member");
+    expect(sql).toContain("create policy group_polls_insert_editor");
+    expect(sql).toContain("create policy group_poll_votes_update_self");
+    expect(sql).toContain("create policy group_availability_update_self");
+    expect(sql).toContain("new.group_id is distinct from old.group_id");
+    expect(sql).toContain("new.plan_id is distinct from old.plan_id");
+    expect(sql).toContain("old.status = 'closed'");
+    expect(sql).toContain("new.user_id is distinct from old.user_id");
+    expect(sql).toContain("alter publication supabase_realtime add table public.%I");
   });
 
   it("publishes notification source tables to Realtime idempotently", () => {

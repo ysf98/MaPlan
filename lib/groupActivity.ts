@@ -1,6 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type GroupActivityEventType = "place_added" | "plan_created";
+export type GroupActivityEventType = "place_added" | "plan_created" | "poll_created" | "poll_closed" | "poll_converted";
 
 export type GroupActivityFeedItem = {
   id: string;
@@ -38,6 +38,13 @@ type RecordPlanCreatedInput = {
   planTitle: string;
 };
 
+type RecordPollActivityInput = {
+  groupId: string;
+  actorUserId: string;
+  pollId: string;
+  pollTitle: string;
+};
+
 function buildActivityMessage(input: {
   actorUsername: string | null;
   eventType: GroupActivityEventType;
@@ -57,6 +64,18 @@ function buildActivityMessage(input: {
     return `${actor} ha creado ${plan}${groupSuffix}.`;
   }
 
+  if (input.eventType === "poll_created") {
+    return `${actor} ha creado la encuesta "${input.entityName || "Sin título"}"${groupSuffix}.`;
+  }
+
+  if (input.eventType === "poll_closed") {
+    return `La encuesta "${input.entityName || "Sin título"}" ya tiene resultado${groupSuffix}.`;
+  }
+
+  if (input.eventType === "poll_converted") {
+    return `${actor} ha convertido "${input.entityName || "una encuesta"}" en un plan${groupSuffix}.`;
+  }
+
   return `${actor} hizo una acción${groupSuffix}.`;
 }
 
@@ -71,6 +90,10 @@ function buildActivityHref(input: {
 
   if (input.eventType === "plan_created") {
     return `/groups/${encodeURIComponent(input.groupId)}/plans/${encodeURIComponent(input.entityId)}`;
+  }
+
+  if (input.eventType === "poll_created" || input.eventType === "poll_closed" || input.eventType === "poll_converted") {
+    return `/groups/${encodeURIComponent(input.groupId)}/decisions`;
   }
 
   if (input.eventType !== "place_added") {
@@ -102,6 +125,33 @@ export async function recordPlanCreatedGroupActivity(input: RecordPlanCreatedInp
     entity_name: input.planTitle.trim() || null,
     metadata: null
   });
+}
+
+async function recordPollActivity(
+  input: RecordPollActivityInput,
+  eventType: Extract<GroupActivityEventType, "poll_created" | "poll_closed" | "poll_converted">
+): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  await supabase.from("group_activity_events").insert({
+    group_id: input.groupId,
+    actor_user_id: input.actorUserId,
+    event_type: eventType,
+    entity_id: input.pollId,
+    entity_name: input.pollTitle.trim() || null,
+    metadata: null
+  });
+}
+
+export async function recordPollCreatedGroupActivity(input: RecordPollActivityInput): Promise<void> {
+  return recordPollActivity(input, "poll_created");
+}
+
+export async function recordPollClosedGroupActivity(input: RecordPollActivityInput): Promise<void> {
+  return recordPollActivity(input, "poll_closed");
+}
+
+export async function recordPollConvertedGroupActivity(input: RecordPollActivityInput): Promise<void> {
+  return recordPollActivity(input, "poll_converted");
 }
 
 export async function getGroupActivityFeedForUser(

@@ -38,6 +38,7 @@ export async function createGroupChatMessageAction(
     content: String(formData.get("content") || ""),
     kind: String(formData.get("kind") || ""),
     planId: String(formData.get("planId") || ""),
+    pollId: String(formData.get("pollId") || ""),
     placeId: String(formData.get("placeId") || ""),
     planPlaceId: String(formData.get("planPlaceId") || "")
   });
@@ -52,6 +53,7 @@ export async function createGroupChatMessageAction(
     content: parsedInput.data.content,
     kind: parsedInput.data.kind as GroupChatMessageKind,
     planId: parsedInput.data.planId,
+    pollId: parsedInput.data.pollId,
     placeId: parsedInput.data.placeId,
     planPlaceId: parsedInput.data.planPlaceId
   });

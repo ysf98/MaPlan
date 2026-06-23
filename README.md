@@ -14,6 +14,7 @@ MaPlan es una app social de mapas para guardar, organizar y compartir lugares co
 - Chat grupal para comentar planes, lugares e ideas del grupo.
 - Mapa de grupo con búsqueda, guardado y filtros.
 - Planes de grupo con ruta, paradas ordenadas por hora, reordenación manual, votos de asistencia y edición inline.
+- Decisiones de grupo con encuestas para votar entre lugares guardados y compartirlas en el chat.
 - Lugares y planes sincronizados entre miembros mediante Supabase Realtime, sin polling continuo.
 - Mapa personal con pestañas `Lugares` y `Mapa`.
 - Selector de mapas en `/maps` para acceder a mapas grupales o mapa personal.
@@ -213,6 +214,18 @@ La vista principal del grupo mantiene una única suscripción Realtime filtrada 
 
 Los lugares añadidos a un plan desde Explore o desde el mapa pueden quedar solo como paradas del plan mediante snapshot, sin guardarse automáticamente como lugar del grupo.
 
+### Decisiones de grupo
+
+La ruta `/groups/[groupId]/decisions` permite crear encuestas para votar entre lugares guardados en el grupo.
+
+- Cada miembro puede votar un lugar y cambiar su voto mientras la encuesta esté abierta.
+- Las encuestas pueden compartirse en el chat del grupo y votarse desde una tarjeta compacta.
+- El resultado marca ganador o empate según el número de votos.
+- El creador de la encuesta o el propietario del grupo puede cerrarla.
+- Un resultado cerrado y sin empate puede convertirse explícitamente en un plan.
+- En grupos abiertos pueden crear decisiones todos los miembros; en grupos privados solo el propietario.
+- Los votos se sincronizan mediante Supabase Realtime sin polling.
+
 ### Lugares personales
 
 Los lugares del mapa personal viven en `personal_places` e incluyen:
@@ -328,8 +341,9 @@ Ejecutar en Supabase SQL Editor en este orden:
 16. `supabase/places_phone_number.sql`
 17. `supabase/places_google_metadata.sql`
 18. `supabase/group_plans.sql`
-19. `supabase/group_chat.sql`
-20. `supabase/notifications_realtime.sql`
+19. `supabase/group_polls.sql`
+20. `supabase/group_chat.sql`
+21. `supabase/notifications_realtime.sql`
 
 Notas:
 
@@ -338,6 +352,7 @@ Notas:
 - `profiles_full_name.sql` y `groups_cover_image_url.sql` son necesarios para la versión actual.
 - `rls_group_activity.sql` crea la actividad de grupo y el estado de actividad vista por usuario.
 - `group_plans.sql` crea planes, paradas con snapshot, votos de asistencia y sus políticas RLS.
+- `group_polls.sql` crea encuestas de lugares, opciones, votos y tablas legacy de disponibilidad para compatibilidad; debe ejecutarse después de `group_plans.sql`.
 - `group_chat.sql` crea el chat grupal y debe ejecutarse después de `group_plans.sql`.
 - `notifications_realtime.sql` activa al final las tablas que alimentan la campana, el listado de notificaciones y la sincronización de lugares y planes de grupo.
 - Si cambia el retorno de una función SQL, Postgres puede fallar con `cannot change return type of existing function`.

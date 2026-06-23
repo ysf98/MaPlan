@@ -31,7 +31,7 @@ begin
 
   alter table public.group_activity_events
     add constraint group_activity_events_event_type_check
-    check (event_type in ('place_added', 'plan_created'));
+    check (event_type in ('place_added', 'plan_created', 'poll_created', 'poll_closed', 'poll_converted'));
 end $$;
 
 create index if not exists idx_group_activity_group_created_at_desc
@@ -73,7 +73,7 @@ for insert
 to authenticated
 with check (
   actor_user_id = auth.uid()
-  and event_type in ('place_added', 'plan_created')
+  and event_type in ('place_added', 'plan_created', 'poll_created', 'poll_closed', 'poll_converted')
   and (
     exists (
       select 1

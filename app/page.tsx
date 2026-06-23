@@ -13,7 +13,7 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-[#fff8f700] via-[#fff8f780] to-[#fff8f7f0]" />
         </div>
 
-        <section className="relative z-10 mt-auto w-full max-w-md px-6 pb-8 text-center">
+        <section className="relative z-10 mt-auto w-full max-w-md px-6 pb-14 text-center sm:pb-12">
           <div className="mb-6 space-y-3">
             <div className="mx-auto">
               <MaplanMinimalIcon size="lg" />
