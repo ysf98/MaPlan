@@ -45,10 +45,8 @@ export async function GET(_request: Request, { params }: ChatContextRouteProps) 
     polls: polls.map((poll) => ({
       id: poll.id,
       kind: "poll",
-      options: poll.options,
+      poll,
       subtitle: poll.status === "open" ? "Abierta" : "Cerrada",
-      status: poll.status,
-      totalResponses: poll.totalResponses,
       title: poll.title
     }))
   });

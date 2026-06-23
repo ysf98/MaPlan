@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { startTransition, useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
@@ -29,6 +29,7 @@ type GroupChatViewProps = {
 const createInitialState: CreateGroupChatMessageActionState = { error: null, success: false };
 const deleteInitialState: DeleteGroupChatMessageActionState = { error: null, success: false };
 const voteInitialState: GroupDecisionActionState = { error: null, success: false };
+const POLL_SHARE_MESSAGE = "Encuesta compartida";
 
 type LocalChatMessage = GroupChatMessageItem & {
   deliveryStatus?: "sending";
@@ -102,6 +103,20 @@ function getContextLabel(kind: ChatContext["kind"]): string {
   return "Lugar";
 }
 
+function formatRelativeUpdate(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Actualizado ahora";
+  }
+
+  const diffMinutes = Math.max(0, Math.floor((Date.now() - parsed.getTime()) / 60000));
+  if (diffMinutes < 1) return "Actualizado ahora";
+  if (diffMinutes < 60) return `Actualizado hace ${diffMinutes} min`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `Actualizado hace ${diffHours} h`;
+  return `Actualizado ${new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short" }).format(parsed)}`;
+}
+
 function buildMessageContext(message: GroupChatMessageItem, pollById: Map<string, GroupPollItem>): ChatContext | null {
   if (message.pollId) {
     const poll = pollById.get(message.pollId);
@@ -138,11 +153,11 @@ function buildMessageContext(message: GroupChatMessageItem, pollById: Map<string
 function PollChatCard({
   context,
   groupId,
-  isMine
+  onVoted
 }: {
   context: Extract<ChatContext, { kind: "poll" }>;
   groupId: string;
-  isMine: boolean;
+  onVoted: () => void;
 }) {
   const router = useRouter();
   const [state, voteAction, isVoting] = useActionState(voteGroupPollAction, voteInitialState);
@@ -150,58 +165,80 @@ function PollChatCard({
 
   useEffect(() => {
     if (state.success) {
+      onVoted();
       router.refresh();
     }
-  }, [router, state.success]);
+  }, [onVoted, router, state.success]);
+
+  if (!poll) {
+    return (
+      <div aria-busy="true" className="overflow-hidden text-zinc-950">
+        <div className="bg-[#fff0ef] px-4 py-4">
+          <p className="text-[11px] font-extrabold text-[#c6283a]">Encuesta</p>
+          <p className="mt-1 truncate text-lg font-extrabold leading-snug">{context.title}</p>
+        </div>
+        <div className="space-y-3 px-4 py-4">
+          <div className="h-3 w-2/3 animate-pulse rounded-full bg-[#fde2e0]" />
+          <div className="h-3 w-full animate-pulse rounded-full bg-[#fde2e0]" />
+          <div className="h-3 w-1/2 animate-pulse rounded-full bg-[#fde2e0]" />
+          <p className="text-[11px] font-bold text-zinc-500">Cargando encuesta...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalVotes = poll.options.reduce((total, option) => total + option.voteCount, 0);
 
   return (
-    <div
-      className={`mt-3 rounded-[18px] border px-3 py-3 ${
-        isMine ? "border-white/20 bg-white/12" : "border-rose-100 bg-[#fff4f3]"
-      }`}
-    >
-      <Link className="block" href={`/groups/${groupId}/decisions`}>
-        <p className={`text-[11px] font-extrabold uppercase ${isMine ? "text-white/70" : "text-[#c6283a]"}`}>Encuesta</p>
-        <p className="mt-0.5 truncate text-sm font-extrabold">{context.title}</p>
+    <div className="overflow-hidden text-zinc-950">
+      <Link className="block bg-[#fff0ef] px-4 py-4" href={`/groups/${groupId}/decisions`}>
+        <p className="text-[11px] font-extrabold text-[#c6283a]">Encuesta</p>
+        <p className="mt-1 text-lg font-extrabold leading-snug">{poll.title}</p>
       </Link>
-      {poll ? (
-        <div className="mt-3 space-y-2">
-          {poll.options.map((option) => {
-            const title = option.placeName || option.label;
-            return (
-              <form action={voteAction} key={option.id}>
-                <input name="groupId" type="hidden" value={groupId} />
-                <input name="pollId" type="hidden" value={poll.id} />
-                <input name="optionId" type="hidden" value={option.id} />
-                <button
-                  className={`flex w-full items-center justify-between gap-2 rounded-2xl px-3 py-2 text-left text-xs font-bold transition ${
-                    poll.status !== "open"
-                      ? isMine ? "bg-white/10 text-white/75" : "bg-white text-zinc-500"
-                      : option.isCurrentUserVote
-                        ? "bg-[#c6283a] text-white"
-                        : isMine
-                          ? "bg-white/15 text-white hover:bg-white/20"
-                          : "bg-white text-zinc-800 hover:bg-[#fff0ef]"
-                  }`}
-                  disabled={poll.status !== "open" || isVoting}
-                  type="submit"
-                >
+      <div className="space-y-3 px-4 py-4">
+        {poll.options.map((option) => {
+          const title = option.placeName || option.label;
+          const percentage = totalVotes === 0 ? 0 : Math.round((option.voteCount / totalVotes) * 100);
+          return (
+            <form action={voteAction} key={option.id}>
+              <input name="groupId" type="hidden" value={groupId} />
+              <input name="pollId" type="hidden" value={poll.id} />
+              <input name="optionId" type="hidden" value={option.id} />
+              <button
+                className="group w-full rounded-2xl text-left transition hover:bg-[#fff8f7] disabled:cursor-default disabled:hover:bg-transparent"
+                disabled={poll.status !== "open" || isVoting}
+                type="submit"
+              >
+                <span className="flex items-center justify-between gap-3 text-xs font-extrabold">
                   <span className="min-w-0 truncate">{title}</span>
-                  <span className="shrink-0">{option.voteCount}</span>
-                </button>
-              </form>
-            );
-          })}
-          {poll.status === "closed" ? (
-            <p className={`text-[11px] font-bold ${isMine ? "text-white/70" : "text-zinc-500"}`}>
-              Encuesta cerrada. Abre decisiones para ver el resultado completo.
-            </p>
-          ) : null}
-          {state.error ? <p className={`text-[11px] font-bold ${isMine ? "text-white" : "text-rose-600"}`}>{state.error}</p> : null}
+                  <span className="shrink-0 text-[#c6283a]">{percentage}%</span>
+                </span>
+                <span className="mt-2 block h-3 overflow-hidden rounded-full bg-[#fde2e0]">
+                  <span
+                    className={`block h-full rounded-full ${option.isCurrentUserVote ? "bg-[#c6283a]" : "bg-[#f4c9c7]"}`}
+                    style={{ width: `${percentage}%` }}
+                  />
+                </span>
+                {option.isCurrentUserVote ? (
+                  <span className="mt-1 block text-[11px] font-bold text-[#c6283a]">Tu voto</span>
+                ) : null}
+              </button>
+            </form>
+          );
+        })}
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <p className="min-w-0 text-[11px] font-bold text-zinc-500">
+            <span className="text-emerald-600">•</span> {totalVotes} votos · {poll.status === "closed" ? "Encuesta cerrada" : formatRelativeUpdate(poll.updatedAt)}
+          </p>
+          <Link
+            className="shrink-0 rounded-full bg-[#c6283a] px-5 py-2 text-xs font-extrabold text-white shadow-[0_10px_24px_rgba(198,40,58,0.24)]"
+            href={`/groups/${groupId}/decisions`}
+          >
+            Votar
+          </Link>
         </div>
-      ) : (
-        <p className={`mt-2 text-xs ${isMine ? "text-white/70" : "text-zinc-500"}`}>Abre decisiones para votar.</p>
-      )}
+        {state.error ? <p className="text-[11px] font-bold text-rose-600">{state.error}</p> : null}
+      </div>
     </div>
   );
 }
@@ -230,6 +267,7 @@ export function GroupChatView({
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [draft, setDraft] = useState("");
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
   const [attachMode, setAttachMode] = useState<ChatContext["kind"] | null>(null);
@@ -251,6 +289,7 @@ export function GroupChatView({
     [currentUserId, messages]
   );
   const visibleMessages = useMemo<LocalChatMessage[]>(() => [...messages, ...optimisticMessages], [messages, optimisticMessages]);
+  const isPollSelected = selectedContext?.kind === "poll";
   const pollById = useMemo(() => {
     const entries = pollContextOptions.flatMap((context) =>
       context.kind === "poll" && context.poll ? [[context.id, context.poll] as const] : []
@@ -258,8 +297,8 @@ export function GroupChatView({
     return new Map(entries);
   }, [pollContextOptions]);
   const hasPollMessages = useMemo(() => visibleMessages.some((message) => Boolean(message.pollId)), [visibleMessages]);
-  const loadChatContext = useCallback(async () => {
-    if (hasLoadedContext || isLoadingContext) {
+  const loadChatContext = useCallback(async (force = false) => {
+    if ((!force && hasLoadedContext) || isLoadingContext) {
       return;
     }
 
@@ -281,6 +320,11 @@ export function GroupChatView({
       setIsLoadingContext(false);
     }
   }, [groupId, hasLoadedContext, isLoadingContext]);
+
+  const reloadPollContext = useCallback(() => {
+    setHasLoadedContext(false);
+    void loadChatContext(true);
+  }, [loadChatContext]);
 
   useEffect(() => {
     if (hasPollMessages && !hasLoadedContext) {
@@ -336,6 +380,15 @@ export function GroupChatView({
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
+    const scheduleRefresh = () => {
+      if (refreshTimer.current) {
+        clearTimeout(refreshTimer.current);
+      }
+      refreshTimer.current = setTimeout(() => {
+        reloadPollContext();
+        router.refresh();
+      }, 250);
+    };
     const channel = supabase
       .channel(`group-chat-${groupId}`)
       .on(
@@ -346,16 +399,36 @@ export function GroupChatView({
           schema: "public",
           table: "group_chat_messages"
         },
-        () => {
-          router.refresh();
-        }
+        scheduleRefresh
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "group_poll_votes"
+        },
+        scheduleRefresh
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          filter: `group_id=eq.${groupId}`,
+          table: "group_polls"
+        },
+        scheduleRefresh
       )
       .subscribe();
 
     return () => {
+      if (refreshTimer.current) {
+        clearTimeout(refreshTimer.current);
+      }
       void supabase.removeChannel(channel);
     };
-  }, [groupId, router]);
+  }, [groupId, reloadPollContext, router]);
 
   useEffect(() => {
     setOptimisticMessages([]);
@@ -388,12 +461,15 @@ export function GroupChatView({
 
   function handleCreateMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const content = draft.trim();
+    const typedContent = draft.trim();
+    const isSharingPoll = selectedContext?.kind === "poll";
+    const content = isSharingPoll ? POLL_SHARE_MESSAGE : typedContent;
     if (!content) {
       return;
     }
 
     const formData = new FormData(event.currentTarget);
+    formData.set("content", content);
     if (selectedContext?.kind === "plan") {
       formData.set("kind", "plan_suggestion");
       formData.set("planId", selectedContext.id);
@@ -436,7 +512,9 @@ export function GroupChatView({
     };
 
     setOptimisticMessages((current) => [...current, optimisticMessage]);
-    setDraft("");
+    if (!isSharingPoll) {
+      setDraft("");
+    }
     setSelectedContext(null);
     setAttachMode(null);
     setIsAttachMenuOpen(false);
@@ -455,8 +533,8 @@ export function GroupChatView({
   }
 
   return (
-    <div className="min-h-dvh bg-[#fff8f7] text-[#261817]">
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-white/60 bg-[#fff8f7]/90 px-5 py-2 backdrop-blur-xl">
+    <div className="min-h-dvh bg-white text-[#261817]">
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-rose-100 bg-white/90 px-5 py-2 backdrop-blur-xl">
         <div className="relative mx-auto flex h-12 max-w-3xl items-center justify-between gap-3">
           <button
             aria-label="Volver atrás"
@@ -480,60 +558,76 @@ export function GroupChatView({
           {visibleMessages.map((message) => {
             const isMine = message.senderId === currentUserId;
             const messageContext = buildMessageContext(message, pollById);
+            const isPollMessage = messageContext?.kind === "poll";
+            const shouldShowContent = !isPollMessage;
             return (
-              <article className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`} key={message.id}>
-                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#fde2e0]">
-                  {message.senderAvatarUrl ? (
-                    <div
-                      aria-label={message.senderUsername || "Avatar"}
-                      className="h-full w-full bg-cover bg-center"
-                      role="img"
-                      style={{ backgroundImage: `url("${message.senderAvatarUrl}")` }}
-                    />
-                  ) : (
-                    <div className="grid h-full w-full place-items-center text-sm font-extrabold text-[#c6283a]">
-                      {getInitial(message.senderUsername)}
-                    </div>
-                  )}
-                </div>
+              <article className={`flex gap-3 ${isMine ? "justify-end" : ""}`} key={message.id}>
+                {!isMine ? (
+                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#fde2e0]">
+                    {message.senderAvatarUrl ? (
+                      <div
+                        aria-label={message.senderUsername || "Avatar"}
+                        className="h-full w-full bg-cover bg-center"
+                        role="img"
+                        style={{ backgroundImage: `url("${message.senderAvatarUrl}")` }}
+                      />
+                    ) : (
+                      <div className="grid h-full w-full place-items-center text-sm font-extrabold text-[#c6283a]">
+                        {getInitial(message.senderUsername)}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
                 <div
-                  className={`min-w-0 max-w-[82%] rounded-[24px] px-4 py-3 shadow-[0_10px_26px_rgba(181,35,48,0.08)] ${
-                    isMine ? "bg-[#c6283a] text-white" : "bg-white text-zinc-900"
+                  className={`min-w-0 max-w-[86%] overflow-hidden rounded-[24px] border shadow-[0_10px_26px_rgba(181,35,48,0.08)] ${
+                    isPollMessage
+                      ? isMine
+                        ? "border-[#f3b6b2] bg-[#fff8f7] text-zinc-900"
+                        : "border-rose-100 bg-white text-zinc-900"
+                      : isMine
+                        ? "border-[#f3b6b2] bg-[#fff0ef] px-4 py-3 text-zinc-900"
+                        : "border-rose-100 bg-white px-4 py-3 text-zinc-900"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className={`truncate text-xs font-bold ${isMine ? "text-white/85" : "text-[#c6283a]"}`}>
+                  <div className={isPollMessage ? "flex items-center justify-between gap-3 px-4 pt-4" : "flex items-center justify-between gap-3"}>
+                    <p className="truncate text-xs font-bold text-[#c6283a]">
                       @{message.senderUsername || "usuario"}
                     </p>
-                    <time className={`shrink-0 text-[11px] font-semibold ${isMine ? "text-white/70" : "text-zinc-400"}`}>
+                    <time className="shrink-0 text-[11px] font-semibold text-zinc-400">
                       {message.deliveryStatus === "sending" ? "Ahora" : formatMessageTime(message.createdAt)}
                     </time>
                   </div>
                   {messageContext?.kind === "poll" ? (
-                    <PollChatCard context={messageContext} groupId={groupId} isMine={isMine} />
+                    <div className="mt-3">
+                      <PollChatCard context={messageContext} groupId={groupId} onVoted={reloadPollContext} />
+                    </div>
                   ) : messageContext ? (
                     <Link
                       className={`mt-3 block rounded-[18px] border px-3 py-2 transition ${
-                        isMine ? "border-white/20 bg-white/12 hover:bg-white/18" : "border-rose-100 bg-[#fff4f3] hover:bg-[#fff0ef]"
+                        isMine ? "border-[#f3b6b2] bg-white/60 hover:bg-white" : "border-rose-100 bg-[#fff4f3] hover:bg-[#fff0ef]"
                       }`}
                       href={getContextHref(groupId, messageContext)}
                     >
-                      <p className={`text-[11px] font-extrabold uppercase ${isMine ? "text-white/70" : "text-[#c6283a]"}`}>
+                      <p className="text-[11px] font-extrabold uppercase text-[#c6283a]">
                         {getContextLabel(messageContext.kind)}
                       </p>
                       <p className="mt-0.5 truncate text-sm font-extrabold">{messageContext.title}</p>
                       {messageContext.subtitle ? (
-                        <p className={`mt-0.5 line-clamp-1 text-xs ${isMine ? "text-white/70" : "text-zinc-500"}`}>
+                        <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
                           {messageContext.subtitle}
                         </p>
                       ) : null}
                     </Link>
                   ) : null}
-                  <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6">{message.content}</p>
+                  {shouldShowContent ? (
+                    <p className={isPollMessage ? "px-4 pb-4 pt-3 text-sm leading-6 text-zinc-700" : "mt-1 whitespace-pre-wrap break-words text-sm leading-6"}>
+                      {message.content}
+                    </p>
+                  ) : null}
                   {isMine && !message.deliveryStatus ? (
                     <form
                       action={deleteAction}
-                      className="mt-2 text-right"
+                      className={isPollMessage ? "px-4 pb-4 pt-3 text-right" : "mt-2 text-right"}
                       onSubmit={(event) => {
                         if (!window.confirm("¿Eliminar este mensaje?")) {
                           event.preventDefault();
@@ -542,7 +636,11 @@ export function GroupChatView({
                     >
                       <input name="groupId" type="hidden" value={groupId} />
                       <input name="messageId" type="hidden" value={message.id} />
-                      <button className="text-[11px] font-bold text-white/75 hover:text-white" disabled={isDeleting} type="submit">
+                      <button
+                        className="text-[11px] font-bold text-[#c6283a] hover:text-[#9f1f2d]"
+                        disabled={isDeleting}
+                        type="submit"
+                      >
                         Eliminar
                       </button>
                     </form>
@@ -556,7 +654,7 @@ export function GroupChatView({
       </main>
 
       <form
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-rose-100 bg-[#fff8f7]/95 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-rose-100 bg-white/95 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl"
         onSubmit={handleCreateMessage}
         ref={formRef}
       >
@@ -687,8 +785,8 @@ export function GroupChatView({
               rows={1}
               value={draft}
             />
-            <Button disabled={!draft.trim()} type="submit">
-              {isCreating && !draft.trim() ? "Enviando..." : "Enviar"}
+            <Button disabled={!draft.trim() && !isPollSelected} type="submit">
+              {isCreating && (!draft.trim() || isPollSelected) ? "Enviando..." : "Enviar"}
             </Button>
           </div>
           {createState.error ? <p className="mt-2 text-sm font-semibold text-rose-600">{createState.error}</p> : null}
