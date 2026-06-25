@@ -400,6 +400,20 @@ export function GroupPlanDetailView({
     router.refresh();
   }, [backHref, deleteState.success, router]);
 
+  useEffect(() => {
+    if (!shareStatus) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShareStatus(null);
+    }, 2500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [shareStatus]);
+
   function resetEditingFields() {
     setEditedTitle(localPlan.title);
     setEditedDate(toDateInputValue(localPlan.plannedDate));
