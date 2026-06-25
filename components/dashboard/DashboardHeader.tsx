@@ -38,7 +38,6 @@ export function DashboardHeader({
         <Link
           className="justify-self-center inline-flex items-center gap-2 text-lg font-bold tracking-tight text-[rgb(var(--primary-strong))]"
           href={ROUTES.dashboard}
-          prefetch={false}
         >
           <MaplanMinimalIcon size="sm" />
           <span>{APP_NAME}</span>
@@ -58,7 +57,6 @@ function ProfileLink({ avatarUrl, displayName }: { avatarUrl: string | null; dis
       aria-label="Ir al perfil"
       className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-[rgb(var(--border)/0.7)] bg-[rgb(var(--surface-soft))] text-sm font-semibold text-[rgb(var(--primary-strong))] shadow-sm"
       href={ROUTES.profile}
-      prefetch={false}
     >
       {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : getInitial(displayName)}
     </Link>

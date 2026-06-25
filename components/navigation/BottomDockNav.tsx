@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { ROUTES } from "@/utils/constants";
 
@@ -66,6 +67,23 @@ function NavIcon({ name }: { name: (typeof items)[number]["icon"] | "pin" }) {
 
 export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      [...items.map((item) => item.href), ROUTES.groups, ROUTES.map].forEach((href) => {
+        if (href !== pathname) {
+          router.prefetch(href);
+        }
+      });
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [isAuthenticated, pathname, router]);
 
   if (!isAuthenticated) {
     return null;
@@ -84,7 +102,6 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
               )}
               href={item.href}
               key={item.href}
-              prefetch={false}
             >
               <NavIcon name={item.icon} />
               {item.label}
@@ -96,6 +113,8 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
           aria-label="Explorar lugares"
           className="mx-auto grid h-14 w-14 -translate-y-5 place-items-center rounded-2xl bg-[rgb(var(--primary-strong))] text-white shadow-[0_12px_24px_rgba(var(--primary-strong)/0.35)] transition hover:bg-[rgb(var(--primary))]"
           href={ROUTES.explore}
+          onPointerDown={() => router.prefetch(ROUTES.explore)}
+          onPointerEnter={() => router.prefetch(ROUTES.explore)}
           prefetch={false}
         >
           <NavIcon name="pin" />
@@ -111,7 +130,6 @@ export function BottomDockNav({ isAuthenticated = true }: BottomDockNavProps) {
               )}
               href={item.href}
               key={item.href}
-              prefetch={false}
             >
               <NavIcon name={item.icon} />
               {item.label}

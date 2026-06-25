@@ -419,6 +419,12 @@ export function GroupPlansTab({
     [displayPlans]
   );
 
+  useEffect(() => {
+    sortedPlans.slice(0, 4).forEach((plan) => {
+      router.prefetch(`/groups/${groupId}/plans/${plan.id}`);
+    });
+  }, [groupId, router, sortedPlans]);
+
   const selectedPlan = useMemo(
     () => sortedPlans.find((plan) => plan.id === selectedPlanId) ?? null,
     [selectedPlanId, sortedPlans]

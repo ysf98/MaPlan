@@ -56,6 +56,17 @@ export function GroupOverviewHeader({
   }, [chatUnreadCount]);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      router.prefetch(`/groups/${group.id}/chat`);
+      router.prefetch(`/groups/${group.id}/decisions`);
+      router.prefetch(`/groups/${group.id}?tab=planes`);
+      router.prefetch(`/groups/${group.id}?tab=mapa`);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [group.id, router]);
+
+  useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     const channel = supabase
       .channel(`group-chat-button-${group.id}`)

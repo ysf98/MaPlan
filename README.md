@@ -356,3 +356,16 @@ pnpm test:e2e
 ## 📌 Estado actual
 
 MaPlan funciona como prototipo completo de planificación social: autenticación, grupos, lugares, mapas, planes, encuestas, chat, notificaciones Realtime, perfil, listas y enlaces públicos de planes. La aplicación está preparada para demostración en Vercel y para ejecución local con las variables de entorno indicadas.
+
+## 🔮 Mejoras futuras
+
+Como evolución futura, MaPlan podría incorporar una capa de caché cliente mediante SWR o TanStack Query. Esto permitiría mantener datos previos al navegar entre vistas, reducir la aparición de estados de carga, aplicar actualizaciones optimistas y sincronizar en segundo plano los cambios recibidos por Supabase Realtime.
+
+Las zonas donde esta mejora tendría mayor impacto serían:
+
+- chat grupal, para mensajes y tarjetas de encuestas casi instantáneas;
+- planes de grupo, para volver al listado o al detalle sin esperas perceptibles;
+- lugares de grupo, para marcar favoritos, visitados o guardar sitios con respuesta inmediata;
+- perfil y listas, para conservar el estado local mientras se revalidan datos.
+
+Esta optimización se plantea como una mejora progresiva, manteniendo Supabase, RLS y las server actions como fuente de verdad.
