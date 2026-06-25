@@ -1,49 +1,32 @@
 # MaPlan
 
-MaPlan es una app social de mapas para guardar, organizar y compartir lugares con amigos. Permite crear grupos, invitar usuarios, guardar recomendaciones, explorar sitios en Mapbox, buscar lugares con Google Places y mantener un mapa personal con estados como `Pendiente`, `Visitado` y `Favorito`.
+MaPlan es una aplicación social de mapas para guardar, organizar y compartir lugares con amigos. El proyecto permite crear grupos, explorar sitios, guardar recomendaciones, planificar rutas, votar decisiones y comentar en chats grupales.
 
-## Funcionalidades principales
+Versión desplegada: [https://maplan.vercel.app/](https://maplan.vercel.app/)
 
-- Autenticación con Supabase.
-- Dashboard con grupos, invitaciones y actividad reciente.
-- Grupos con privacidad `abierto` / `privado`.
-- Permisos por rol: `owner` / `member`.
-- Invitaciones de grupo y solicitudes de unión.
-- Amigos y solicitudes de amistad.
-- Búsqueda de amigos con sugerencias en vivo desde la propia barra.
-- Chat grupal para comentar planes, lugares e ideas del grupo.
-- Mapa de grupo con búsqueda, guardado y filtros.
-- Planes de grupo con ruta, paradas ordenadas por hora, reordenación manual, votos de asistencia y edición inline.
-- Planes compartibles por enlace público en modo solo lectura.
-- Encuestas de grupo para votar entre lugares guardados y compartirlas en el chat.
-- Lugares y planes sincronizados entre miembros mediante Supabase Realtime, sin polling continuo.
-- Mapa personal con pestañas `Lugares` y `Mapa`.
-- Selector de mapas en `/maps` para acceder a mapas grupales o mapa personal.
-- Explorador principal en `/explore` para buscar lugares y guardarlos en distintos destinos.
-- Guardado multi-destino desde Explore: `Mapa personal` o grupos donde el usuario tiene permisos.
-- Lugares personales con estado `Pendiente`, `Visitado` y `Favorito`.
-- Vista global de listas en perfil: todos, favoritos, pendientes y visitados.
-- Perfil editable con contadores reales.
-- Logros de explorador: Cartógrafo, Gourmet, Naturalista y Deportista.
-- Imágenes de lugares desde Google Places o guardado manual.
-- Enlaces de Google Maps compatibles con web y móvil.
-- Notificaciones de grupo con estado visto, mensajes no leídos y actividad de otros usuarios.
-- Campana y listado de notificaciones actualizados mediante Supabase Realtime, sin polling continuo.
-- RLS y validaciones server-side para proteger datos.
+## Descripción general
 
-## Stack
+La idea principal de MaPlan es convertir el mapa en un espacio colaborativo. Cada usuario puede tener su propio mapa personal y, además, participar en grupos donde se comparten lugares, planes, encuestas y mensajes.
+
+El prototipo está orientado a planificación social: viajes, cenas, rutas, sitios pendientes, favoritos y coordinación entre miembros de un grupo.
+
+## Stack tecnológico
 
 - Next.js App Router
 - React
 - TypeScript en modo estricto
 - Tailwind CSS
-- Supabase Auth, Postgres y RLS
+- Supabase Auth
+- Supabase Postgres
+- Supabase RLS
+- Supabase Realtime
 - Mapbox GL
-- Google Places mediante rutas API server-side
+- Google Places mediante API routes server-side
 - Zod
 - Vitest
 - Playwright
 - pnpm
+- Vercel
 
 El package manager está fijado en `package.json`:
 
@@ -51,9 +34,15 @@ El package manager está fijado en `package.json`:
 "packageManager": "pnpm@10.11.0"
 ```
 
-## Requisitos de entorno
+## Instalación y ejecución
 
-Crea un archivo `.env` local con:
+Instalar dependencias:
+
+```bash
+pnpm install
+```
+
+Crear un archivo `.env` en la raíz del proyecto:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
@@ -64,51 +53,24 @@ NEXT_PUBLIC_MAPBOX_STYLE=
 GOOGLE_PLACES_API_KEY=
 ```
 
-`NEXT_PUBLIC_MAPBOX_STYLE` es opcional; si no se define, la app usa el estilo por defecto de Mapbox.
+`NEXT_PUBLIC_MAPBOX_STYLE` es opcional. Si no se define, la app usa el estilo por defecto de Mapbox.
 
-Variables opcionales para E2E:
-
-```bash
-E2E_EMAIL=
-E2E_PASSWORD=
-E2E_RUN_SIGNUP=1
-PLAYWRIGHT_BASE_URL=
-```
-
-## Cuentas de demostración
-
-La aplicación dispone de dos usuarios de prueba:
-
-| Usuario | Correo electrónico | Contraseña |
-| --- | --- | --- |
-| Demo 1 | `demo1@example.com` | `MaPlanDemo2026!` |
-| Demo 2 | `demo2@example.com` | `MaPlanDemo2026!` |
-
-Estas credenciales son exclusivamente para demostraciones y pruebas. No deben reutilizarse en entornos de producción.
-
-Reglas de seguridad:
-
-- No commitear `.env` ni secretos.
-- Mantener `GOOGLE_PLACES_API_KEY` solo en servidor.
-- No crear `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY`.
-- Mantener `SUPABASE_SERVICE_ROLE_KEY` solo en servidor; se usa para borrar cuentas completamente.
-- No crear `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`.
-- La anon key de Supabase es pública, pero RLS debe proteger los datos.
-- No usar service role en cliente.
-
-## Desarrollo local
-
-```bash
-pnpm install
-pnpm dev
-```
-
-## Comandos
+Ejecutar en desarrollo:
 
 ```bash
 pnpm dev
+```
+
+Compilar para producción:
+
+```bash
 pnpm build
 pnpm start
+```
+
+Comandos útiles:
+
+```bash
 pnpm lint
 pnpm test
 pnpm test:e2e
@@ -117,32 +79,160 @@ pnpm test:e2e:headed
 pnpm test:e2e:report
 ```
 
-Si `pnpm` no está disponible en el entorno local, instala pnpm/Corepack antes de cambiar de package manager.
+Variables opcionales para Playwright:
+
+```bash
+E2E_EMAIL=
+E2E_PASSWORD=
+E2E_RUN_SIGNUP=1
+PLAYWRIGHT_BASE_URL=
+```
+
+## Usuarios de prueba
+
+La aplicación tiene login. Para probar el proyecto se pueden usar estas cuentas:
+
+| Usuario | Correo electrónico | Contraseña |
+| --- | --- | --- |
+| Demo 1 | `demo1@example.com` | `MaPlanDemo2026!` |
+| Demo 2 | `demo2@example.com` | `MaPlanDemo2026!` |
+
+Estas credenciales son solo para demostraciones y pruebas del prototipo.
 
 ## Estructura del proyecto
 
 - `app/`: rutas App Router, layouts, route handlers y server actions.
-- `components/`: componentes UI y de feature.
-- `components/map/`: Mapbox, buscador, tarjetas de lugar, mapa personal y mapa de grupo.
+- `components/`: componentes reutilizables y vistas de funcionalidad.
+- `components/groups/`: grupos, miembros, lugares, planes, encuestas, chat y permisos.
+- `components/map/`: Mapbox, mapa personal, mapa de grupo, tarjetas y buscador.
 - `components/explore/`: mapa principal de exploración y guardado multi-destino.
-- `components/maps/`: selector de mapas grupales y mapa personal.
-- `components/groups/`: vistas, tabs, miembros, invitaciones y controles de grupo.
-- `components/profile/`: perfil, listas globales y logros.
+- `components/maps/`: selector entre mapas grupales y mapa personal.
+- `components/profile/`: perfil, listas personales y logros.
 - `components/ui/`: primitivas visuales reutilizables.
-- `lib/`: lógica de dominio, permisos, Supabase, validación y helpers.
+- `lib/`: lógica de dominio, permisos, validación, Supabase y helpers.
 - `lib/map/`: Google Places, geocoding, distancias, URLs de Google Maps y clasificación.
-- `lib/profilePlaces.ts`: agregación de lugares personales y de grupos para el perfil.
-- `lib/profileAchievements.ts`: cálculo de logros de explorador.
-- `lib/saveDestinations.ts`: destinos disponibles para guardar lugares desde Explore.
 - `lib/validation/`: schemas Zod.
-- `types/`: tipos compartidos, especialmente Supabase.
-- `supabase/`: SQL, schema y RLS.
-- `tests/`: tests Vitest.
-- `e2e/`: tests Playwright.
+- `types/`: tipos compartidos y tipos de Supabase.
+- `supabase/`: SQL, migraciones manuales y políticas RLS.
+- `tests/`: tests de Vitest.
+- `e2e/`: tests de Playwright.
+- `utils/constants.ts`: constantes globales y rutas principales.
+
+## Funcionalidades principales
+
+### Autenticación y seguridad
+
+- Registro e inicio de sesión con Supabase Auth.
+- Protección de datos mediante RLS.
+- Validaciones server-side con Zod.
+- Server actions con autenticación y comprobación de permisos.
+- Service role limitado a código server-side.
+
+### Dashboard y notificaciones
+
+- Dashboard con grupos, invitaciones y actividad reciente.
+- Actividad reciente filtrada para mostrar acciones de otros usuarios.
+- Campana de notificaciones con contador.
+- Notificaciones Realtime sin polling continuo.
+- Mensajes no leídos de chats de grupo.
+- Avisos de invitaciones, solicitudes y actividad relevante de grupos.
+
+### Grupos
+
+- Creación de grupos.
+- Grupos `abierto` y `privado`.
+- Roles `owner` y `member`.
+- Invitaciones de grupo.
+- Solicitudes para unirse a grupos.
+- Gestión de miembros.
+- Vista de grupo con pestañas: `Lugares`, `Actividad`, `Mapa` y `Planes`.
+- Botones compactos para abrir chat y encuestas desde el resumen del grupo.
+
+### Lugares de grupo
+
+- Guardado de lugares en grupos.
+- Búsqueda con Google Places.
+- Visualización en Mapbox.
+- Estados personales por usuario: `Pendiente`, `Visitado` y `Favorito`.
+- Filtros y tarjetas compactas.
+- Sincronización Realtime para que los lugares nuevos, editados o eliminados aparezcan a otros miembros sin recargar.
+
+### Mapa personal
+
+- Mapa propio para guardar lugares personales.
+- Pestañas `Lugares` y `Mapa`.
+- Estados `Pendiente`, `Visitado` y `Favorito`.
+- Vista de lugar seleccionable desde enlaces internos.
+- Búsqueda y guardado desde mapa.
+
+### Explore
+
+- Mapa principal inmersivo en `/explore`.
+- Búsqueda de lugares con Google Places.
+- Selección de sitios desde el mapa.
+- Guardado en mapa personal o en grupos permitidos.
+- Validación de permisos también en backend.
+
+### Planes de grupo
+
+- Creación de planes desde un grupo o desde una tarjeta de lugar.
+- Vista independiente de detalle de plan.
+- Edición inline de nombre, fecha, horas y paradas.
+- Eliminación de paradas.
+- Eliminación de planes.
+- Votos de asistencia: `Iré`, `Quizás` y `No`.
+- Paradas con snapshot para que sobrevivan aunque se borre el lugar original.
+- Lugares no guardados pueden añadirse a un plan sin guardarse automáticamente como lugar del grupo.
+- Tarjetas resumen con hasta 4 lugares y contador `+N`.
+- Orden por hora y reordenación manual de paradas.
+- Planes compartibles por enlace público en modo solo lectura.
+- En grupos abiertos, los miembros pueden editar planes.
+- En grupos privados, la edición queda reservada al propietario.
+
+### Encuestas
+
+- Encuestas de grupo centradas en votar entre lugares guardados.
+- Creación de encuestas desde `/groups/[groupId]/decisions`.
+- Voto único por usuario y posibilidad de cambiarlo mientras la encuesta esté abierta.
+- Resultados con ganador o empate.
+- Encuestas compartibles en el chat.
+- Voto desde tarjetas compactas dentro del chat.
+
+### Chat grupal
+
+- Chat independiente a pantalla completa por grupo.
+- Mensajes en tiempo real mediante Supabase Realtime.
+- Contador de no leídos en el botón de chat.
+- Contexto de lugares, planes y encuestas.
+- Tarjetas de contexto enlazables.
+- Eliminación de mensajes propios.
+- El chat muestra el nombre del grupo en la cabecera.
+
+### Perfil y listas
+
+- Perfil editable.
+- Contadores reales basados en datos guardados.
+- Logros de explorador.
+- Listas globales en `/profile/places`:
+  - todos;
+  - favoritos;
+  - pendientes;
+  - visitados.
+- Tarjetas compactas.
+- Acciones directas para marcar `Visitado` / `Pendiente` y añadir o quitar favoritos.
+- Botón `Ver` que abre el lugar dentro de MaPlan:
+  - si es de grupo, abre el mapa del grupo con el lugar seleccionado;
+  - si es personal, abre el mapa personal con el lugar seleccionado.
+- Desde la tarjeta del mapa se puede abrir Google Maps.
+
+### Amigos
+
+- Búsqueda de amigos.
+- Autocomplete en la propia barra de búsqueda.
+- Solicitudes de amistad.
+- Estados de solicitud y amistad.
 
 ## Rutas principales
-
-Las rutas comunes viven en `utils/constants.ts` bajo `ROUTES`.
 
 - `/`
 - `/login`
@@ -156,175 +246,20 @@ Las rutas comunes viven en `utils/constants.ts` bajo `ROUTES`.
 - `/groups/join`
 - `/groups/[groupId]`
 - `/groups/[groupId]/chat`
+- `/groups/[groupId]/decisions`
 - `/groups/[groupId]/plans/[planId]`
+- `/plans/share/[token]`
 - `/maps`
 - `/map`
 - `/explore`
 - `/profile`
 - `/profile/places`
+- `/terms`
+- `/privacy`
 
-## Modelo de dominio
+## Base de datos y SQL
 
-### Grupos
-
-Los grupos son espacios colaborativos donde los usuarios guardan lugares. Pueden ser:
-
-- `abierto`: los miembros pueden colaborar según las reglas actuales.
-- `privado`: solo owner/admin tiene permisos elevados.
-
-La pertenencia se gestiona en `group_members`; el creador real del grupo también se trata como owner aunque falte una fila legacy de membresía.
-
-### Lugares de grupo
-
-Los lugares compartidos viven en `places`.
-
-La pestaña de lugares de un grupo permite filtrar entre todos los lugares, lugares incluidos en planes y lugares sin plan. Las tarjetas muestran una referencia compacta al plan cuando el lugar ya forma parte de una ruta.
-
-Los estados personales por usuario de lugares de grupo viven en `group_place_user_states`:
-
-- `status`: `pending` / `visited`
-- `is_favorite`: boolean
-
-Esto permite que cada usuario tenga sus propios favoritos y visitados dentro de un mismo grupo.
-
-### Planes de grupo
-
-Los planes de grupo viven en `group_plans` y sus paradas en `group_plan_places`.
-
-La vista de planes dentro de un grupo permite:
-
-- crear planes desde el grupo o desde una tarjeta de lugar;
-- ver hasta 4 paradas en la tarjeta resumen del plan y un contador `+N` si hay más;
-- abrir un detalle independiente en `/groups/[groupId]/plans/[planId]`;
-- editar nombre, fecha, horas de paradas y eliminar paradas desde el detalle;
-- ordenar el itinerario por hora, dejando al final las paradas sin hora;
-- reordenar manualmente paradas en modo edición con drag & drop o controles de subir/bajar;
-- votar asistencia con `Iré`, `Quizás` y `No`;
-- eliminar el plan desde el menú de opciones de la tarjeta de detalle.
-
-Permisos de edición:
-
-- En grupos `abierto`, propietarios y miembros pueden crear planes, editar nombre y fecha, añadir o eliminar paradas, cambiar horas y reordenar el itinerario.
-- En grupos `privado`, solo el propietario puede crear o editar planes; los miembros conservan lectura y voto.
-- El plan completo solo puede eliminarlo su creador o el propietario real del grupo.
-- Las columnas estructurales `group_id`, `created_by`, `plan_id` y `added_by` están protegidas mediante triggers SQL.
-
-La vista principal del grupo mantiene una única suscripción Realtime filtrada por `group_id` para `places` y `group_plans`. Los cambios en paradas actualizan `group_plans.updated_at`, de modo que también refrescan las tarjetas de planes sin suscribirse individualmente a cada ruta.
-
-`group_plan_places` guarda una instantánea de los datos importantes del lugar (`place_name`, dirección, imagen, coordenadas, enlaces y metadata principal) y un `position` para mantener el orden manual. Esto permite que una parada siga apareciendo en un plan aunque el lugar original se borre de `places`.
-
-Cada plan tiene un `public_share_token` estable para abrir `/plans/share/[token]`. Esa ruta es pública y de solo lectura: muestra el plan, el mapa y sus paradas, pero no expone votos, asistentes, miembros, chat ni controles de edición. La lectura pública se hace mediante `get_public_group_plan(token)`, una función SQL limitada a los campos seguros necesarios para renderizar el plan.
-
-Los lugares añadidos a un plan desde Explore o desde el mapa pueden quedar solo como paradas del plan mediante snapshot, sin guardarse automáticamente como lugar del grupo.
-
-### Encuestas de grupo
-
-La ruta `/groups/[groupId]/decisions` permite crear encuestas para votar entre lugares guardados en el grupo.
-
-- Cada miembro puede votar un lugar y cambiar su voto mientras la encuesta esté abierta.
-- Las encuestas pueden compartirse en el chat del grupo y votarse desde una tarjeta compacta.
-- El resultado marca ganador o empate según el número de votos.
-- El creador de la encuesta o el propietario del grupo puede cerrarla.
-- Un resultado cerrado y sin empate puede convertirse explícitamente en un plan.
-- En grupos abiertos pueden crear encuestas todos los miembros; en grupos privados solo el propietario.
-- Los votos se sincronizan mediante Supabase Realtime sin polling.
-
-### Lugares personales
-
-Los lugares del mapa personal viven en `personal_places` e incluyen:
-
-- `status`: `pending` / `visited`
-- `is_favorite`: boolean
-- `provider`, `external_place_id`, `google_maps_url`
-- imagen, teléfono, puntuación de Google Places si existe, coordenadas y categoría.
-
-### Selector de mapas y Explore
-
-La ruta `/maps` es el punto de entrada de la sección `Mapa` en la barra inferior. Muestra dos accesos:
-
-- `Mapas Grupales`: redirige a `/groups`.
-- `Mapa Personal`: redirige a `/map`.
-
-La ruta `/explore` es el mapa principal inmersivo. Permite buscar lugares con Google Places o tocar el mapa, seleccionar un sitio y guardarlo en:
-
-- `Mapa personal`;
-- grupos donde el usuario tiene permisos para guardar lugares.
-
-Los destinos se calculan con `lib/saveDestinations.ts`. La mutación se realiza mediante `app/explore/actions.ts`, reutilizando:
-
-- `createPersonalPlace` para `personal_places`;
-- `createPlace` para lugares de grupo.
-
-Aunque la UI solo muestra destinos permitidos, el backend vuelve a validar permisos y duplicados antes de guardar.
-
-### Amigos
-
-La sección `/friends` permite buscar usuarios mediante `app/api/friends/search/route.ts`.
-
-El buscador muestra sugerencias en vivo dentro de la propia barra mientras se escribe, incluyendo si el usuario ya es amigo, si hay una solicitud pendiente o si se puede enviar una nueva solicitud.
-
-### Chat de grupo
-
-Los mensajes del chat grupal viven en `group_chat_messages`. El estado de lectura por usuario vive en `group_chat_reads`.
-
-La vista independiente `/groups/[groupId]/chat` permite a los miembros escribir mensajes normales del grupo en pantalla completa. El selector `+` permite adjuntar contexto de un plan o lugar guardado del grupo, y las tarjetas de contexto enlazan a la vista correspondiente.
-
-Solo miembros del grupo pueden leer o escribir mensajes. Cada usuario puede eliminar sus propios mensajes.
-
-El botón `Abrir chat` muestra un contador flotante con mensajes no leídos. El contador excluye mensajes enviados por el propio usuario y se limpia al entrar en la vista del chat.
-
-### Perfil, listas y logros
-
-El perfil usa agregación real desde `lib/profilePlaces.ts`:
-
-- lugares personales;
-- lugares de grupos visibles para el usuario;
-- estados personales de grupo.
-
-La ruta `/profile/places` permite filtrar:
-
-- todos;
-- favoritos;
-- pendientes;
-- visitados.
-
-Los logros se calculan en `lib/profileAchievements.ts`:
-
-- Cartógrafo: cualquier lugar guardado.
-- Gourmet: comida, restaurantes, bares, cafeterías, etc.
-- Naturalista: parques, montes, rutas, playas, naturaleza, etc.
-- Deportista: gimnasio, pistas, deporte, fútbol, pádel, etc.
-
-## Mapa y búsqueda de lugares
-
-MaPlan separa dos capas:
-
-- Mapbox renderiza el mapa visual, marcadores, cámara y controles.
-- Google Places se consulta solo desde rutas API server-side.
-
-Rutas relevantes:
-
-- `app/api/places/search/route.ts`
-- `app/api/places/details/route.ts`
-- `app/api/places/nearby/route.ts`
-- `app/api/places/photo/route.ts`
-
-Componentes relevantes:
-
-- `components/explore/ExploreMap.tsx`
-- `components/maps/MapsHubView.tsx`
-- `components/map/GroupMap.tsx`
-- `components/map/PersonalMap.tsx`
-- `components/map/MapSearchBox.tsx`
-- `components/map/MapPlaceCard.tsx`
-- `components/map/SimplePlacesList.tsx`
-- `components/map/useMapboxResize.ts`
-
-Los enlaces de Google Maps deben construirse con `lib/map/googleMapsUrl.ts` para funcionar bien en web y móvil.
-
-## Orden SQL recomendado en Supabase
-
-Ejecutar en Supabase SQL Editor en este orden:
+Los scripts SQL se encuentran en `supabase/`. El orden recomendado de ejecución en Supabase SQL Editor es:
 
 1. `supabase/profiles_full_name.sql`
 2. `supabase/rls_friends.sql`
@@ -350,34 +285,23 @@ Ejecutar en Supabase SQL Editor en este orden:
 
 Notas:
 
-- La mayoría de scripts son idempotentes y usan `if not exists` / `drop policy if exists`.
-- `groups_privacy.sql` migra flags legacy si existen.
-- `profiles_full_name.sql` y `groups_cover_image_url.sql` son necesarios para la versión actual.
-- `rls_group_activity.sql` crea la actividad de grupo y el estado de actividad vista por usuario.
-- `group_plans.sql` crea planes, paradas con snapshot, votos de asistencia y sus políticas RLS.
-- `group_polls.sql` crea encuestas de lugares, opciones, votos y tablas legacy de disponibilidad para compatibilidad; debe ejecutarse después de `group_plans.sql`.
-- `group_chat.sql` crea el chat grupal y debe ejecutarse después de `group_plans.sql`.
-- `notifications_realtime.sql` activa al final las tablas que alimentan la campana, el listado de notificaciones y la sincronización de lugares y planes de grupo.
-- Si cambia el retorno de una función SQL, Postgres puede fallar con `cannot change return type of existing function`.
-
-Solución habitual:
-
-```sql
-drop function if exists public.get_profiles_by_ids(uuid[]);
-```
-
-Después vuelve a ejecutar el SQL que recrea la función.
+- Los scripts son mayoritariamente idempotentes.
+- `group_plans.sql` crea planes, paradas, snapshots, votos de asistencia, permisos y políticas RLS.
+- `group_polls.sql` crea encuestas de lugares, opciones y votos.
+- `group_chat.sql` crea chat grupal y lecturas por usuario.
+- `notifications_realtime.sql` activa Realtime para notificaciones, chat, lugares y planes.
+- RLS debe mantenerse activo en las tablas sensibles.
 
 ## Testing
 
-Tests unitarios, dominio y seguridad:
+Tests unitarios, dominio, acciones y seguridad:
 
 - `tests/lib/*`
 - `tests/actions/*`
 - `tests/validation/*`
 - `tests/security/*`
 
-E2E:
+Tests end-to-end:
 
 - `e2e/auth.spec.ts`
 - `e2e/navigation.spec.ts`
@@ -385,31 +309,32 @@ E2E:
 - `e2e/map.spec.ts`
 - `e2e/notifications.spec.ts`
 
-Playwright usa `PLAYWRIGHT_BASE_URL` si está definido; si no, arranca el dev server con `pnpm dev`.
+Ejecutar:
+
+```bash
+pnpm test
+pnpm test:e2e
+```
+
+## Seguridad y variables
+
+- No commitear `.env` ni secretos.
+- Mantener `GOOGLE_PLACES_API_KEY` solo server-side.
+- No crear `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY`.
+- Mantener `SUPABASE_SERVICE_ROLE_KEY` solo server-side.
+- No usar service role en componentes cliente.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` es pública por diseño, pero RLS protege los datos.
+- `NEXT_PUBLIC_MAPBOX_TOKEN` es pública por diseño.
 
 ## Troubleshooting
 
-- `pnpm` no encontrado: instala pnpm/Corepack y vuelve a ejecutar.
-- Falta Mapbox: revisa `NEXT_PUBLIC_MAPBOX_TOKEN`.
-- No carga Google Places: revisa `GOOGLE_PLACES_API_KEY` en servidor.
-- La ubicación del navegador no funciona: usa HTTPS o `localhost`, y revisa permisos del navegador.
-- Imágenes externas raras: algunas fotos de Google pueden traer márgenes internos; las tarjetas intentan disimularlo con fondo desenfocado.
-- Mapbox gris o mal dimensionado en móvil: revisar `useMapboxResize.ts`.
-- Explore no debe mostrar la barra inferior: revisar `AppShell fullBleed` y `/explore`.
-- Avatares o perfiles no aparecen: revisar `profiles_full_name.sql` y políticas de `rls_friends.sql`.
+- Si `pnpm` no existe, instalar pnpm/Corepack antes de cambiar de package manager.
+- Si Mapbox no carga, revisar `NEXT_PUBLIC_MAPBOX_TOKEN`.
+- Si Google Places no responde, revisar `GOOGLE_PLACES_API_KEY`.
+- Si la ubicación del navegador no funciona, usar HTTPS o `localhost` y revisar permisos.
+- Si Realtime no actualiza, comprobar que las tablas necesarias están activadas en `supabase_realtime`.
+- Si el mapa aparece gris o mal dimensionado, revisar `components/map/useMapboxResize.ts`.
 
-## Estado actual del producto
+## Estado actual
 
-- Detalle de grupo con tabs `Lugares`, `Actividad`, `Mapa` y `Planes`, y acceso a chat en vista independiente.
-- Planes de grupo con creación, tarjetas resumen, detalle independiente, edición inline, paradas snapshot, reordenación manual y votos de asistencia.
-- Mapa personal alineado con el estilo de grupos.
-- Selector `/maps` para separar mapas grupales y mapa personal.
-- Explore fullscreen para buscar y guardar lugares en mapa personal o grupos permitidos.
-- Estados personales y de grupo para favoritos, pendientes y visitados.
-- Perfil con contadores agregados reales.
-- Listas globales en `/profile/places`.
-- Logros de explorador calculados desde lugares reales.
-- Amigos, invitaciones, solicitudes y notificaciones integradas, incluyendo mensajes pendientes, actividad vista y planes creados por otros usuarios.
-- Búsqueda de amigos con autocomplete en la barra.
-- Chat grupal con mensajes entre miembros, Realtime, tarjetas de contexto enlazables y contador de no leídos.
-- Modelo de permisos enforced en UI, server actions y RLS.
+MaPlan funciona como prototipo completo de planificación social: autenticación, grupos, lugares, mapas, planes, encuestas, chat, notificaciones Realtime, perfil, listas y enlaces públicos de planes. La aplicación está preparada para demostración en Vercel y para ejecución local con las variables de entorno indicadas.

@@ -19,6 +19,7 @@ import type { PersonalPlace } from "@/lib/personalPlaces";
 type MapPageClientProps = {
   personalPlaces: PersonalPlace[];
   activeTab: PersonalMapTab;
+  initialSelectedPlaceId?: string | null;
 };
 
 const statusInitialState: UpdatePersonalPlaceStatusActionState = { error: null, success: false };
@@ -29,7 +30,7 @@ const personalMapTabs: Array<{ label: string; value: PersonalMapTab }> = [
   { label: "Mapa", value: "mapa" }
 ];
 
-export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps) {
+export function MapPageClient({ personalPlaces, activeTab, initialSelectedPlaceId = null }: MapPageClientProps) {
   const savedPlacesCountLabel = `${personalPlaces.length} ${personalPlaces.length === 1 ? "lugar guardado" : "lugares guardados"}`;
   const tabs = useMemo(() => ["lugares", "mapa"] as const, []);
   const [currentTab, setCurrentTab] = useState<PersonalMapTab>(activeTab);
@@ -39,7 +40,7 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
   const [isDragging, setIsDragging] = useState(false);
   const [dragAxis, setDragAxis] = useState<"x" | "y" | null>(null);
   const [lockSwipeGesture, setLockSwipeGesture] = useState(false);
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(initialSelectedPlaceId);
   const tabPanelRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [activePanelHeight, setActivePanelHeight] = useState<number | null>(null);
   const [statusState, statusFormAction, isUpdatingStatus] = useActionState(updatePersonalPlaceStatusAction, statusInitialState);
@@ -86,6 +87,10 @@ export function MapPageClient({ personalPlaces, activeTab }: MapPageClientProps)
   useEffect(() => {
     setCurrentTab(activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    setSelectedPlaceId(initialSelectedPlaceId);
+  }, [initialSelectedPlaceId]);
 
   useEffect(() => {
     const url = new URL(window.location.href);

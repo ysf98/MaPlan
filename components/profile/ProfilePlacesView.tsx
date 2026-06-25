@@ -45,6 +45,14 @@ function sourceLabel(place: ProfilePlaceItem): string {
   return place.source === "personal" ? "Mi mapa" : place.groupName ?? "Grupo";
 }
 
+function getProfilePlaceViewHref(place: ProfilePlaceItem): string {
+  if (place.source === "group" && place.groupId) {
+    return `${ROUTES.groups}/${place.groupId}?tab=mapa&placeId=${encodeURIComponent(place.id)}`;
+  }
+
+  return `${ROUTES.map}?tab=mapa&placeId=${encodeURIComponent(place.id)}`;
+}
+
 function filterVisiblePlaces(places: ProfilePlaceItem[], filter: ProfilePlacesFilter): ProfilePlaceItem[] {
   if (filter === "favorites") {
     return places.filter((place) => place.isFavorite);
@@ -219,16 +227,12 @@ export function ProfilePlacesView({ activeFilter, places, totalCount }: ProfileP
                       </p>
                       <PlaceRatingBadge className="mt-2" compact rating={place.rating} userRatingsTotal={place.userRatingsTotal} />
                     </div>
-                    {place.googleMapsUrl ? (
-                      <a
-                        className="mt-0.5 inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-rose-100 bg-rose-50 px-4 text-xs font-bold text-[#c6283a] transition hover:bg-rose-100"
-                        href={place.googleMapsUrl}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        Ir
-                      </a>
-                    ) : null}
+                    <Link
+                      className="mt-0.5 inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-rose-100 bg-rose-50 px-4 text-xs font-bold text-[#c6283a] transition hover:bg-rose-100"
+                      href={getProfilePlaceViewHref(place)}
+                    >
+                      Ver
+                    </Link>
                   </div>
                 </div>
               </article>

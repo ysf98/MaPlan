@@ -22,10 +22,12 @@ export default async function MapPage({ searchParams }: MapPageProps) {
   ]);
 
   const activeTab = getPersonalMapTab(resolvedSearchParams?.tab);
+  const rawPlaceId = resolvedSearchParams?.placeId;
+  const initialSelectedPlaceId = Array.isArray(rawPlaceId) ? rawPlaceId[0] ?? null : rawPlaceId ?? null;
 
   return (
     <AppShell backHref={ROUTES.dashboard} currentUser={user}>
-      <MapPageClient activeTab={activeTab} personalPlaces={personalPlaces} />
+      <MapPageClient activeTab={activeTab} initialSelectedPlaceId={initialSelectedPlaceId} personalPlaces={personalPlaces} />
     </AppShell>
   );
 }
