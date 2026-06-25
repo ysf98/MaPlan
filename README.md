@@ -10,6 +10,24 @@ La idea principal de MaPlan es convertir el mapa en un espacio colaborativo. Cad
 
 El prototipo está orientado a planificación social: viajes, cenas, rutas, sitios pendientes, favoritos y coordinación entre miembros de un grupo.
 
+## Capturas
+
+| Dashboard | Grupo |
+| --- | --- |
+| ![Dashboard de MaPlan](public/readme-screenshots/dashboard_maplan.png) | ![Vista de grupo en MaPlan](public/readme-screenshots/group_maplan.png) |
+
+| Chat | Mapa |
+| --- | --- |
+| ![Chat grupal de MaPlan](public/readme-screenshots/chat_maplan.png) | ![Mapa de grupo en MaPlan](public/readme-screenshots/mapa_maplan.png) |
+
+| Lugares guardados | Planes |
+| --- | --- |
+| ![Listado de lugares guardados](public/readme-screenshots/listado_maplan.png) | ![Listado de planes de grupo](public/readme-screenshots/planes_maplan.png) |
+
+| Detalle de plan | Perfil |
+| --- | --- |
+| ![Detalle de plan en MaPlan](public/readme-screenshots/vista_planes_maplan.png) | ![Perfil de usuario en MaPlan](public/readme-screenshots/perfil_maplan.png) |
+
 ## Stack tecnológico
 
 - Next.js App Router
