@@ -26,7 +26,7 @@ export function DashboardHeader({
   preferBackHref = false
 }: DashboardHeaderProps) {
   return (
-    <header className="vc-glass sticky top-0 z-20 border-b border-[rgb(var(--border)/0.55)]">
+    <header className="sticky top-0 z-20 border-b border-[rgb(var(--border)/0.75)] bg-white/95 backdrop-blur-xl">
       <div className="mx-auto grid h-16 w-full max-w-3xl grid-cols-3 items-center px-[20px]">
         <div className="flex min-w-24 justify-start">
           {backHref ? (

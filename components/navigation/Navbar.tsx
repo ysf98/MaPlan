@@ -4,7 +4,7 @@ import { APP_NAME, ROUTES } from "@/utils/constants";
 
 export function Navbar() {
   return (
-    <header className="vc-glass sticky top-0 z-30 border-b border-[rgb(var(--border)/0.6)]">
+    <header className="sticky top-0 z-30 border-b border-[rgb(var(--border)/0.75)] bg-white/95 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-[20px]">
         <Link className="inline-flex items-center gap-2 text-lg font-bold tracking-tight text-[rgb(var(--primary-strong))]" href={ROUTES.home}>
           <MaplanMinimalIcon size="sm" />
