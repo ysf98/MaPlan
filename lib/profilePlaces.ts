@@ -1,35 +1,11 @@
 import { getUserGroups } from "@/lib/groups";
 import { normalizeGoogleMapsUrl } from "@/lib/map/googleMapsUrl";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { ProfilePlaceItem, ProfilePlaceStats, ProfilePlacesFilter } from "@/lib/profilePlacesShared";
 import type { GroupListItem } from "@/lib/groups/types";
 import type { PlaceStatus } from "@/types/supabase";
-
-export type ProfilePlacesFilter = "all" | "favorites" | "pending" | "visited";
-
-export type ProfilePlaceItem = {
-  id: string;
-  source: "personal" | "group";
-  groupId: string | null;
-  groupName: string | null;
-  name: string;
-  address: string | null;
-  city: string | null;
-  category: string | null;
-  imageUrl: string | null;
-  googleMapsUrl: string | null;
-  rating: number | null;
-  userRatingsTotal: number | null;
-  status: PlaceStatus;
-  isFavorite: boolean;
-  createdAt: string;
-};
-
-export type ProfilePlaceStats = {
-  all: number;
-  favorites: number;
-  pending: number;
-  visited: number;
-};
+export { PROFILE_PLACE_FILTERS } from "@/lib/profilePlacesShared";
+export type { ProfilePlaceItem, ProfilePlaceStats, ProfilePlacesFilter } from "@/lib/profilePlacesShared";
 
 type PersonalPlaceRow = {
   id: string;
@@ -72,13 +48,6 @@ type GroupPlaceStateRow = {
   status: string;
   is_favorite: boolean;
 };
-
-export const PROFILE_PLACE_FILTERS: Array<{ label: string; value: ProfilePlacesFilter }> = [
-  { label: "Todos", value: "all" },
-  { label: "Favoritos", value: "favorites" },
-  { label: "Por visitar", value: "pending" },
-  { label: "Historial", value: "visited" }
-];
 
 export function getProfilePlacesFilter(value: string | string[] | undefined): ProfilePlacesFilter {
   const raw = Array.isArray(value) ? value[0] : value;

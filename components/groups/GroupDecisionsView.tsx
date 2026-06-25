@@ -172,11 +172,14 @@ function CreateDecisionPanel({
         </div>
         <button
           aria-label="Cerrar formulario"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-rose-100 text-[#c6283a]"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-rose-100 text-[#c6283a] transition hover:bg-rose-50"
           onClick={onClose}
           type="button"
         >
-          <span aria-hidden="true" className="text-xl">×</span>
+          <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.4" viewBox="0 0 24 24">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
         </button>
       </div>
 

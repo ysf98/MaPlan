@@ -111,9 +111,9 @@ export function GroupOverviewHeader({
 
         <p className="max-w-[34rem] text-sm leading-5 text-zinc-700">{group.description || "Sin descripción"}</p>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="grid grid-cols-2 gap-2">
           <Link
-            className="relative inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#c6283a] px-5 text-sm font-extrabold text-white shadow-[0_12px_26px_rgba(198,40,58,0.18)] transition hover:bg-[#b32033] sm:w-auto"
+            className="relative inline-flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-full bg-[#c6283a] px-3 text-xs font-extrabold text-white shadow-[0_10px_20px_rgba(198,40,58,0.16)] transition hover:bg-[#b32033] sm:h-11 sm:text-sm"
             href={`/groups/${group.id}/chat`}
           >
             {visibleChatUnreadCount > 0 ? (
@@ -121,21 +121,21 @@ export function GroupOverviewHeader({
                 {visibleChatUnreadCount > 99 ? "99+" : visibleChatUnreadCount}
               </span>
             ) : null}
-            <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.1" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" fill="none" stroke="currentColor" strokeWidth="2.1" viewBox="0 0 24 24">
               <path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-6.2A8 8 0 1 1 21 12Z" />
               <path d="M8 11h8M8 15h5" />
             </svg>
-            Abrir chat
+            <span className="truncate">Abrir chat</span>
           </Link>
           <Link
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-5 text-sm font-extrabold text-[#c6283a] shadow-[0_10px_22px_rgba(198,40,58,0.10)] transition hover:bg-rose-50 sm:w-auto"
+            className="inline-flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-white px-3 text-xs font-extrabold text-[#c6283a] shadow-[0_8px_18px_rgba(198,40,58,0.09)] transition hover:bg-rose-50 sm:h-11 sm:text-sm"
             href={`/groups/${group.id}/decisions`}
           >
-            <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.1" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" fill="none" stroke="currentColor" strokeWidth="2.1" viewBox="0 0 24 24">
               <path d="M5 4h14v16H5z" />
               <path d="m8 9 2 2 5-5M8 16h8" />
             </svg>
-            Encuestas
+            <span className="truncate">Encuestas</span>
           </Link>
         </div>
 

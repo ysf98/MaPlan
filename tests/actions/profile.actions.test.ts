@@ -19,7 +19,11 @@ const {
   revalidatePathMock,
   selectMock,
   signOutMock,
-  updateMock
+  updateMock,
+  updatePersonalPlaceFavoriteMock,
+  updatePersonalPlaceStatusMock,
+  updatePlaceFavoriteMock,
+  updatePlaceStatusMock
 } = vi.hoisted(() => ({
   adminDeleteUserMock: vi.fn(),
   adminEqMock: vi.fn(),
@@ -39,7 +43,11 @@ const {
   revalidatePathMock: vi.fn(),
   selectMock: vi.fn(),
   signOutMock: vi.fn(),
-  updateMock: vi.fn()
+  updateMock: vi.fn(),
+  updatePersonalPlaceFavoriteMock: vi.fn(),
+  updatePersonalPlaceStatusMock: vi.fn(),
+  updatePlaceFavoriteMock: vi.fn(),
+  updatePlaceStatusMock: vi.fn()
 }));
 
 vi.mock("next/cache", () => ({
@@ -63,11 +71,37 @@ vi.mock("@/lib/supabase/admin", () => ({
   createSupabaseAdminClient: createSupabaseAdminClientMock
 }));
 
+vi.mock("@/lib/personalPlaces", () => ({
+  updatePersonalPlaceFavorite: updatePersonalPlaceFavoriteMock,
+  updatePersonalPlaceStatus: updatePersonalPlaceStatusMock
+}));
+
+vi.mock("@/lib/places", () => ({
+  updatePlaceFavorite: updatePlaceFavoriteMock,
+  updatePlaceStatus: updatePlaceStatusMock
+}));
+
 let profileActions: typeof import("@/app/profile/actions");
 
 function buildFormData(confirmation: string) {
   const formData = new FormData();
   formData.set("confirmation", confirmation);
+  return formData;
+}
+
+function buildProfilePlaceFormData(input: {
+  groupId?: string;
+  isFavorite?: string;
+  placeId?: string;
+  source: "group" | "personal";
+  status?: string;
+}) {
+  const formData = new FormData();
+  formData.set("source", input.source);
+  formData.set("placeId", input.placeId ?? "11111111-1111-4111-8111-111111111111");
+  if (input.groupId) formData.set("groupId", input.groupId);
+  if (input.status) formData.set("status", input.status);
+  if (input.isFavorite) formData.set("isFavorite", input.isFavorite);
   return formData;
 }
 
@@ -109,6 +143,92 @@ describe("profile server actions", () => {
     redirectMock.mockImplementation((path: string) => {
       throw new Error(`redirect:${path}`);
     });
+    updatePersonalPlaceFavoriteMock.mockResolvedValue({ error: null });
+    updatePersonalPlaceStatusMock.mockResolvedValue({ error: null });
+    updatePlaceFavoriteMock.mockResolvedValue({ error: null });
+    updatePlaceStatusMock.mockResolvedValue({ error: null });
+  });
+
+  it("actualiza el estado de un lugar personal desde el perfil", async () => {
+    const result = await profileActions.updateProfilePlaceStatusAction(
+      { error: null, success: false },
+      buildProfilePlaceFormData({ source: "personal", status: "visited" })
+    );
+
+    expect(result).toEqual({ error: null, success: true });
+    expect(updatePersonalPlaceStatusMock).toHaveBeenCalledWith({
+      placeId: "11111111-1111-4111-8111-111111111111",
+      status: "visited",
+      userId: "user-1"
+    });
+    expect(revalidatePathMock).toHaveBeenCalledWith("/profile");
+    expect(revalidatePathMock).toHaveBeenCalledWith("/profile/places");
+  });
+
+  it("actualiza favorito de un lugar personal desde el perfil", async () => {
+    const result = await profileActions.updateProfilePlaceFavoriteAction(
+      { error: null, success: false },
+      buildProfilePlaceFormData({ isFavorite: "true", source: "personal" })
+    );
+
+    expect(result).toEqual({ error: null, success: true });
+    expect(updatePersonalPlaceFavoriteMock).toHaveBeenCalledWith({
+      isFavorite: true,
+      placeId: "11111111-1111-4111-8111-111111111111",
+      userId: "user-1"
+    });
+    expect(revalidatePathMock).toHaveBeenCalledWith("/profile/places");
+  });
+
+  it("actualiza el estado de un lugar de grupo desde el perfil", async () => {
+    const result = await profileActions.updateProfilePlaceStatusAction(
+      { error: null, success: false },
+      buildProfilePlaceFormData({
+        groupId: "22222222-2222-4222-8222-222222222222",
+        source: "group",
+        status: "pending"
+      })
+    );
+
+    expect(result).toEqual({ error: null, success: true });
+    expect(updatePlaceStatusMock).toHaveBeenCalledWith({
+      groupId: "22222222-2222-4222-8222-222222222222",
+      placeId: "11111111-1111-4111-8111-111111111111",
+      status: "pending",
+      userId: "user-1"
+    });
+  });
+
+  it("actualiza favorito de un lugar de grupo desde el perfil", async () => {
+    const result = await profileActions.updateProfilePlaceFavoriteAction(
+      { error: null, success: false },
+      buildProfilePlaceFormData({
+        groupId: "22222222-2222-4222-8222-222222222222",
+        isFavorite: "false",
+        source: "group"
+      })
+    );
+
+    expect(result).toEqual({ error: null, success: true });
+    expect(updatePlaceFavoriteMock).toHaveBeenCalledWith({
+      groupId: "22222222-2222-4222-8222-222222222222",
+      isFavorite: false,
+      placeId: "11111111-1111-4111-8111-111111111111",
+      userId: "user-1"
+    });
+  });
+
+  it("rechaza cambios de perfil con tipo de lugar invalido", async () => {
+    const formData = new FormData();
+    formData.set("source", "otro");
+    formData.set("placeId", "11111111-1111-4111-8111-111111111111");
+    formData.set("status", "visited");
+
+    const result = await profileActions.updateProfilePlaceStatusAction({ error: null, success: false }, formData);
+
+    expect(result).toEqual({ error: "Tipo de lugar inválido.", success: false });
+    expect(updatePersonalPlaceStatusMock).not.toHaveBeenCalled();
+    expect(updatePlaceStatusMock).not.toHaveBeenCalled();
   });
 
   it("rechaza eliminar cuenta si la confirmacion es incorrecta", async () => {

@@ -3,9 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getValidationErrorMessage, requireAuthenticatedUser } from "@/lib/actions/serverAction";
+import { updatePersonalPlaceFavorite, updatePersonalPlaceStatus } from "@/lib/personalPlaces";
+import { updatePlaceFavorite, updatePlaceStatus } from "@/lib/places";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { deleteAccountSchema, updateProfileSchema } from "@/lib/validation/schemas";
+import {
+  deleteAccountSchema,
+  updatePersonalPlaceFavoriteSchema,
+  updatePersonalPlaceStatusSchema,
+  updatePlaceFavoriteSchema,
+  updatePlaceStatusSchema,
+  updateProfileSchema
+} from "@/lib/validation/schemas";
+import type { PlaceStatus } from "@/types/supabase";
 import { ROUTES } from "@/utils/constants";
 
 export type UpdateProfileActionState = {
@@ -14,6 +24,11 @@ export type UpdateProfileActionState = {
 };
 
 export type DeleteAccountActionState = {
+  error: string | null;
+  success: boolean;
+};
+
+export type UpdateProfilePlaceActionState = {
   error: string | null;
   success: boolean;
 };
@@ -37,6 +52,19 @@ type DbMutationResult = {
 
 function getDeletionErrorMessage(table: AccountDeletionTable, message: string) {
   return `No se pudo eliminar la cuenta por datos pendientes en ${table}: ${message}`;
+}
+
+function revalidateProfilePlaces() {
+  revalidatePath(ROUTES.profile);
+  revalidatePath(ROUTES.profilePlaces);
+}
+
+function getProfilePlaceSource(formData: FormData): "group" | "personal" | null {
+  const source = String(formData.get("source") || "");
+  if (source === "group" || source === "personal") {
+    return source;
+  }
+  return null;
 }
 
 async function deleteRowsByColumn(
@@ -122,6 +150,120 @@ export async function updateProfileAction(
 
   revalidatePath(ROUTES.profile);
   revalidatePath(ROUTES.dashboard);
+  return { error: null, success: true };
+}
+
+export async function updateProfilePlaceStatusAction(
+  _previousState: UpdateProfilePlaceActionState,
+  formData: FormData
+): Promise<UpdateProfilePlaceActionState> {
+  const user = await requireAuthenticatedUser(ROUTES.profilePlaces);
+  const source = getProfilePlaceSource(formData);
+
+  if (!source) {
+    return { error: "Tipo de lugar inválido.", success: false };
+  }
+
+  if (source === "personal") {
+    const parsedInput = updatePersonalPlaceStatusSchema.safeParse({
+      placeId: String(formData.get("placeId") || ""),
+      status: String(formData.get("status") || "")
+    });
+
+    if (!parsedInput.success) {
+      return { error: getValidationErrorMessage(parsedInput.error), success: false };
+    }
+
+    const result = await updatePersonalPlaceStatus({
+      userId: user.id,
+      placeId: parsedInput.data.placeId,
+      status: parsedInput.data.status as PlaceStatus
+    });
+
+    if (result.error) {
+      return { error: result.error, success: false };
+    }
+  } else {
+    const parsedInput = updatePlaceStatusSchema.safeParse({
+      groupId: String(formData.get("groupId") || ""),
+      placeId: String(formData.get("placeId") || ""),
+      status: String(formData.get("status") || "")
+    });
+
+    if (!parsedInput.success) {
+      return { error: getValidationErrorMessage(parsedInput.error), success: false };
+    }
+
+    const result = await updatePlaceStatus({
+      userId: user.id,
+      groupId: parsedInput.data.groupId,
+      placeId: parsedInput.data.placeId,
+      status: parsedInput.data.status as PlaceStatus
+    });
+
+    if (result.error) {
+      return { error: result.error, success: false };
+    }
+  }
+
+  revalidateProfilePlaces();
+  return { error: null, success: true };
+}
+
+export async function updateProfilePlaceFavoriteAction(
+  _previousState: UpdateProfilePlaceActionState,
+  formData: FormData
+): Promise<UpdateProfilePlaceActionState> {
+  const user = await requireAuthenticatedUser(ROUTES.profilePlaces);
+  const source = getProfilePlaceSource(formData);
+
+  if (!source) {
+    return { error: "Tipo de lugar inválido.", success: false };
+  }
+
+  if (source === "personal") {
+    const parsedInput = updatePersonalPlaceFavoriteSchema.safeParse({
+      placeId: String(formData.get("placeId") || ""),
+      isFavorite: String(formData.get("isFavorite") || "")
+    });
+
+    if (!parsedInput.success) {
+      return { error: getValidationErrorMessage(parsedInput.error), success: false };
+    }
+
+    const result = await updatePersonalPlaceFavorite({
+      userId: user.id,
+      placeId: parsedInput.data.placeId,
+      isFavorite: parsedInput.data.isFavorite
+    });
+
+    if (result.error) {
+      return { error: result.error, success: false };
+    }
+  } else {
+    const parsedInput = updatePlaceFavoriteSchema.safeParse({
+      groupId: String(formData.get("groupId") || ""),
+      placeId: String(formData.get("placeId") || ""),
+      isFavorite: String(formData.get("isFavorite") || "")
+    });
+
+    if (!parsedInput.success) {
+      return { error: getValidationErrorMessage(parsedInput.error), success: false };
+    }
+
+    const result = await updatePlaceFavorite({
+      userId: user.id,
+      groupId: parsedInput.data.groupId,
+      placeId: parsedInput.data.placeId,
+      isFavorite: parsedInput.data.isFavorite
+    });
+
+    if (result.error) {
+      return { error: result.error, success: false };
+    }
+  }
+
+  revalidateProfilePlaces();
   return { error: null, success: true };
 }
 
