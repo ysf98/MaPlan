@@ -6,9 +6,10 @@ import { cn } from "@/lib/cn";
 type BackButtonProps = {
   className?: string;
   fallbackHref: string;
+  preferFallback?: boolean;
 };
 
-export function BackButton({ className, fallbackHref }: BackButtonProps) {
+export function BackButton({ className, fallbackHref, preferFallback = false }: BackButtonProps) {
   const router = useRouter();
 
   return (
@@ -19,6 +20,11 @@ export function BackButton({ className, fallbackHref }: BackButtonProps) {
         className
       )}
       onClick={() => {
+        if (preferFallback) {
+          router.push(fallbackHref);
+          return;
+        }
+
         if (window.history.length > 1) {
           router.back();
           return;

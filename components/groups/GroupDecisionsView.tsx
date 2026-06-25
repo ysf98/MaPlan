@@ -375,7 +375,7 @@ export function GroupDecisionsView({
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-sm font-bold text-[#c6283a]">{groupName}</p>
-          <h1 className="mt-1 text-3xl font-extrabold text-zinc-950">Decisiones</h1>
+          <h1 className="mt-1 text-3xl font-extrabold text-zinc-950">Encuestas</h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-600">Votad entre lugares guardados y elegid la mejor opción.</p>
         </div>
         {canCreate && !isCreateOpen ? <Button onClick={() => setIsCreateOpen(true)}>Crear</Button> : null}

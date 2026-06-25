@@ -135,7 +135,7 @@ export function GroupOverviewHeader({
               <path d="M5 4h14v16H5z" />
               <path d="m8 9 2 2 5-5M8 16h8" />
             </svg>
-            Decisiones
+            Encuestas
           </Link>
         </div>
 

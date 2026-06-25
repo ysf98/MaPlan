@@ -279,7 +279,7 @@ export async function getGroupPollsForUser(userId: string, groupId: string): Pro
 
 export async function createGroupPoll(input: CreateGroupPollInput): Promise<{ error: string | null; pollId: string | null }> {
   if (!(await canEditPlaces(input.userId, input.groupId))) {
-    return { error: "No tienes permisos para crear decisiones en este grupo.", pollId: null };
+    return { error: "No tienes permisos para crear encuestas en este grupo.", pollId: null };
   }
 
   const referenceError = await validatePollReferences(input);

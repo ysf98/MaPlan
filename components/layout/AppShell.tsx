@@ -12,6 +12,7 @@ type AppShellProps = {
   children: ReactNode;
   currentUser?: Awaited<ReturnType<typeof getCurrentUser>>;
   fullBleed?: boolean;
+  preferBackHref?: boolean;
 };
 
 type AppShellProfileRow = {
@@ -20,7 +21,7 @@ type AppShellProfileRow = {
   avatar_url: string | null;
 };
 
-export async function AppShell({ backHref, children, currentUser, fullBleed = false }: AppShellProps) {
+export async function AppShell({ backHref, children, currentUser, fullBleed = false, preferBackHref = false }: AppShellProps) {
   const user = currentUser === undefined ? await getCurrentUser() : currentUser;
   let pendingNotificationsCount = 0;
   let profile: AppShellProfileRow | null = null;
@@ -54,6 +55,7 @@ export async function AppShell({ backHref, children, currentUser, fullBleed = fa
           currentUserId={user.id}
           displayName={displayName}
           notificationsCount={pendingNotificationsCount}
+          preferBackHref={preferBackHref}
         />
       ) : !fullBleed ? (
         <Navbar />

@@ -14,7 +14,7 @@ MaPlan es una app social de mapas para guardar, organizar y compartir lugares co
 - Chat grupal para comentar planes, lugares e ideas del grupo.
 - Mapa de grupo con búsqueda, guardado y filtros.
 - Planes de grupo con ruta, paradas ordenadas por hora, reordenación manual, votos de asistencia y edición inline.
-- Decisiones de grupo con encuestas para votar entre lugares guardados y compartirlas en el chat.
+- Encuestas de grupo para votar entre lugares guardados y compartirlas en el chat.
 - Lugares y planes sincronizados entre miembros mediante Supabase Realtime, sin polling continuo.
 - Mapa personal con pestañas `Lugares` y `Mapa`.
 - Selector de mapas en `/maps` para acceder a mapas grupales o mapa personal.
@@ -214,7 +214,7 @@ La vista principal del grupo mantiene una única suscripción Realtime filtrada 
 
 Los lugares añadidos a un plan desde Explore o desde el mapa pueden quedar solo como paradas del plan mediante snapshot, sin guardarse automáticamente como lugar del grupo.
 
-### Decisiones de grupo
+### Encuestas de grupo
 
 La ruta `/groups/[groupId]/decisions` permite crear encuestas para votar entre lugares guardados en el grupo.
 
@@ -223,7 +223,7 @@ La ruta `/groups/[groupId]/decisions` permite crear encuestas para votar entre l
 - El resultado marca ganador o empate según el número de votos.
 - El creador de la encuesta o el propietario del grupo puede cerrarla.
 - Un resultado cerrado y sin empate puede convertirse explícitamente en un plan.
-- En grupos abiertos pueden crear decisiones todos los miembros; en grupos privados solo el propietario.
+- En grupos abiertos pueden crear encuestas todos los miembros; en grupos privados solo el propietario.
 - Los votos se sincronizan mediante Supabase Realtime sin polling.
 
 ### Lugares personales

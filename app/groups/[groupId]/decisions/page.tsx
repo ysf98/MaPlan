@@ -31,7 +31,7 @@ export default async function GroupDecisionsPage({ params, searchParams }: Group
   const initialCreateOpen = (Array.isArray(rawCreate) ? rawCreate[0] : rawCreate) === "1";
 
   return (
-    <AppShell backHref={`/groups/${groupId}`} currentUser={user}>
+    <AppShell backHref={`/groups/${groupId}`} currentUser={user} preferBackHref>
       <GroupDecisionsView
         canCreate={group.canEditPlaces}
         currentUserId={user.id}

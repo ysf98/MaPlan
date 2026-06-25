@@ -10,6 +10,7 @@ type DashboardHeaderProps = {
   currentUserId: string;
   displayName: string;
   notificationsCount: number;
+  preferBackHref?: boolean;
 };
 
 function getInitial(name: string): string {
@@ -21,14 +22,15 @@ export function DashboardHeader({
   backHref,
   currentUserId,
   displayName,
-  notificationsCount
+  notificationsCount,
+  preferBackHref = false
 }: DashboardHeaderProps) {
   return (
     <header className="vc-glass sticky top-0 z-20 border-b border-[rgb(var(--border)/0.55)]">
       <div className="mx-auto grid h-16 w-full max-w-3xl grid-cols-3 items-center px-[20px]">
         <div className="flex min-w-24 justify-start">
           {backHref ? (
-            <BackButton fallbackHref={backHref} />
+            <BackButton fallbackHref={backHref} preferFallback={preferBackHref} />
           ) : (
             <ProfileLink avatarUrl={avatarUrl} displayName={displayName} />
           )}
