@@ -1,16 +1,16 @@
-# MaPlan
+# 🗺️ MaPlan
 
 MaPlan es una aplicación social de mapas para guardar, organizar y compartir lugares con amigos. El proyecto permite crear grupos, explorar sitios, guardar recomendaciones, planificar rutas, votar decisiones y comentar en chats grupales.
 
 Versión desplegada: [https://maplan.vercel.app/](https://maplan.vercel.app/)
 
-## Descripción general
+## ✨ Descripción general
 
 La idea principal de MaPlan es convertir el mapa en un espacio colaborativo. Cada usuario puede tener su propio mapa personal y, además, participar en grupos donde se comparten lugares, planes, encuestas y mensajes.
 
 El prototipo está orientado a planificación social: viajes, cenas, rutas, sitios pendientes, favoritos y coordinación entre miembros de un grupo.
 
-## Capturas
+## 📸 Capturas
 
 | Dashboard | Grupo |
 | --- | --- |
@@ -28,7 +28,7 @@ El prototipo está orientado a planificación social: viajes, cenas, rutas, siti
 | --- | --- |
 | ![Detalle de plan en MaPlan](public/readme-screenshots/vista_planes_maplan.png) | ![Perfil de usuario en MaPlan](public/readme-screenshots/perfil_maplan.png) |
 
-## Stack tecnológico
+## 🧰 Stack tecnológico
 
 - Next.js App Router
 - React
@@ -52,7 +52,7 @@ El package manager está fijado en `package.json`:
 "packageManager": "pnpm@10.11.0"
 ```
 
-## Instalación y ejecución
+## 🚀 Instalación y ejecución
 
 Instalar dependencias:
 
@@ -106,7 +106,7 @@ E2E_RUN_SIGNUP=1
 PLAYWRIGHT_BASE_URL=
 ```
 
-## Usuarios de prueba
+## 🔐 Usuarios de prueba
 
 La aplicación tiene login. Para probar el proyecto se pueden usar estas cuentas:
 
@@ -117,7 +117,7 @@ La aplicación tiene login. Para probar el proyecto se pueden usar estas cuentas
 
 Estas credenciales son solo para demostraciones y pruebas del prototipo.
 
-## Estructura del proyecto
+## 📁 Estructura del proyecto
 
 - `app/`: rutas App Router, layouts, route handlers y server actions.
 - `components/`: componentes reutilizables y vistas de funcionalidad.
@@ -136,9 +136,9 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - `e2e/`: tests de Playwright.
 - `utils/constants.ts`: constantes globales y rutas principales.
 
-## Funcionalidades principales
+## ⭐ Funcionalidades principales
 
-### Autenticación y seguridad
+### 🔒 Autenticación y seguridad
 
 - Registro e inicio de sesión con Supabase Auth.
 - Protección de datos mediante RLS.
@@ -146,7 +146,7 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - Server actions con autenticación y comprobación de permisos.
 - Service role limitado a código server-side.
 
-### Dashboard y notificaciones
+### 🔔 Dashboard y notificaciones
 
 - Dashboard con grupos, invitaciones y actividad reciente.
 - Actividad reciente filtrada para mostrar acciones de otros usuarios.
@@ -155,7 +155,7 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - Mensajes no leídos de chats de grupo.
 - Avisos de invitaciones, solicitudes y actividad relevante de grupos.
 
-### Grupos
+### 👥 Grupos
 
 - Creación de grupos.
 - Grupos `abierto` y `privado`.
@@ -166,7 +166,7 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - Vista de grupo con pestañas: `Lugares`, `Actividad`, `Mapa` y `Planes`.
 - Botones compactos para abrir chat y encuestas desde el resumen del grupo.
 
-### Lugares de grupo
+### 📍 Lugares de grupo
 
 - Guardado de lugares en grupos.
 - Búsqueda con Google Places.
@@ -175,7 +175,7 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - Filtros y tarjetas compactas.
 - Sincronización Realtime para que los lugares nuevos, editados o eliminados aparezcan a otros miembros sin recargar.
 
-### Mapa personal
+### 🧭 Mapa personal
 
 - Mapa propio para guardar lugares personales.
 - Pestañas `Lugares` y `Mapa`.
@@ -183,7 +183,7 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - Vista de lugar seleccionable desde enlaces internos.
 - Búsqueda y guardado desde mapa.
 
-### Explore
+### 🔎 Explore
 
 - Mapa principal inmersivo en `/explore`.
 - Búsqueda de lugares con Google Places.
@@ -191,7 +191,7 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - Guardado en mapa personal o en grupos permitidos.
 - Validación de permisos también en backend.
 
-### Planes de grupo
+### 🗓️ Planes de grupo
 
 - Creación de planes desde un grupo o desde una tarjeta de lugar.
 - Vista independiente de detalle de plan.
@@ -207,7 +207,7 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - En grupos abiertos, los miembros pueden editar planes.
 - En grupos privados, la edición queda reservada al propietario.
 
-### Encuestas
+### 🗳️ Encuestas
 
 - Encuestas de grupo centradas en votar entre lugares guardados.
 - Creación de encuestas desde `/groups/[groupId]/decisions`.
@@ -216,7 +216,7 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - Encuestas compartibles en el chat.
 - Voto desde tarjetas compactas dentro del chat.
 
-### Chat grupal
+### 💬 Chat grupal
 
 - Chat independiente a pantalla completa por grupo.
 - Mensajes en tiempo real mediante Supabase Realtime.
@@ -226,7 +226,7 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - Eliminación de mensajes propios.
 - El chat muestra el nombre del grupo en la cabecera.
 
-### Perfil y listas
+### 👤 Perfil y listas
 
 - Perfil editable.
 - Contadores reales basados en datos guardados.
@@ -243,14 +243,14 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
   - si es personal, abre el mapa personal con el lugar seleccionado.
 - Desde la tarjeta del mapa se puede abrir Google Maps.
 
-### Amigos
+### 🤝 Amigos
 
 - Búsqueda de amigos.
 - Autocomplete en la propia barra de búsqueda.
 - Solicitudes de amistad.
 - Estados de solicitud y amistad.
 
-## Rutas principales
+## 🧭 Rutas principales
 
 - `/`
 - `/login`
@@ -275,7 +275,7 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - `/terms`
 - `/privacy`
 
-## Base de datos y SQL
+## 🗄️ Base de datos y SQL
 
 Los scripts SQL se encuentran en `supabase/`. El orden recomendado de ejecución en Supabase SQL Editor es:
 
@@ -310,7 +310,7 @@ Notas:
 - `notifications_realtime.sql` activa Realtime para notificaciones, chat, lugares y planes.
 - RLS debe mantenerse activo en las tablas sensibles.
 
-## Testing
+## ✅ Testing
 
 Tests unitarios, dominio, acciones y seguridad:
 
@@ -334,7 +334,7 @@ pnpm test
 pnpm test:e2e
 ```
 
-## Seguridad y variables
+## 🛡️ Seguridad y variables
 
 - No commitear `.env` ni secretos.
 - Mantener `GOOGLE_PLACES_API_KEY` solo server-side.
@@ -344,7 +344,7 @@ pnpm test:e2e
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` es pública por diseño, pero RLS protege los datos.
 - `NEXT_PUBLIC_MAPBOX_TOKEN` es pública por diseño.
 
-## Troubleshooting
+## 🧯 Troubleshooting
 
 - Si `pnpm` no existe, instalar pnpm/Corepack antes de cambiar de package manager.
 - Si Mapbox no carga, revisar `NEXT_PUBLIC_MAPBOX_TOKEN`.
@@ -353,6 +353,6 @@ pnpm test:e2e
 - Si Realtime no actualiza, comprobar que las tablas necesarias están activadas en `supabase_realtime`.
 - Si el mapa aparece gris o mal dimensionado, revisar `components/map/useMapboxResize.ts`.
 
-## Estado actual
+## 📌 Estado actual
 
 MaPlan funciona como prototipo completo de planificación social: autenticación, grupos, lugares, mapas, planes, encuestas, chat, notificaciones Realtime, perfil, listas y enlaces públicos de planes. La aplicación está preparada para demostración en Vercel y para ejecución local con las variables de entorno indicadas.
