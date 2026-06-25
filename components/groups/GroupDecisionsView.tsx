@@ -8,6 +8,7 @@ import {
   closeGroupPollAction,
   convertGroupPollToPlanAction,
   createGroupPollAction,
+  deleteGroupPollAction,
   voteGroupPollAction,
   type GroupDecisionActionState
 } from "@/app/groups/[groupId]/decisions/actions";
@@ -265,8 +266,9 @@ function CreateDecisionPanel({
 function PollCard({ groupId, poll }: { groupId: string; poll: GroupPollItem }) {
   const router = useRouter();
   const [closeState, closeAction, isClosing] = useActionState(closeGroupPollAction, actionInitialState);
+  const [deleteState, deleteAction, isDeleting] = useActionState(deleteGroupPollAction, actionInitialState);
   const [convertState, convertAction, isConverting] = useActionState(convertGroupPollToPlanAction, actionInitialState);
-  const error = closeState.error || convertState.error;
+  const error = closeState.error || deleteState.error || convertState.error;
 
   useEffect(() => {
     if (convertState.success && convertState.planId) {
@@ -274,10 +276,42 @@ function PollCard({ groupId, poll }: { groupId: string; poll: GroupPollItem }) {
     }
   }, [convertState.planId, convertState.success, groupId, router]);
 
+  useEffect(() => {
+    if (deleteState.success) {
+      router.refresh();
+    }
+  }, [deleteState.success, router]);
+
   return (
-    <article className="rounded-[24px] border border-rose-100 bg-white p-4 shadow-[0_12px_34px_rgba(181,35,48,0.08)] sm:p-5">
+    <article className="relative rounded-[24px] border border-rose-100 bg-white p-4 shadow-[0_12px_34px_rgba(181,35,48,0.08)] sm:p-5">
+      {poll.canDelete ? (
+        <form
+          action={deleteAction}
+          className="absolute right-3 top-3"
+          onSubmit={(event) => {
+            const confirmed = window.confirm("¿Eliminar esta encuesta?");
+            if (!confirmed) {
+              event.preventDefault();
+            }
+          }}
+        >
+          <input name="groupId" type="hidden" value={groupId} />
+          <input name="pollId" type="hidden" value={poll.id} />
+          <button
+            aria-label={`Eliminar encuesta ${poll.title}`}
+            className="grid h-9 w-9 place-items-center rounded-full border border-rose-100 bg-white text-[#c6283a] shadow-sm transition hover:bg-rose-50 disabled:opacity-60"
+            disabled={isDeleting}
+            type="submit"
+          >
+            <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.4" viewBox="0 0 24 24">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </form>
+      ) : null}
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 pr-9">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-[#fff0ef] px-3 py-1 text-[11px] font-extrabold uppercase text-[#c6283a]">
               Encuesta de lugares

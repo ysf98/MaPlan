@@ -103,6 +103,7 @@ export type GroupPollItem = {
   totalResponses: number;
   hasTie: boolean;
   canClose: boolean;
+  canDelete: boolean;
   canConvert: boolean;
 };
 
@@ -249,6 +250,7 @@ export async function getGroupPollsForUser(userId: string, groupId: string): Pro
       totalResponses: uniqueResponders,
       hasTie: winningIds.length > 1,
       canClose: poll.status === "open" && (isOwner || poll.created_by === userId),
+      canDelete: isOwner || poll.created_by === userId,
       canConvert:
         poll.status === "closed" &&
         poll.converted_plan_id === null &&
@@ -441,6 +443,31 @@ export async function closeGroupPoll(input: {
   if (!error && !data) {
     return { error: "La encuesta ya estaba cerrada." };
   }
+  return { error: error?.message ?? null };
+}
+
+export async function deleteGroupPoll(input: {
+  userId: string;
+  groupId: string;
+  pollId: string;
+}): Promise<{ error: string | null }> {
+  const poll = await getPollRow(input.groupId, input.pollId);
+  if (!poll) {
+    return { error: "No se encontró la encuesta." };
+  }
+
+  const canDelete = poll.created_by === input.userId || (await isGroupOwner(input.userId, input.groupId));
+  if (!canDelete) {
+    return { error: "No tienes permisos para eliminar esta encuesta." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("group_polls")
+    .delete()
+    .eq("id", input.pollId)
+    .eq("group_id", input.groupId);
+
   return { error: error?.message ?? null };
 }
 

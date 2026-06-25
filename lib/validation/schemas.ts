@@ -556,6 +556,11 @@ export const closeGroupPollSchema = z.object({
   pollId: uuidSchema
 });
 
+export const deleteGroupPollSchema = z.object({
+  groupId: uuidSchema,
+  pollId: uuidSchema
+});
+
 export const convertGroupPollToPlanSchema = z.object({
   groupId: uuidSchema,
   pollId: uuidSchema,
@@ -767,6 +772,7 @@ export type CreateGroupPollInput = z.infer<typeof createGroupPollSchema>;
 export type VoteGroupPollInput = z.infer<typeof voteGroupPollSchema>;
 export type RespondGroupAvailabilityInput = z.infer<typeof respondGroupAvailabilitySchema>;
 export type CloseGroupPollInput = z.infer<typeof closeGroupPollSchema>;
+export type DeleteGroupPollInput = z.infer<typeof deleteGroupPollSchema>;
 export type ConvertGroupPollToPlanInput = z.infer<typeof convertGroupPollToPlanSchema>;
 export type CreateGroupChatMessageInput = z.infer<typeof createGroupChatMessageSchema>;
 export type DeleteGroupChatMessageInput = z.infer<typeof deleteGroupChatMessageSchema>;

@@ -6,6 +6,7 @@ const createGroupPollMock = vi.fn();
 const voteGroupPollMock = vi.fn();
 const respondGroupAvailabilityMock = vi.fn();
 const closeGroupPollMock = vi.fn();
+const deleteGroupPollMock = vi.fn();
 const convertGroupPollToPlanMock = vi.fn();
 
 vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
@@ -17,6 +18,7 @@ vi.mock("@/lib/groupPolls", () => ({
   closeGroupPoll: closeGroupPollMock,
   convertGroupPollToPlan: convertGroupPollToPlanMock,
   createGroupPoll: createGroupPollMock,
+  deleteGroupPoll: deleteGroupPollMock,
   respondGroupAvailability: respondGroupAvailabilityMock,
   voteGroupPoll: voteGroupPollMock
 }));
@@ -35,6 +37,7 @@ describe("group poll server actions", () => {
     createGroupPollMock.mockResolvedValue({ error: null, pollId });
     voteGroupPollMock.mockResolvedValue({ error: null });
     closeGroupPollMock.mockResolvedValue({ error: null });
+    deleteGroupPollMock.mockResolvedValue({ error: null });
     convertGroupPollToPlanMock.mockResolvedValue({ error: null, planId: "44444444-4444-4444-8444-444444444444" });
   });
 
@@ -122,6 +125,22 @@ describe("group poll server actions", () => {
       success: true
     });
     expect(voteGroupPollMock).toHaveBeenCalledWith({ groupId, optionId, pollId, userId });
+    expect(revalidatePathMock).toHaveBeenCalledWith(`/groups/${groupId}/chat`);
+  });
+
+  it("elimina una encuesta y revalida grupo, decisiones y chat", async () => {
+    const { deleteGroupPollAction } = await import("@/app/groups/[groupId]/decisions/actions");
+    const formData = new FormData();
+    formData.set("groupId", groupId);
+    formData.set("pollId", pollId);
+
+    await expect(deleteGroupPollAction({ error: null, success: false }, formData)).resolves.toEqual({
+      error: null,
+      success: true
+    });
+    expect(deleteGroupPollMock).toHaveBeenCalledWith({ groupId, pollId, userId });
+    expect(revalidatePathMock).toHaveBeenCalledWith(`/groups/${groupId}`);
+    expect(revalidatePathMock).toHaveBeenCalledWith(`/groups/${groupId}/decisions`);
     expect(revalidatePathMock).toHaveBeenCalledWith(`/groups/${groupId}/chat`);
   });
 });

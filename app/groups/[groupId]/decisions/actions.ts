@@ -6,6 +6,7 @@ import {
   closeGroupPoll,
   convertGroupPollToPlan,
   createGroupPoll,
+  deleteGroupPoll,
   respondGroupAvailability,
   voteGroupPoll
 } from "@/lib/groupPolls";
@@ -13,6 +14,7 @@ import {
   closeGroupPollSchema,
   convertGroupPollToPlanSchema,
   createGroupPollSchema,
+  deleteGroupPollSchema,
   respondGroupAvailabilitySchema,
   voteGroupPollSchema
 } from "@/lib/validation/schemas";
@@ -131,6 +133,27 @@ export async function closeGroupPollAction(
   }
 
   const result = await closeGroupPoll({ userId: user.id, ...parsedInput.data });
+  if (result.error) {
+    return { error: result.error, success: false };
+  }
+  revalidateDecisionRoutes(parsedInput.data.groupId);
+  return { error: null, success: true };
+}
+
+export async function deleteGroupPollAction(
+  _previousState: GroupDecisionActionState = initialState,
+  formData: FormData
+): Promise<GroupDecisionActionState> {
+  const user = await requireAuthenticatedUser("/groups");
+  const parsedInput = deleteGroupPollSchema.safeParse({
+    groupId: String(formData.get("groupId") || ""),
+    pollId: String(formData.get("pollId") || "")
+  });
+  if (!parsedInput.success) {
+    return { error: getValidationErrorMessage(parsedInput.error), success: false };
+  }
+
+  const result = await deleteGroupPoll({ userId: user.id, ...parsedInput.data });
   if (result.error) {
     return { error: result.error, success: false };
   }
