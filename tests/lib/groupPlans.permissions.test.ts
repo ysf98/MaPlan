@@ -163,4 +163,33 @@ describe("group plan permissions", () => {
     expect(result?.plan.canEdit).toBe(false);
     expect(result?.plan.canDelete).toBe(false);
   });
+
+  it("returns null when a public shared plan token has no rows", async () => {
+    createSupabaseServerClientMock.mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({ data: [], error: null })
+    });
+    const { getPublicGroupPlanByToken } = await import("@/lib/groupPlans");
+
+    await expect(getPublicGroupPlanByToken("11111111-1111-4111-8111-111111111111")).resolves.toBeNull();
+  });
+
+  it("returns null when public shared plan rows are incomplete", async () => {
+    createSupabaseServerClientMock.mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({
+        data: [
+          {
+            group_id: "group-1",
+            group_name: "Viaje",
+            plan_id: "plan-1",
+            public_share_token: null,
+            title: "Ruta"
+          }
+        ],
+        error: null
+      })
+    });
+    const { getPublicGroupPlanByToken } = await import("@/lib/groupPlans");
+
+    await expect(getPublicGroupPlanByToken("11111111-1111-4111-8111-111111111111")).resolves.toBeNull();
+  });
 });

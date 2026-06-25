@@ -738,11 +738,15 @@ export function GroupPlanDetailView({
                     <CalendarIcon />
                     {formatPlanDate(localPlan.plannedDate)}
                   </span>
-                  <span className="text-rose-200">-</span>
-                  <span className="inline-flex items-center gap-1">
-                    <UsersIcon />
-                    {localPlan.attendingCount} confirmados
-                  </span>
+                  {!publicReadOnly ? (
+                    <>
+                      <span className="text-rose-200">-</span>
+                      <span className="inline-flex items-center gap-1">
+                        <UsersIcon />
+                        {localPlan.attendingCount} confirmados
+                      </span>
+                    </>
+                  ) : null}
                 </div>
                 {!publicReadOnly ? (
                   <Link

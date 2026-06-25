@@ -238,6 +238,8 @@ begin
 end;
 $$;
 
+drop function if exists public.get_public_group_plan(uuid);
+
 create or replace function public.get_public_group_plan(p_share_token uuid)
 returns table (
   plan_id uuid,
