@@ -109,6 +109,8 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("create table if not exists public.group_plans");
     expect(sql).toContain("create table if not exists public.group_plan_places");
     expect(sql).toContain("create table if not exists public.group_plan_votes");
+    expect(sql).toContain("public_share_token uuid not null default gen_random_uuid()");
+    expect(sql).toContain("idx_group_plans_public_share_token");
     expect(sql).toContain("place_id uuid null references public.places(id) on delete set null");
     expect(sql).toContain("foreign key (place_id) references public.places(id) on delete set null");
     expect(sql).toContain("position integer not null default 0");
@@ -128,6 +130,10 @@ describe("RLS policies baseline", () => {
     expect(sql).toContain("create or replace function public.enforce_group_plan_protected_updates");
     expect(sql).toContain("new.group_id is distinct from old.group_id");
     expect(sql).toContain("new.created_by is distinct from old.created_by");
+    expect(sql).toContain("new.public_share_token is distinct from old.public_share_token");
+    expect(sql).toContain("create or replace function public.get_public_group_plan");
+    expect(sql).toContain("security definer");
+    expect(sql).toContain("grant execute on function public.get_public_group_plan(uuid) to anon");
     expect(sql).toContain("create or replace function public.enforce_group_plan_place_protected_updates");
     expect(sql).toContain("new.plan_id is distinct from old.plan_id");
     expect(sql).toContain("new.added_by is distinct from old.added_by");

@@ -104,6 +104,7 @@ type GroupPlanRow = {
   title: string;
   description: string | null;
   planned_date: string | null;
+  public_share_token: string;
   created_at: string;
   updated_at: string;
 };
@@ -162,6 +163,7 @@ export type GroupPlanItem = {
   title: string;
   description: string | null;
   plannedDate: string | null;
+  publicShareToken: string;
   createdAt: string;
   updatedAt: string;
   places: GroupPlanPlaceItem[];
@@ -174,6 +176,39 @@ export type GroupPlanItem = {
   canDelete: boolean;
   canEdit: boolean;
   isCreator: boolean;
+};
+
+type PublicGroupPlanRow = {
+  created_at: string | null;
+  description: string | null;
+  google_maps_url: string | null;
+  group_id: string | null;
+  group_name: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  note: string | null;
+  phone_number: string | null;
+  place_address: string | null;
+  place_city: string | null;
+  place_created_at: string | null;
+  place_id: string | null;
+  place_image_url: string | null;
+  place_name: string | null;
+  plan_id: string | null;
+  plan_place_id: string | null;
+  planned_at: string | null;
+  planned_date: string | null;
+  place_position: number | null;
+  public_share_token: string | null;
+  rating: number | null;
+  title: string | null;
+  updated_at: string | null;
+  user_ratings_total: number | null;
+};
+
+export type PublicGroupPlan = {
+  groupName: string;
+  plan: GroupPlanItem;
 };
 
 function isGroupPlanVote(value: string): value is GroupPlanVote {
@@ -189,7 +224,7 @@ async function getPlanForGroup(groupId: string, planId: string): Promise<GroupPl
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("group_plans")
-    .select("id, group_id, created_by, title, description, planned_date, created_at, updated_at")
+    .select("id, group_id, created_by, title, description, planned_date, public_share_token, created_at, updated_at")
     .eq("group_id", groupId)
     .eq("id", planId)
     .maybeSingle();
@@ -294,7 +329,7 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
   const supabase = await createSupabaseServerClient();
   const plansResult = await supabase
     .from("group_plans")
-    .select("id, group_id, created_by, title, description, planned_date, created_at, updated_at")
+    .select("id, group_id, created_by, title, description, planned_date, public_share_token, created_at, updated_at")
     .eq("group_id", groupId)
     .order("planned_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
@@ -399,6 +434,7 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
       title: plan.title,
       description: plan.description,
       plannedDate: plan.planned_date,
+      publicShareToken: plan.public_share_token,
       createdAt: plan.created_at,
       updatedAt: plan.updated_at,
       places: placesByPlanId.get(plan.id) ?? [],
@@ -413,6 +449,73 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
       isCreator: plan.created_by === userId
     };
   });
+}
+
+export async function getPublicGroupPlanByToken(token: string): Promise<PublicGroupPlan | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("get_public_group_plan", { p_share_token: token });
+
+  if (error || !data || data.length === 0) {
+    return null;
+  }
+
+  const rows = data as PublicGroupPlanRow[];
+  const first = rows[0];
+  if (!first?.plan_id || !first.title || !first.group_id || !first.group_name || !first.public_share_token) {
+    return null;
+  }
+
+  const places: GroupPlanPlaceItem[] = rows.flatMap((row) => {
+    if (!row.plan_place_id || !row.place_name || !row.place_address) {
+      return [];
+    }
+
+    return [
+      {
+        id: row.plan_place_id,
+        placeId: row.place_id,
+        name: row.place_name,
+        address: row.place_address,
+        city: row.place_city,
+        imageUrl: row.place_image_url,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        googleMapsUrl: row.google_maps_url,
+        phoneNumber: row.phone_number,
+        rating: row.rating,
+        userRatingsTotal: row.user_ratings_total,
+        plannedAt: row.planned_at,
+        position: row.place_position ?? 0,
+        note: row.note,
+        createdAt: row.place_created_at ?? first.created_at ?? new Date(0).toISOString()
+      }
+    ];
+  });
+
+  return {
+    groupName: first.group_name,
+    plan: {
+      id: first.plan_id,
+      groupId: first.group_id,
+      createdBy: "",
+      title: first.title,
+      description: first.description,
+      plannedDate: first.planned_date,
+      publicShareToken: first.public_share_token,
+      createdAt: first.created_at ?? new Date(0).toISOString(),
+      updatedAt: first.updated_at ?? first.created_at ?? new Date(0).toISOString(),
+      places,
+      votes: [],
+      attendingCount: 0,
+      maybeCount: 0,
+      notAttendingCount: 0,
+      currentUserVote: null,
+      acceptsNewPlaces: false,
+      canDelete: false,
+      canEdit: false,
+      isCreator: false
+    }
+  };
 }
 
 async function canEditPlanContent(userId: string, groupId: string): Promise<boolean> {

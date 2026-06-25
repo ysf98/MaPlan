@@ -35,6 +35,7 @@ function createPlanClient() {
       group_id: "group-1",
       id: "plan-1",
       planned_date: "2099-07-10T00:00:00.000Z",
+      public_share_token: "11111111-1111-4111-8111-111111111111",
       title: "Ruta",
       updated_at: "2026-01-01T00:00:00.000Z"
     },
@@ -114,5 +115,52 @@ describe("group plan permissions", () => {
 
     expect(result).toEqual({ error: null });
     expect(deleteMock).toHaveBeenCalled();
+  });
+
+  it("maps a public shared plan without exposing votes or members", async () => {
+    createSupabaseServerClientMock.mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({
+        data: [
+          {
+            created_at: "2026-01-01T00:00:00.000Z",
+            description: null,
+            google_maps_url: "https://maps.example",
+            group_id: "group-1",
+            group_name: "Viaje",
+            latitude: 39.47,
+            longitude: -0.37,
+            note: null,
+            phone_number: null,
+            place_address: "Carrer de la Pau",
+            place_city: "Valencia",
+            place_created_at: "2026-01-01T00:00:00.000Z",
+            place_id: null,
+            place_image_url: null,
+            place_name: "Bar Centro",
+            plan_id: "plan-1",
+            plan_place_id: "place-1",
+            planned_at: "2026-07-10T20:00:00.000Z",
+            planned_date: "2026-07-10T00:00:00.000Z",
+            position: 0,
+            public_share_token: "11111111-1111-4111-8111-111111111111",
+            rating: 4.5,
+            title: "Ruta compartida",
+            updated_at: "2026-01-01T00:00:00.000Z",
+            user_ratings_total: 12
+          }
+        ],
+        error: null
+      })
+    });
+    const { getPublicGroupPlanByToken } = await import("@/lib/groupPlans");
+
+    const result = await getPublicGroupPlanByToken("11111111-1111-4111-8111-111111111111");
+
+    expect(result?.groupName).toBe("Viaje");
+    expect(result?.plan.title).toBe("Ruta compartida");
+    expect(result?.plan.places).toHaveLength(1);
+    expect(result?.plan.votes).toEqual([]);
+    expect(result?.plan.canEdit).toBe(false);
+    expect(result?.plan.canDelete).toBe(false);
   });
 });

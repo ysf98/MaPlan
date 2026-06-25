@@ -14,6 +14,7 @@ MaPlan es una app social de mapas para guardar, organizar y compartir lugares co
 - Chat grupal para comentar planes, lugares e ideas del grupo.
 - Mapa de grupo con búsqueda, guardado y filtros.
 - Planes de grupo con ruta, paradas ordenadas por hora, reordenación manual, votos de asistencia y edición inline.
+- Planes compartibles por enlace público en modo solo lectura.
 - Encuestas de grupo para votar entre lugares guardados y compartirlas en el chat.
 - Lugares y planes sincronizados entre miembros mediante Supabase Realtime, sin polling continuo.
 - Mapa personal con pestañas `Lugares` y `Mapa`.
@@ -211,6 +212,8 @@ Permisos de edición:
 La vista principal del grupo mantiene una única suscripción Realtime filtrada por `group_id` para `places` y `group_plans`. Los cambios en paradas actualizan `group_plans.updated_at`, de modo que también refrescan las tarjetas de planes sin suscribirse individualmente a cada ruta.
 
 `group_plan_places` guarda una instantánea de los datos importantes del lugar (`place_name`, dirección, imagen, coordenadas, enlaces y metadata principal) y un `position` para mantener el orden manual. Esto permite que una parada siga apareciendo en un plan aunque el lugar original se borre de `places`.
+
+Cada plan tiene un `public_share_token` estable para abrir `/plans/share/[token]`. Esa ruta es pública y de solo lectura: muestra el plan, el mapa y sus paradas, pero no expone votos, asistentes, miembros, chat ni controles de edición. La lectura pública se hace mediante `get_public_group_plan(token)`, una función SQL limitada a los campos seguros necesarios para renderizar el plan.
 
 Los lugares añadidos a un plan desde Explore o desde el mapa pueden quedar solo como paradas del plan mediante snapshot, sin guardarse automáticamente como lugar del grupo.
 

@@ -8,6 +8,7 @@ create table if not exists public.group_plans (
   title text not null,
   description text null,
   planned_date timestamptz null,
+  public_share_token uuid not null default gen_random_uuid(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -46,6 +47,12 @@ create table if not exists public.group_plan_votes (
 
 do $$
 begin
+  alter table public.group_plans add column if not exists public_share_token uuid default gen_random_uuid();
+  update public.group_plans
+  set public_share_token = gen_random_uuid()
+  where public_share_token is null;
+  alter table public.group_plans alter column public_share_token set not null;
+
   alter table public.group_plan_places add column if not exists place_name text null;
   alter table public.group_plan_places add column if not exists place_address text null;
   alter table public.group_plan_places add column if not exists place_city text null;
@@ -118,6 +125,9 @@ on public.group_plans (group_id, created_at desc);
 
 create index if not exists idx_group_plans_group_planned_date
 on public.group_plans (group_id, planned_date asc nulls last);
+
+create unique index if not exists idx_group_plans_public_share_token
+on public.group_plans (public_share_token);
 
 create index if not exists idx_group_plan_places_plan
 on public.group_plan_places (plan_id, position asc, created_at asc);
@@ -220,9 +230,82 @@ begin
     raise exception 'No se puede cambiar la persona creadora del plan.';
   end if;
 
+  if new.public_share_token is distinct from old.public_share_token then
+    raise exception 'No se puede cambiar el enlace público del plan.';
+  end if;
+
   return new;
 end;
 $$;
+
+create or replace function public.get_public_group_plan(p_share_token uuid)
+returns table (
+  plan_id uuid,
+  public_share_token uuid,
+  group_id uuid,
+  group_name text,
+  title text,
+  description text,
+  planned_date timestamptz,
+  created_at timestamptz,
+  updated_at timestamptz,
+  plan_place_id uuid,
+  place_id uuid,
+  place_name text,
+  place_address text,
+  place_city text,
+  place_image_url text,
+  latitude double precision,
+  longitude double precision,
+  google_maps_url text,
+  phone_number text,
+  rating numeric,
+  user_ratings_total integer,
+  planned_at timestamptz,
+  place_position integer,
+  note text,
+  place_created_at timestamptz
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    gp.id as plan_id,
+    gp.public_share_token,
+    gp.group_id,
+    g.name as group_name,
+    gp.title,
+    gp.description,
+    gp.planned_date,
+    gp.created_at,
+    gp.updated_at,
+    gpp.id as plan_place_id,
+    gpp.place_id,
+    gpp.place_name,
+    gpp.place_address,
+    gpp.place_city,
+    gpp.place_image_url,
+    gpp.latitude,
+    gpp.longitude,
+    gpp.google_maps_url,
+    gpp.phone_number,
+    gpp.rating,
+    gpp.user_ratings_total,
+    gpp.planned_at,
+    gpp.position as place_position,
+    gpp.note,
+    gpp.created_at as place_created_at
+  from public.group_plans gp
+  join public.groups g on g.id = gp.group_id
+  left join public.group_plan_places gpp on gpp.plan_id = gp.id
+  where gp.public_share_token = p_share_token
+  order by gpp.position asc nulls last, gpp.created_at asc nulls last, gpp.id asc nulls last;
+$$;
+
+revoke execute on function public.get_public_group_plan(uuid) from public;
+grant execute on function public.get_public_group_plan(uuid) to anon;
+grant execute on function public.get_public_group_plan(uuid) to authenticated;
 
 create or replace function public.enforce_group_plan_place_protected_updates()
 returns trigger

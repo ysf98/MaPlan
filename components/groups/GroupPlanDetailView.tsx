@@ -27,8 +27,12 @@ import type { GroupPlanVote } from "@/types/supabase";
 type GroupPlanDetailViewProps = {
   groupId: string;
   groupName: string;
+  loginHref?: string;
   mapboxToken?: string;
   plan: GroupPlanItem;
+  publicReadOnly?: boolean;
+  publicShareUrl?: string;
+  showPublicAuthCta?: boolean;
 };
 
 type MarkerPoint = {
@@ -225,15 +229,6 @@ function ShareIcon() {
   );
 }
 
-function BellIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-      <path d="M10 21h4" />
-    </svg>
-  );
-}
-
 function CalendarIcon() {
   return (
     <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -292,7 +287,16 @@ function NativeDateTimeInput({ disabled, label, onChange, type, value }: NativeD
   );
 }
 
-export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: GroupPlanDetailViewProps) {
+export function GroupPlanDetailView({
+  groupId,
+  groupName,
+  loginHref = "/login",
+  mapboxToken,
+  plan,
+  publicReadOnly = false,
+  publicShareUrl,
+  showPublicAuthCta = false
+}: GroupPlanDetailViewProps) {
   const router = useRouter();
   const [localPlan, setLocalPlan] = useState(plan);
   const [isEditing, setIsEditing] = useState(false);
@@ -307,6 +311,7 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
   const [pendingReorderRequestId, setPendingReorderRequestId] = useState<string | null>(null);
   const [draggedPlaceId, setDraggedPlaceId] = useState<string | null>(null);
   const [pendingVote, setPendingVote] = useState<GroupPlanVote | null>(null);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [detailsState, updateDetailsAction, isSavingDetails] = useActionState(updateGroupPlanDetailsAction, updateDetailsInitialState);
   const [timeState, updateTimeAction, isSavingTime] = useActionState(updateGroupPlanPlaceTimeAction, updateTimeInitialState);
   const [removeState, removePlaceAction, isRemovingPlace] = useActionState(removeGroupPlanPlaceAction, removePlaceInitialState);
@@ -316,9 +321,9 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
   const sortedPlaces = useMemo(() => sortPlanPlaces(localPlan.places, isEditing), [isEditing, localPlan.places]);
   const mapUrl = buildMapboxStaticUrl(sortedPlaces, mapboxToken);
   const markerPoints = getMarkerPoints(sortedPlaces);
-  const backHref = `/groups/${groupId}?tab=planes`;
-  const canEditPlan = localPlan.canEdit;
-  const canDeletePlan = localPlan.canDelete;
+  const backHref = publicReadOnly ? "/" : `/groups/${groupId}?tab=planes`;
+  const canEditPlan = !publicReadOnly && localPlan.canEdit;
+  const canDeletePlan = !publicReadOnly && localPlan.canDelete;
 
   useEffect(() => {
     setLocalPlan(plan);
@@ -538,6 +543,8 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
   }
 
   function submitVote(nextVote: GroupPlanVote) {
+    if (publicReadOnly) return;
+
     const payload = new FormData();
     payload.set("groupId", groupId);
     payload.set("planId", localPlan.id);
@@ -558,6 +565,36 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
     }
   }
 
+  async function sharePlan() {
+    const sharePath = publicShareUrl || `/plans/share/${localPlan.publicShareToken}`;
+    const shareUrl =
+      typeof window !== "undefined" && sharePath.startsWith("/")
+        ? `${window.location.origin}${sharePath}`
+        : sharePath;
+
+    if (!shareUrl) {
+      setShareStatus("No se pudo preparar el enlace");
+      return;
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: localPlan.title,
+          text: `Plan compartido en MaPlan: ${localPlan.title}`,
+          url: shareUrl
+        });
+        setShareStatus("Plan compartido");
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      setShareStatus("Enlace copiado");
+    } catch {
+      setShareStatus("No se pudo compartir");
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#fff8f7] pb-32 text-[#261817]">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/50 bg-[#fff8f7]/85 px-5 py-2 backdrop-blur-xl">
@@ -567,17 +604,29 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
           </Link>
           <div className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center gap-2">
             <MaplanMinimalIcon size="sm" />
-            <span className="text-xl font-bold text-[#c6283a]">MaPlan</span>
+            <span className="text-lg font-bold text-[#c6283a]">MaPlan</span>
           </div>
           <div className="flex items-center gap-1 text-[#c6283a]">
-            <button aria-label="Compartir plan" className="grid h-10 w-10 place-items-center rounded-full transition hover:bg-rose-50" type="button">
+            {showPublicAuthCta ? (
+              <Link className="rounded-full bg-[#fff0ef] px-3 py-2 text-xs font-extrabold text-[#c6283a]" href={loginHref}>
+                Entrar
+              </Link>
+            ) : null}
+            <button
+              aria-label="Compartir plan"
+              className="grid h-10 w-10 place-items-center rounded-full transition hover:bg-rose-50"
+              onClick={sharePlan}
+              type="button"
+            >
               <ShareIcon />
-            </button>
-            <button aria-label="Notificaciones" className="grid h-10 w-10 place-items-center rounded-full transition hover:bg-rose-50" type="button">
-              <BellIcon />
             </button>
           </div>
         </div>
+        {shareStatus ? (
+          <div className="absolute right-5 top-[58px] rounded-full border border-rose-100 bg-white px-3 py-1.5 text-xs font-bold text-[#c6283a] shadow-[0_10px_22px_rgba(181,35,48,0.14)]">
+            {shareStatus}
+          </div>
+        ) : null}
       </header>
 
       <main className="mx-auto max-w-3xl pt-16">
@@ -602,6 +651,21 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
         </section>
 
         <section className="relative z-10 -mt-12 px-5">
+          {showPublicAuthCta ? (
+            <div className="mb-3 rounded-[24px] border border-rose-100 bg-white/95 p-4 shadow-[0_12px_30px_rgba(181,35,48,0.10)]">
+              <p className="text-sm font-semibold leading-5 text-zinc-700">
+                ¿Quieres crear tus propios planes?{" "}
+                <Link className="font-extrabold text-[#c6283a]" href={loginHref}>
+                  Inicia sesión
+                </Link>{" "}
+                o{" "}
+                <Link className="font-extrabold text-[#c6283a]" href="/register">
+                  crea una cuenta
+                </Link>
+                .
+              </p>
+            </div>
+          ) : null}
           <div className="relative rounded-[32px] bg-white p-6 shadow-[0_18px_48px_rgba(181,35,48,0.12)]">
             {(canEditPlan || canDeletePlan) && !isEditing ? (
               <div className="absolute right-5 top-5">
@@ -680,12 +744,14 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
                     {localPlan.attendingCount} confirmados
                   </span>
                 </div>
-                <Link
-                  className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-[#fff0ef] px-4 text-sm font-extrabold text-[#c6283a] transition hover:bg-[#fde2e0]"
-                  href={`/groups/${groupId}/chat?planId=${localPlan.id}`}
-                >
-                  Comentar en el chat
-                </Link>
+                {!publicReadOnly ? (
+                  <Link
+                    className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-[#fff0ef] px-4 text-sm font-extrabold text-[#c6283a] transition hover:bg-[#fde2e0]"
+                    href={`/groups/${groupId}/chat?planId=${localPlan.id}`}
+                  >
+                    Comentar en el chat
+                  </Link>
+                ) : null}
               </>
             )}
             {detailsState.error ? <p className="mt-3 text-sm font-semibold text-rose-600">{detailsState.error}</p> : null}
@@ -834,6 +900,7 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
           </div>
         </section>
 
+        {!publicReadOnly ? (
         <section className="mt-8 px-5">
           <div className="rounded-[32px] bg-[#fff0ef] p-5">
             <div className="flex items-center justify-between gap-3">
@@ -881,8 +948,9 @@ export function GroupPlanDetailView({ groupId, groupName, mapboxToken, plan }: G
             </div>
           </div>
         </section>
+        ) : null}
       </main>
-      <BottomDockNav />
+      <BottomDockNav isAuthenticated={!publicReadOnly} />
     </div>
   );
 }

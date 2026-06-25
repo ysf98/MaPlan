@@ -674,6 +674,7 @@ export type Database = {
           group_id: string
           id: string
           planned_date: string | null
+          public_share_token: string
           title: string
           updated_at: string
         }
@@ -684,6 +685,7 @@ export type Database = {
           group_id: string
           id?: string
           planned_date?: string | null
+          public_share_token?: string
           title: string
           updated_at?: string
         }
@@ -694,6 +696,7 @@ export type Database = {
           group_id?: string
           id?: string
           planned_date?: string | null
+          public_share_token?: string
           title?: string
           updated_at?: string
         }
@@ -1080,6 +1083,36 @@ export type Database = {
       can_manage_group_members: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
       can_access_group: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
       can_edit_group_shared_content: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
+      get_public_group_plan: {
+        Args: { p_share_token: string }
+        Returns: {
+          created_at: string | null
+          description: string | null
+          google_maps_url: string | null
+          group_id: string | null
+          group_name: string | null
+          latitude: number | null
+          longitude: number | null
+          note: string | null
+          phone_number: string | null
+          place_address: string | null
+          place_city: string | null
+          place_created_at: string | null
+          place_id: string | null
+          place_image_url: string | null
+          place_name: string | null
+          plan_id: string | null
+          plan_place_id: string | null
+          planned_at: string | null
+          planned_date: string | null
+          place_position: number | null
+          public_share_token: string | null
+          rating: number | null
+          title: string | null
+          updated_at: string | null
+          user_ratings_total: number | null
+        }[]
+      }
       is_group_creator: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean }
       is_group_member: { Args: { target_group_id: string }; Returns: boolean }
       is_group_owner: { Args: { target_group_id: string }; Returns: boolean }

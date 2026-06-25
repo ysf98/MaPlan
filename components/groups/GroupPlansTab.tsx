@@ -488,6 +488,7 @@ export function GroupPlansTab({
       title: pendingCreatePlan.title,
       description: pendingCreatePlan.description,
       plannedDate: pendingCreatePlan.plannedDate,
+      publicShareToken: "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       places: pendingCreatePlan.selectedPlaces.map((place, index) => toPlanPlaceItem(place, index)),
