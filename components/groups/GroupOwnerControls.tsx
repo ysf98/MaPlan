@@ -62,6 +62,7 @@ export function GroupOwnerControls({
   const isOwner = role === "owner";
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const settingsRef = useRef<HTMLDivElement | null>(null);
+  const isSettingsOpenRef = useRef(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [invitingFriendId, setInvitingFriendId] = useState<string | null>(null);
@@ -109,13 +110,17 @@ export function GroupOwnerControls({
   }, [groupCoverImageUrl, isEditOpen]);
 
   useEffect(() => {
+    isSettingsOpenRef.current = isSettingsOpen;
+  }, [isSettingsOpen]);
+
+  useEffect(() => {
     const onMouseDown = (event: MouseEvent) => {
       if (!isEditOpen) return;
       const targetNode = event.target as Node;
       if (!dialogRef.current?.contains(targetNode)) {
         setIsEditOpen(false);
       }
-      if (isSettingsOpen && !settingsRef.current?.contains(targetNode)) {
+      if (isSettingsOpenRef.current && !settingsRef.current?.contains(targetNode)) {
         setIsSettingsOpen(false);
       }
     };
@@ -132,7 +137,7 @@ export function GroupOwnerControls({
       document.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [isEditOpen, isSettingsOpen]);
+  }, [isEditOpen]);
 
   function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
     if (!canEditGroup) {
