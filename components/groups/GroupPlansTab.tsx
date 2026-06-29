@@ -314,15 +314,6 @@ function ChevronRightIcon() {
   );
 }
 
-function CalendarSmallIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-      <rect height="18" rx="2" width="18" x="3" y="4" />
-      <path d="M8 2v4M16 2v4M3 10h18" />
-    </svg>
-  );
-}
-
 function RestaurantIcon() {
   return (
     <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -355,7 +346,6 @@ export function GroupPlansTab({
   const [draftRoutePlaceIds, setDraftRoutePlaceIds] = useState<string[]>([]);
   const [dismissedDraftRecommendationIds, setDismissedDraftRecommendationIds] = useState<Record<string, true>>({});
   const [minPlanDate] = useState(() => getTodayPlanDatePart());
-  const [menuPlanId, setMenuPlanId] = useState<string | null>(null);
   const [planToDelete, setPlanToDelete] = useState<GroupPlanItem | null>(null);
   const [planToEditDate, setPlanToEditDate] = useState<GroupPlanItem | null>(null);
   const [editedPlannedDate, setEditedPlannedDate] = useState("");
@@ -558,7 +548,6 @@ export function GroupPlansTab({
       setDisplayPlans((current) => current.filter((plan) => plan.id !== planToDelete.id));
     }
     setPlanToDelete(null);
-    setMenuPlanId(null);
     if (selectedPlanId === planToDelete?.id) {
       setSelectedPlanId(null);
     }
@@ -596,7 +585,6 @@ export function GroupPlansTab({
     router.refresh();
     setPlanToEditDate(null);
     setEditedPlannedDate("");
-    setMenuPlanId(null);
     setPendingPlanDateUpdate(null);
   }, [pendingPlanDateUpdate, router, updatePlanDateState.requestId, updatePlanDateState.success]);
 
@@ -647,14 +635,12 @@ export function GroupPlansTab({
   function openEditDate(plan: GroupPlanItem) {
     setPlanToEditDate(plan);
     setEditedPlannedDate(toDateTimeLocalValue(plan.plannedDate));
-    setMenuPlanId(null);
   }
 
   function openEditDetails(plan: GroupPlanItem) {
     setPlanToEditDetails(plan);
     setEditedPlanTitle(plan.title);
     setEditedPlanDetailsDate(toDateTimeLocalValue(plan.plannedDate));
-    setMenuPlanId(null);
   }
 
   function openPlanPage(planId: string) {
@@ -716,6 +702,30 @@ export function GroupPlansTab({
     startTransition(() => addPlaceAction(payload));
   }
 
+  function deletePlan(plan: GroupPlanItem) {
+    const confirmed = window.confirm(`¿Eliminar "${plan.title}"? Esta acción no se puede deshacer.`);
+    if (!confirmed) {
+      return;
+    }
+
+    const payload = new FormData();
+    payload.set("groupId", groupId);
+    payload.set("planId", plan.id);
+    setPlanToDelete(plan);
+    startTransition(() => deleteAction(payload));
+  }
+
+  function handlePlanMenuAction(plan: GroupPlanItem, value: string) {
+    if (value === "edit-date") {
+      openEditDate(plan);
+      return;
+    }
+
+    if (value === "delete") {
+      deletePlan(plan);
+    }
+  }
+
   function renderPlanMenu(plan: GroupPlanItem) {
     if (!plan.canEdit && !plan.canDelete) {
       return null;
@@ -724,47 +734,32 @@ export function GroupPlansTab({
     return (
       <div className="relative">
         <button
+          aria-hidden="true"
           aria-label="Opciones del plan"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 transition hover:bg-rose-50 hover:text-[#c6283a]"
-          onClick={(event) => {
-            event.stopPropagation();
-            setMenuPlanId((current) => (current === plan.id ? null : plan.id));
-          }}
+          className="pointer-events-none flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 transition hover:bg-rose-50 hover:text-[#c6283a]"
+          disabled={isDeleting}
+          tabIndex={-1}
           type="button"
         >
           <DotsIcon />
         </button>
-        {menuPlanId === plan.id ? (
-          <div className="absolute right-0 top-11 z-20 w-44 rounded-2xl border border-rose-100 bg-white p-2 shadow-[0_16px_40px_rgba(181,35,48,0.14)]">
-            {plan.canEdit ? (
-              <button
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-zinc-700 transition hover:bg-rose-50 hover:text-[#c6283a]"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  openEditDate(plan);
-                }}
-                type="button"
-              >
-                <CalendarSmallIcon />
-                Cambiar fecha
-              </button>
-            ) : null}
-            {plan.canDelete ? (
-              <button
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setPlanToDelete(plan);
-                  setMenuPlanId(null);
-                }}
-                type="button"
-              >
-                <TrashIcon />
-                Eliminar plan
-              </button>
-            ) : null}
-          </div>
-        ) : null}
+        <select
+          aria-label="Opciones del plan"
+          className="absolute inset-0 h-9 w-9 cursor-pointer opacity-0"
+          disabled={isDeleting}
+          onChange={(event) => {
+            handlePlanMenuAction(plan, event.target.value);
+            event.target.value = "";
+          }}
+          onClick={(event) => event.stopPropagation()}
+          value=""
+        >
+          <option disabled value="">
+            Opciones del plan
+          </option>
+          {plan.canEdit ? <option value="edit-date">Cambiar fecha</option> : null}
+          {plan.canDelete ? <option value="delete">Eliminar plan</option> : null}
+        </select>
       </div>
     );
   }
@@ -1270,26 +1265,6 @@ export function GroupPlansTab({
 
         <ConfirmDialog
           cancelLabel="Cancelar"
-          confirmLabel="Eliminar plan"
-          description={planToDelete ? `Se borrara "${planToDelete.title}" para todo el grupo.` : undefined}
-          isPending={isDeleting}
-          onCancel={() => setPlanToDelete(null)}
-          onConfirm={() => {
-            if (!planToDelete) {
-              return;
-            }
-
-            const payload = new FormData();
-            payload.set("groupId", groupId);
-            payload.set("planId", planToDelete.id);
-            startTransition(() => deleteAction(payload));
-          }}
-          open={Boolean(planToDelete)}
-          title="Eliminar plan"
-        />
-
-        <ConfirmDialog
-          cancelLabel="Cancelar"
           confirmLabel="Eliminar parada"
           description="Se quitara este lugar de la ruta del plan."
           isPending={isRemovingPlace}
@@ -1587,26 +1562,6 @@ export function GroupPlansTab({
           </button>
         </div>
       ) : null}
-
-      <ConfirmDialog
-        cancelLabel="Cancelar"
-        confirmLabel="Eliminar plan"
-        description={planToDelete ? `Se borrara "${planToDelete.title}" para todo el grupo.` : undefined}
-        isPending={isDeleting}
-        onCancel={() => setPlanToDelete(null)}
-        onConfirm={() => {
-          if (!planToDelete) {
-            return;
-          }
-
-          const payload = new FormData();
-          payload.set("groupId", groupId);
-          payload.set("planId", planToDelete.id);
-          startTransition(() => deleteAction(payload));
-        }}
-        open={Boolean(planToDelete)}
-        title="Eliminar plan"
-      />
 
       {typeof document !== "undefined" && planToEditDate
         ? createPortal(
