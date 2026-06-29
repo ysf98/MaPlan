@@ -132,7 +132,7 @@ export function GroupOwnerControls({
       document.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [isEditOpen]);
+  }, [isEditOpen, isSettingsOpen]);
 
   function handleCoverChange(event: ChangeEvent<HTMLInputElement>) {
     if (!canEditGroup) {

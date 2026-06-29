@@ -235,7 +235,8 @@ export function GroupMap({
     });
 
     mapRef.current = map;
-    markerByPlaceIdRef.current.clear();
+    const markerByPlaceId = markerByPlaceIdRef.current;
+    markerByPlaceId.clear();
     setMapError(null);
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
     const cleanupInitialResize = resizeMapboxAfterLayout(map);
@@ -332,7 +333,7 @@ export function GroupMap({
       const latitude = place.latitude as number;
       const longitude = place.longitude as number;
       const marker = new mapboxgl.Marker({ color: getPlaceMarkerColorFromPlace(place) }).setLngLat([longitude, latitude]).addTo(map);
-      markerByPlaceIdRef.current.set(place.id, marker);
+      markerByPlaceId.set(place.id, marker);
 
       marker.getElement().addEventListener("click", (event) => {
         event.stopPropagation();
@@ -356,7 +357,7 @@ export function GroupMap({
       }
       selectedSearchMarkerRef.current?.remove();
       selectedSearchMarkerRef.current = null;
-      markerByPlaceIdRef.current.clear();
+      markerByPlaceId.clear();
       cleanupInitialResize();
       cleanupLoadResize?.();
       map.off("load", handleMapLoad);

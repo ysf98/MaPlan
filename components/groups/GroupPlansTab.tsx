@@ -562,7 +562,7 @@ export function GroupPlansTab({
     if (selectedPlanId === planToDelete?.id) {
       setSelectedPlanId(null);
     }
-  }, [deleteState.success, planToDelete?.id, selectedPlanId]);
+  }, [deleteState.success, planToDelete, selectedPlanId]);
 
   useEffect(() => {
     if (!removePlaceState.success) {

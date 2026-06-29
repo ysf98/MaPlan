@@ -190,7 +190,8 @@ export function PersonalMap({
     });
 
     mapRef.current = map;
-    markerByPlaceIdRef.current.clear();
+    const markerByPlaceId = markerByPlaceIdRef.current;
+    markerByPlaceId.clear();
     setMapError(null);
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
     const cleanupInitialResize = resizeMapboxAfterLayout(map);
@@ -285,7 +286,7 @@ export function PersonalMap({
     const bounds = new mapboxgl.LngLatBounds();
     places.forEach((place) => {
       const marker = new mapboxgl.Marker({ color: getPlaceMarkerColorFromPlace(place) }).setLngLat([place.longitude, place.latitude]).addTo(map);
-      markerByPlaceIdRef.current.set(place.id, marker);
+      markerByPlaceId.set(place.id, marker);
 
       marker.getElement().addEventListener("click", (event) => {
         event.stopPropagation();
@@ -309,7 +310,7 @@ export function PersonalMap({
       }
       selectedSearchMarkerRef.current?.remove();
       selectedSearchMarkerRef.current = null;
-      markerByPlaceIdRef.current.clear();
+      markerByPlaceId.clear();
       cleanupInitialResize();
       cleanupLoadResize?.();
       map.off("load", handleMapLoad);

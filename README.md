@@ -71,7 +71,7 @@ NEXT_PUBLIC_MAPBOX_STYLE=
 GOOGLE_PLACES_API_KEY=
 ```
 
-`NEXT_PUBLIC_MAPBOX_STYLE` es opcional. Si no se define, la app usa el estilo por defecto de Mapbox.
+`NEXT_PUBLIC_MAPBOX_STYLE` es opcional. No hace falta añadirla al `.env` si solo se quiere usar el estilo por defecto de Mapbox con `NEXT_PUBLIC_MAPBOX_TOKEN`.
 
 Ejecutar en desarrollo:
 
@@ -322,6 +322,7 @@ Tests unitarios, dominio, acciones y seguridad:
 Tests end-to-end:
 
 - `e2e/auth.spec.ts`
+- `e2e/legal.spec.ts`
 - `e2e/navigation.spec.ts`
 - `e2e/groups.spec.ts`
 - `e2e/map.spec.ts`

@@ -17,6 +17,10 @@ La app combina:
 - visualización con Mapbox;
 - amigos, invitaciones y solicitudes;
 - perfil con listas globales;
+- planes de grupo;
+- encuestas de lugares;
+- chat grupal en tiempo real;
+- notificaciones Realtime;
 - logros de explorador;
 - estados personales por lugar: `Pendiente`, `Visitado` y `Favorito`.
 
@@ -77,6 +81,7 @@ GOOGLE_PLACES_API_KEY=
 ```
 
 `NEXT_PUBLIC_MAPBOX_STYLE` es opcional.
+No hace falta incluirla en `.env` si se usa el estilo por defecto de Mapbox con `NEXT_PUBLIC_MAPBOX_TOKEN`.
 
 Variables E2E opcionales:
 
@@ -145,11 +150,17 @@ Rutas importantes:
 - `/groups/new`
 - `/groups/join`
 - `/groups/[groupId]`
+- `/groups/[groupId]/chat`
+- `/groups/[groupId]/decisions`
+- `/groups/[groupId]/plans/[planId]`
+- `/plans/share/[token]`
 - `/maps`
 - `/map`
 - `/explore`
 - `/profile`
 - `/profile/places`
+- `/terms`
+- `/privacy`
 
 ## TypeScript
 
@@ -204,6 +215,10 @@ Archivos SQL relevantes:
 - `supabase/places_favorites.sql`
 - `supabase/places_phone_number.sql`
 - `supabase/places_google_metadata.sql`
+- `supabase/group_plans.sql`
+- `supabase/group_polls.sql`
+- `supabase/group_chat.sql`
+- `supabase/notifications_realtime.sql`
 
 Al cambiar base de datos:
 
@@ -266,6 +281,26 @@ Incluyen:
 - `phone_number`
 - `image_url`
 - coordenadas.
+
+### Planes, encuestas y chat
+
+Los planes de grupo viven en `group_plans`, `group_plan_places` y `group_plan_votes`.
+
+- Los planes pueden incluir lugares guardados o snapshots de sitios no guardados.
+- Los votos de asistencia usan `yes` / `maybe` / `no`.
+- El enlace público de plan vive en `/plans/share/[token]` y es de solo lectura.
+- La edición de planes respeta permisos de grupo: en grupos privados queda reservada al owner y en grupos abiertos pueden editar miembros permitidos.
+
+Las encuestas viven en `group_polls`, `group_poll_options`, `group_poll_votes` y `group_availability_responses`.
+
+- `/groups/[groupId]/decisions` muestra y crea encuestas.
+- Las encuestas de lugares permiten un voto por usuario y cambio de voto mientras estén abiertas.
+
+El chat grupal vive en `group_chat_messages` y `group_chat_reads`.
+
+- `/groups/[groupId]/chat` muestra mensajes en tiempo real.
+- Los mensajes pueden enlazar contexto de lugares, planes o encuestas.
+- Las lecturas alimentan contadores de no leídos.
 
 ### Selector de mapas y Explore
 
@@ -413,6 +448,7 @@ Vitest:
 Playwright:
 
 - `e2e/auth.spec.ts`
+- `e2e/legal.spec.ts`
 - `e2e/navigation.spec.ts`
 - `e2e/groups.spec.ts`
 - `e2e/map.spec.ts`
