@@ -6,10 +6,23 @@ import type mapboxgl from "mapbox-gl";
 export function resizeMapboxAfterLayout(map: mapboxgl.Map): () => void {
   let firstFrame: number | null = null;
   let secondFrame: number | null = null;
+  let isActive = true;
   const timeouts: Array<ReturnType<typeof setTimeout>> = [];
 
   const resize = () => {
-    map.resize();
+    if (!isActive) {
+      return;
+    }
+
+    try {
+      map.resize();
+    } catch (error) {
+      if (error instanceof TypeError) {
+        return;
+      }
+
+      throw error;
+    }
   };
 
   firstFrame = window.requestAnimationFrame(() => {
@@ -21,6 +34,7 @@ export function resizeMapboxAfterLayout(map: mapboxgl.Map): () => void {
   timeouts.push(setTimeout(resize, 600));
 
   return () => {
+    isActive = false;
     if (firstFrame !== null) {
       window.cancelAnimationFrame(firstFrame);
     }
@@ -33,11 +47,16 @@ export function resizeMapboxAfterLayout(map: mapboxgl.Map): () => void {
 
 function resizeMapboxWhenContainerHasSize(map: mapboxgl.Map, container: HTMLElement): () => void {
   const cleanupCallbacks: Array<() => void> = [];
+  let isActive = true;
   let lastWidth = 0;
   let lastHeight = 0;
   let resizeObserver: ResizeObserver | null = null;
 
   const scheduleResize = () => {
+    if (!isActive) {
+      return;
+    }
+
     cleanupCallbacks.push(resizeMapboxAfterLayout(map));
   };
 
@@ -81,6 +100,7 @@ function resizeMapboxWhenContainerHasSize(map: mapboxgl.Map, container: HTMLElem
   window.addEventListener("orientationchange", handleViewportResize);
 
   return () => {
+    isActive = false;
     cleanupCallbacks.forEach((cleanup) => cleanup());
     resizeObserver?.disconnect();
     window.visualViewport?.removeEventListener("resize", handleViewportResize);
