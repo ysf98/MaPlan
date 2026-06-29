@@ -20,7 +20,6 @@ import {
   type VoteGroupPlanActionState
 } from "@/app/groups/[groupId]/actions";
 import { Button } from "@/components/ui/Button";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import type { GroupPlanItem, GroupPlanPlaceItem } from "@/lib/groupPlans";
@@ -377,7 +376,6 @@ export function GroupPlansTab({
   } | null>(null);
   const [dismissedRecommendationIds, setDismissedRecommendationIds] = useState<Record<string, true>>({});
   const [didApplyInitialEditMode, setDidApplyInitialEditMode] = useState(false);
-  const [planPlaceToDeleteId, setPlanPlaceToDeleteId] = useState<string | null>(null);
   const [createState, createAction, isCreating] = useActionState(createGroupPlanAction, createInitialState);
   const [addPlaceState, addPlaceAction, isAddingRecommendedPlace] = useActionState(addPlaceToGroupPlanAction, addPlaceInitialState);
   const [voteState, voteAction, isVoting] = useActionState(voteGroupPlanAction, voteInitialState);
@@ -554,14 +552,6 @@ export function GroupPlansTab({
   }, [deleteState.success, planToDelete, selectedPlanId]);
 
   useEffect(() => {
-    if (!removePlaceState.success) {
-      return;
-    }
-
-    setPlanPlaceToDeleteId(null);
-  }, [removePlaceState.success]);
-
-  useEffect(() => {
     if (
       !updatePlanDateState.success ||
       !pendingPlanDateUpdate ||
@@ -700,6 +690,19 @@ export function GroupPlansTab({
       requestId
     });
     startTransition(() => addPlaceAction(payload));
+  }
+
+  function removePlaceFromPlan(plan: GroupPlanItem, place: GroupPlanPlaceItem) {
+    const confirmed = window.confirm(`¿Quitar "${place.name}" del plan?`);
+    if (!confirmed) {
+      return;
+    }
+
+    const payload = new FormData();
+    payload.set("groupId", groupId);
+    payload.set("planId", plan.id);
+    payload.set("planPlaceId", place.id);
+    startTransition(() => removePlaceAction(payload));
   }
 
   function deletePlan(plan: GroupPlanItem) {
@@ -1065,7 +1068,8 @@ export function GroupPlansTab({
                       {selectedPlan.canEdit && !place.id.startsWith("optimistic-") ? (
                         <button
                           className="rounded-full p-2 text-zinc-300 transition hover:text-rose-500"
-                          onClick={() => setPlanPlaceToDeleteId(place.id)}
+                          disabled={isRemovingPlace}
+                          onClick={() => removePlaceFromPlan(selectedPlan, place)}
                           type="button"
                         >
                           <TrashIcon />
@@ -1262,27 +1266,6 @@ export function GroupPlansTab({
             </Button>
           </div>
         </div>
-
-        <ConfirmDialog
-          cancelLabel="Cancelar"
-          confirmLabel="Eliminar parada"
-          description="Se quitara este lugar de la ruta del plan."
-          isPending={isRemovingPlace}
-          onCancel={() => setPlanPlaceToDeleteId(null)}
-          onConfirm={() => {
-            if (!planPlaceToDeleteId) {
-              return;
-            }
-
-            const payload = new FormData();
-            payload.set("groupId", groupId);
-            payload.set("planId", selectedPlan.id);
-            payload.set("planPlaceId", planPlaceToDeleteId);
-            startTransition(() => removePlaceAction(payload));
-          }}
-          open={Boolean(planPlaceToDeleteId)}
-          title="Eliminar lugar"
-        />
 
       </div>
     );
