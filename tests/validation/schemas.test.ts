@@ -367,6 +367,30 @@ describe("group chat schemas", () => {
     ).toBe(true);
   });
 
+  it("createGroupChatMessageSchema accepts plan and place attachments without text", () => {
+    expect(
+      createGroupChatMessageSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        content: "   ",
+        kind: "plan_suggestion",
+        planId: "22222222-2222-4222-8222-222222222222",
+        placeId: "",
+        planPlaceId: ""
+      }).success
+    ).toBe(true);
+
+    expect(
+      createGroupChatMessageSchema.safeParse({
+        groupId: "11111111-1111-4111-8111-111111111111",
+        content: "",
+        kind: "place_comment",
+        planId: "",
+        placeId: "33333333-3333-4333-8333-333333333333",
+        planPlaceId: ""
+      }).success
+    ).toBe(true);
+  });
+
   it("createGroupChatMessageSchema rejects empty messages and invalid kind", () => {
     expect(
       createGroupChatMessageSchema.safeParse({

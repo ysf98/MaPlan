@@ -68,6 +68,28 @@ describe("group chat server actions", () => {
     expect(revalidatePathMock).toHaveBeenCalledWith(`/groups/${groupId}/chat`);
   });
 
+  it("createGroupChatMessageAction allows sharing a plan without text", async () => {
+    const { createGroupChatMessageAction } = await import("@/app/groups/[groupId]/chat/actions");
+    const formData = new FormData();
+    formData.set("groupId", groupId);
+    formData.set("content", "   ");
+    formData.set("kind", "plan_suggestion");
+    formData.set("planId", "33333333-3333-4333-8333-333333333333");
+
+    const result = await createGroupChatMessageAction({ error: null, success: false }, formData);
+
+    expect(result).toEqual({ error: null, success: true });
+    expect(createGroupChatMessageMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: "",
+        groupId,
+        kind: "plan_suggestion",
+        planId: "33333333-3333-4333-8333-333333333333",
+        userId: user.id
+      })
+    );
+  });
+
   it("deleteGroupChatMessageAction calls domain and revalidates group", async () => {
     const { deleteGroupChatMessageAction } = await import("@/app/groups/[groupId]/chat/actions");
     const formData = new FormData();

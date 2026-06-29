@@ -300,8 +300,13 @@ export async function createGroupChatMessage(input: CreateGroupChatMessageInput)
   }
 
   const content = input.content.trim();
-  if (!content) {
-    return { error: "Escribe un mensaje." };
+  const kind = input.kind ?? "message";
+  const hasContext =
+    (kind === "plan_suggestion" && Boolean(input.planId)) ||
+    (kind === "place_comment" && Boolean(input.placeId)) ||
+    (kind === "poll" && Boolean(input.pollId));
+  if (!content && !hasContext) {
+    return { error: "Escribe un mensaje o adjunta un lugar, plan o encuesta." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -309,7 +314,7 @@ export async function createGroupChatMessage(input: CreateGroupChatMessageInput)
     group_id: input.groupId,
     sender_id: input.userId,
     content,
-    kind: input.kind ?? "message",
+    kind,
     plan_id: input.planId ?? null,
     poll_id: input.pollId ?? null,
     place_id: input.placeId ?? null,

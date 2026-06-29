@@ -574,26 +574,42 @@ const optionalUuidField = z
   .transform((value) => (value && value.length > 0 ? value : null))
   .refine((value) => value === null || uuidSchema.safeParse(value).success, "Identificador inválido.");
 
-export const createGroupChatMessageSchema = z.object({
-  groupId: uuidSchema,
-  content: z
-    .string()
-    .trim()
-    .min(1, "Escribe un mensaje.")
-    .max(1000, "El mensaje no puede superar 1000 caracteres."),
-  kind: z
-    .string()
-    .optional()
-    .transform((value) => value || "message")
-    .refine(
-      (value): value is (typeof GROUP_CHAT_MESSAGE_KIND_VALUES)[number] => GROUP_CHAT_MESSAGE_KIND_VALUES.includes(value as never),
-      "Tipo de mensaje inválido."
-    ),
-  planId: optionalUuidField,
-  pollId: optionalUuidField,
-  placeId: optionalUuidField,
-  planPlaceId: optionalUuidField
-});
+export const createGroupChatMessageSchema = z
+  .object({
+    groupId: uuidSchema,
+    content: z.string().trim().max(1000, "El mensaje no puede superar 1000 caracteres."),
+    kind: z
+      .string()
+      .optional()
+      .transform((value) => value || "message")
+      .refine(
+        (value): value is (typeof GROUP_CHAT_MESSAGE_KIND_VALUES)[number] => GROUP_CHAT_MESSAGE_KIND_VALUES.includes(value as never),
+        "Tipo de mensaje inválido."
+      ),
+    planId: optionalUuidField,
+    pollId: optionalUuidField,
+    placeId: optionalUuidField,
+    planPlaceId: optionalUuidField
+  })
+  .superRefine((input, context) => {
+    if (input.content.length > 0) {
+      return;
+    }
+
+    if (input.kind === "plan_suggestion" && input.planId) {
+      return;
+    }
+
+    if (input.kind === "place_comment" && input.placeId) {
+      return;
+    }
+
+    if (input.kind === "poll" && input.pollId) {
+      return;
+    }
+
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Escribe un mensaje o adjunta un lugar, plan o encuesta.", path: ["content"] });
+  });
 
 export const deleteGroupChatMessageSchema = z.object({
   groupId: uuidSchema,

@@ -29,7 +29,6 @@ type GroupChatViewProps = {
 const createInitialState: CreateGroupChatMessageActionState = { error: null, success: false };
 const deleteInitialState: DeleteGroupChatMessageActionState = { error: null, success: false };
 const voteInitialState: GroupDecisionActionState = { error: null, success: false };
-const POLL_SHARE_MESSAGE = "Encuesta compartida";
 
 type LocalChatMessage = GroupChatMessageItem & {
   deliveryStatus?: "sending";
@@ -289,7 +288,6 @@ export function GroupChatView({
     [currentUserId, messages]
   );
   const visibleMessages = useMemo<LocalChatMessage[]>(() => [...messages, ...optimisticMessages], [messages, optimisticMessages]);
-  const isPollSelected = selectedContext?.kind === "poll";
   const pollById = useMemo(() => {
     const entries = pollContextOptions.flatMap((context) =>
       context.kind === "poll" && context.poll ? [[context.id, context.poll] as const] : []
@@ -462,9 +460,9 @@ export function GroupChatView({
   function handleCreateMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const typedContent = draft.trim();
-    const isSharingPoll = selectedContext?.kind === "poll";
-    const content = isSharingPoll ? POLL_SHARE_MESSAGE : typedContent;
-    if (!content) {
+    const hasSelectedContext = Boolean(selectedContext);
+    const content = typedContent;
+    if (!content && !hasSelectedContext) {
       return;
     }
 
@@ -512,9 +510,7 @@ export function GroupChatView({
     };
 
     setOptimisticMessages((current) => [...current, optimisticMessage]);
-    if (!isSharingPoll) {
-      setDraft("");
-    }
+    setDraft("");
     setSelectedContext(null);
     setAttachMode(null);
     setIsAttachMenuOpen(false);
@@ -619,7 +615,7 @@ export function GroupChatView({
                       ) : null}
                     </Link>
                   ) : null}
-                  {shouldShowContent ? (
+                  {shouldShowContent && message.content ? (
                     <p className={isPollMessage ? "px-4 pb-4 pt-3 text-sm leading-6 text-zinc-700" : "mt-1 whitespace-pre-wrap break-words text-sm leading-6"}>
                       {message.content}
                     </p>
@@ -785,8 +781,8 @@ export function GroupChatView({
               rows={1}
               value={draft}
             />
-            <Button disabled={!draft.trim() && !isPollSelected} type="submit">
-              {isCreating && (!draft.trim() || isPollSelected) ? "Enviando..." : "Enviar"}
+            <Button disabled={!draft.trim() && !selectedContext} type="submit">
+              {isCreating && (!draft.trim() || Boolean(selectedContext)) ? "Enviando..." : "Enviar"}
             </Button>
           </div>
           {createState.error ? <p className="mt-2 text-sm font-semibold text-rose-600">{createState.error}</p> : null}
