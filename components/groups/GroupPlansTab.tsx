@@ -1386,7 +1386,7 @@ export function GroupPlansTab({
                       : {
                           box: "bg-sky-50 text-sky-700",
                           badge: "bg-rose-50 text-[#c6283a]",
-                          button: "border border-rose-200 bg-white text-[#c6283a] hover:bg-rose-50"
+                          button: "bg-[#c6283a] text-white hover:bg-[#b32033]"
                         };
 
                   const previewPlaces = plan.places.slice(0, 4);
