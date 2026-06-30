@@ -57,6 +57,34 @@ function SpinnerIcon() {
   );
 }
 
+const iconActionClass = "flex flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[10px] font-medium text-zinc-600 transition duration-150 hover:scale-110 hover:bg-rose-50 active:scale-95";
+const disabledIconActionClass = "flex flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[10px] font-medium text-zinc-400";
+
+function DirectionsIcon({ disabled = false }: { disabled?: boolean }) {
+  return (
+    <svg
+      className={`h-[18px] w-[18px] ${disabled ? "text-zinc-300" : "text-[#c6283a]"}`}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2.1"
+      viewBox="0 0 24 24"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8 11.4 8.2-3.1-3.1 8.2-1.4-3.7z" />
+    </svg>
+  );
+}
+
+function PhoneIcon({ disabled = false }: { disabled?: boolean }) {
+  return (
+    <svg className={`h-[18px] w-[18px] ${disabled ? "text-zinc-300" : "text-[#c6283a]"}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
+    </svg>
+  );
+}
+
 function createRecommendationMarkerElement(): HTMLButtonElement {
   const button = document.createElement("button");
   button.type = "button";
@@ -88,6 +116,8 @@ function ExploreSaveCard({
 }) {
   const [selectedDestinationKey, setSelectedDestinationKey] = useState(`${destinations[0]?.type ?? "personal"}:${destinations[0]?.id ?? "personal"}`);
   const selectedDestination = destinations.find((destination) => `${destination.type}:${destination.id}` === selectedDestinationKey) ?? destinations[0];
+  const canOpenMaps = Boolean(draft.googleMapsUrl);
+  const canCall = Boolean(draft.phoneNumber);
 
   useEffect(() => {
     setSelectedDestinationKey(`${destinations[0]?.type ?? "personal"}:${destinations[0]?.id ?? "personal"}`);
@@ -133,6 +163,32 @@ function ExploreSaveCard({
         </div>
       </div>
 
+      <div className="mt-3 flex items-center justify-center gap-10 border-t border-rose-100/70 pt-2">
+        {canOpenMaps ? (
+          <a className={iconActionClass} href={draft.googleMapsUrl ?? "#"} rel="noreferrer" target="_blank">
+            <DirectionsIcon />
+            Ir
+          </a>
+        ) : (
+          <button className={disabledIconActionClass} disabled type="button">
+            <DirectionsIcon disabled />
+            Ir
+          </button>
+        )}
+
+        {canCall ? (
+          <a className={iconActionClass} href={`tel:${draft.phoneNumber}`}>
+            <PhoneIcon />
+            Llamar
+          </a>
+        ) : (
+          <button className={disabledIconActionClass} disabled type="button">
+            <PhoneIcon disabled />
+            Llamar
+          </button>
+        )}
+      </div>
+
       <form
         action={(formData) => {
           if (!selectedDestination) {
@@ -142,7 +198,7 @@ function ExploreSaveCard({
           formData.set("destinationId", selectedDestination.id);
           onSubmit(formData);
         }}
-        className="mt-4 space-y-3 border-t border-rose-100/70 pt-3"
+        className="mt-3 space-y-3 border-t border-rose-100/70 pt-3"
       >
         <input name="latitude" type="hidden" value={String(draft.latitude)} />
         <input name="longitude" type="hidden" value={String(draft.longitude)} />
