@@ -57,8 +57,8 @@ function SpinnerIcon() {
   );
 }
 
-const iconActionClass = "flex flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[10px] font-medium text-zinc-600 transition duration-150 hover:scale-110 hover:bg-rose-50 active:scale-95";
-const disabledIconActionClass = "flex flex-col items-center gap-1 rounded-2xl px-2 py-1 text-[10px] font-medium text-zinc-400";
+const iconActionClass = "flex h-9 min-w-12 items-center justify-center gap-1 rounded-2xl px-2 text-[10px] font-semibold text-zinc-600 transition duration-150 hover:scale-105 hover:bg-rose-50 active:scale-95";
+const disabledIconActionClass = "flex h-9 min-w-12 items-center justify-center gap-1 rounded-2xl px-2 text-[10px] font-semibold text-zinc-400";
 
 function DirectionsIcon({ disabled = false }: { disabled?: boolean }) {
   return (
@@ -163,32 +163,6 @@ function ExploreSaveCard({
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-center gap-10 border-t border-rose-100/70 pt-2">
-        {canOpenMaps ? (
-          <a className={iconActionClass} href={draft.googleMapsUrl ?? "#"} rel="noreferrer" target="_blank">
-            <DirectionsIcon />
-            Ir
-          </a>
-        ) : (
-          <button className={disabledIconActionClass} disabled type="button">
-            <DirectionsIcon disabled />
-            Ir
-          </button>
-        )}
-
-        {canCall ? (
-          <a className={iconActionClass} href={`tel:${draft.phoneNumber}`}>
-            <PhoneIcon />
-            Llamar
-          </a>
-        ) : (
-          <button className={disabledIconActionClass} disabled type="button">
-            <PhoneIcon disabled />
-            Llamar
-          </button>
-        )}
-      </div>
-
       <form
         action={(formData) => {
           if (!selectedDestination) {
@@ -198,7 +172,7 @@ function ExploreSaveCard({
           formData.set("destinationId", selectedDestination.id);
           onSubmit(formData);
         }}
-        className="mt-3 space-y-3 border-t border-rose-100/70 pt-3"
+        className="mt-3 space-y-2 border-t border-rose-100/70 pt-2.5"
       >
         <input name="latitude" type="hidden" value={String(draft.latitude)} />
         <input name="longitude" type="hidden" value={String(draft.longitude)} />
@@ -216,31 +190,59 @@ function ExploreSaveCard({
         <input name="city" type="hidden" value={draft.city} />
         <input name="name" type="hidden" value={draft.name} />
 
-        <label className="block space-y-2">
-          <span className="text-xs font-bold text-zinc-700">Guardar en:</span>
-          <select
-            className="h-11 w-full rounded-2xl border border-rose-100 bg-white px-3 text-sm font-semibold text-zinc-900 shadow-sm focus:border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-100"
-            onChange={(event) => setSelectedDestinationKey(event.target.value)}
-            value={selectedDestinationKey}
-          >
-            {destinations.map((destination) => (
-              <option key={`${destination.type}:${destination.id}`} value={`${destination.type}:${destination.id}`}>
-                {destination.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+          <label className="block min-w-0 space-y-1">
+            <span className="text-[11px] font-bold text-zinc-600">Guardar en</span>
+            <select
+              className="h-9 w-full rounded-2xl border border-rose-100 bg-white px-3 text-xs font-bold text-zinc-900 shadow-sm focus:border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-100"
+              onChange={(event) => setSelectedDestinationKey(event.target.value)}
+              value={selectedDestinationKey}
+            >
+              {destinations.map((destination) => (
+                <option key={`${destination.type}:${destination.id}`} value={`${destination.type}:${destination.id}`}>
+                  {destination.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="flex items-center gap-1">
+            {canOpenMaps ? (
+              <a className={iconActionClass} href={draft.googleMapsUrl ?? "#"} rel="noreferrer" target="_blank">
+                <DirectionsIcon />
+                Ir
+              </a>
+            ) : (
+              <button className={disabledIconActionClass} disabled type="button">
+                <DirectionsIcon disabled />
+                Ir
+              </button>
+            )}
+
+            {canCall ? (
+              <a className={iconActionClass} href={`tel:${draft.phoneNumber}`}>
+                <PhoneIcon />
+                Llamar
+              </a>
+            ) : (
+              <button className={disabledIconActionClass} disabled type="button">
+                <PhoneIcon disabled />
+                Llamar
+              </button>
+            )}
+          </div>
+        </div>
 
         {selectedDestination ? (
-          <p className="text-xs font-medium text-zinc-500">{selectedDestination.description}</p>
+          <p className="text-[11px] font-medium text-zinc-500">{selectedDestination.description}</p>
         ) : (
-          <p className="text-xs font-medium text-zinc-500">No hay destinos disponibles.</p>
+          <p className="text-[11px] font-medium text-zinc-500">No hay destinos disponibles.</p>
         )}
         {error ? <p className="text-xs font-semibold text-rose-600">{error}</p> : null}
         {success ? <p className="text-xs font-semibold text-emerald-700">Lugar guardado correctamente.</p> : null}
 
         <button
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#c6283a] px-4 text-sm font-bold text-white shadow-[0_8px_18px_rgba(198,40,58,0.24)] transition hover:bg-[#b32033] disabled:cursor-not-allowed disabled:opacity-70"
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-2xl bg-[#c6283a] px-4 text-sm font-bold text-white shadow-[0_8px_18px_rgba(198,40,58,0.24)] transition hover:bg-[#b32033] disabled:cursor-not-allowed disabled:opacity-70"
           disabled={isPending || !selectedDestination}
           type="submit"
         >
