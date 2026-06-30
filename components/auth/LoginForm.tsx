@@ -1,15 +1,17 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { useActionState, useState } from "react";
+import { loginAction, type LoginActionState } from "@/app/login/actions";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { getSafeInternalPath } from "@/lib/navigation/safeRedirect";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ROUTES } from "@/utils/constants";
 
 type LoginFormProps = {
   nextPath?: string;
 };
+
+const initialLoginState: LoginActionState = { error: null };
 
 function SpinnerIcon() {
   return (
@@ -22,33 +24,12 @@ function SpinnerIcon() {
 
 export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
   const safeNextPath = getSafeInternalPath(nextPath, ROUTES.dashboard);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [state, formAction, isLoading] = useActionState(loginAction, initialLoginState);
   const [showPassword, setShowPassword] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrorMessage("");
-    setIsLoading(true);
-
-    const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") || "");
-    const password = String(formData.get("password") || "");
-
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      setIsLoading(false);
-      setErrorMessage(error.message);
-      return;
-    }
-
-    window.location.assign(safeNextPath);
-  }
-
   return (
-    <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+    <form action={formAction} className="mt-6 space-y-4">
+      <input name="nextPath" type="hidden" value={safeNextPath} />
       <div className="space-y-1.5">
         <label className="ml-1 text-xs font-semibold text-zinc-600" htmlFor="login-email">
           Correo electrónico
@@ -113,7 +94,7 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
         </a>
       </div>
 
-      {errorMessage ? <p className="text-sm text-rose-600">{errorMessage}</p> : null}
+      {state.error ? <p className="text-sm text-rose-600">{state.error}</p> : null}
 
       <button
         className="mt-1 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[rgb(var(--vc-coral))] text-lg font-bold text-white shadow-[0_10px_24px_rgba(255,90,95,0.35)] transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
