@@ -57,13 +57,14 @@ function SpinnerIcon() {
   );
 }
 
-const iconActionClass = "flex h-9 min-w-12 items-center justify-center gap-1 rounded-2xl px-2 text-[10px] font-semibold text-zinc-600 transition duration-150 hover:scale-105 hover:bg-rose-50 active:scale-95";
-const disabledIconActionClass = "flex h-9 min-w-12 items-center justify-center gap-1 rounded-2xl px-2 text-[10px] font-semibold text-zinc-400";
+const iconActionClass =
+  "flex h-10 min-w-14 items-center justify-center gap-1 rounded-2xl px-2 text-[10px] font-semibold text-zinc-600 transition duration-150 hover:scale-105 hover:bg-rose-50 active:scale-95";
+const disabledIconActionClass = "flex h-10 min-w-14 items-center justify-center gap-1 rounded-2xl px-2 text-[10px] font-semibold text-zinc-400";
 
 function DirectionsIcon({ disabled = false }: { disabled?: boolean }) {
   return (
     <svg
-      className={`h-[18px] w-[18px] ${disabled ? "text-zinc-300" : "text-[#c6283a]"}`}
+      className={`h-[22px] w-[22px] ${disabled ? "text-zinc-300" : "text-[#c6283a]"}`}
       fill="none"
       stroke="currentColor"
       strokeLinecap="round"
@@ -79,7 +80,7 @@ function DirectionsIcon({ disabled = false }: { disabled?: boolean }) {
 
 function PhoneIcon({ disabled = false }: { disabled?: boolean }) {
   return (
-    <svg className={`h-[18px] w-[18px] ${disabled ? "text-zinc-300" : "text-[#c6283a]"}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <svg className={`h-[22px] w-[22px] ${disabled ? "text-zinc-300" : "text-[#c6283a]"}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
       <path d="M22 16.92V20a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.08 2h3.09a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.62a2 2 0 0 1-.45 2.11L8 9.17a16 16 0 0 0 6.83 6.83l.72-1.35a2 2 0 0 1 2.11-.45c.84.3 1.72.51 2.62.63A2 2 0 0 1 22 16.92z" />
     </svg>
   );
@@ -192,9 +193,9 @@ function ExploreSaveCard({
 
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
           <label className="block min-w-0 space-y-1">
-            <span className="text-[11px] font-bold text-zinc-600">Guardar en</span>
+            <span className="text-[10px] font-bold text-zinc-600">Guardar en</span>
             <select
-              className="h-9 w-full rounded-2xl border border-rose-100 bg-white px-3 text-xs font-bold text-zinc-900 shadow-sm focus:border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-100"
+              className="h-8 w-full rounded-xl border border-rose-100 bg-white px-2.5 text-[11px] font-bold text-zinc-900 shadow-sm focus:border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-100"
               onChange={(event) => setSelectedDestinationKey(event.target.value)}
               value={selectedDestinationKey}
             >
