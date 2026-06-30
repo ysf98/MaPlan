@@ -22,7 +22,7 @@ export function getContentSecurityPolicy() {
     "style-src 'self' 'unsafe-inline' https://api.mapbox.com",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    `connect-src 'self' ${supabaseOrigin} https://*.supabase.co https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com https://*.mapbox.com`,
+    `connect-src 'self' ${supabaseOrigin} https://*.supabase.co wss://*.supabase.co https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com https://*.mapbox.com`,
     "worker-src 'self' blob:",
     "frame-ancestors 'none'",
     "base-uri 'self'",
