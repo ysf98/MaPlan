@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { getSafeInternalPath } from "@/lib/navigation/safeRedirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -22,7 +21,6 @@ function SpinnerIcon() {
 }
 
 export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
-  const router = useRouter();
   const safeNextPath = getSafeInternalPath(nextPath, ROUTES.dashboard);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -40,15 +38,13 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-    setIsLoading(false);
-
     if (error) {
+      setIsLoading(false);
       setErrorMessage(error.message);
       return;
     }
 
-    router.replace(safeNextPath);
-    router.refresh();
+    window.location.assign(safeNextPath);
   }
 
   return (
