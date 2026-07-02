@@ -10,8 +10,8 @@ export async function loginWithEnvUser(page: Page) {
   }
 
   await page.goto("/login");
-  await page.getByLabel("Email").fill(E2E_EMAIL);
-  await page.getByLabel("Contraseña").fill(E2E_PASSWORD);
+  await page.getByLabel("Correo electrónico").fill(E2E_EMAIL);
+  await page.getByRole("textbox", { name: "Contraseña" }).fill(E2E_PASSWORD);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }

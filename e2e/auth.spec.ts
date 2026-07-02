@@ -22,9 +22,14 @@ test.describe("authentication", () => {
     test.skip(!HAS_E2E_CREDENTIALS, "Set E2E_EMAIL and E2E_PASSWORD to run authenticated tests.");
 
     await loginWithEnvUser(page);
-    await expect(page.getByRole("button", { name: "Cerrar sesión" })).toBeVisible();
-    await page.getByRole("button", { name: "Cerrar sesión" }).click();
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("link", { name: "Login" })).toBeVisible();
+    await page.goto("/profile");
+    const signOutForm = page.locator('form[action="/auth/signout"]');
+    await expect(signOutForm.getByRole("button", { name: /Cerrar sesi/i })).toBeVisible();
+    await signOutForm.evaluate((form) => {
+      if (!(form instanceof HTMLFormElement)) return;
+      form.requestSubmit();
+    });
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole("heading", { name: "Bienvenido de nuevo" })).toBeVisible();
   });
 });

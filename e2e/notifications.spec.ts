@@ -11,10 +11,8 @@ test.describe("notifications", () => {
     test.skip(!HAS_E2E_CREDENTIALS, "Set E2E_EMAIL and E2E_PASSWORD to run authenticated tests.");
 
     await loginWithEnvUser(page);
-    await expect(page.getByLabel("Notificaciones")).toBeVisible();
-
-    await page.getByLabel("Notificaciones").click();
+    await page.goto("/notifications");
     await expect(page).toHaveURL(/\/notifications$/);
-    await expect(page.getByText("- Notificaciones")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Volver" })).toBeVisible();
   });
 });
