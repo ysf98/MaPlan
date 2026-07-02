@@ -25,6 +25,7 @@ type PlacePlanDialogProps = {
 
 const createInitialState: CreateGroupPlanActionState = { error: null, success: false };
 const addInitialState: AddPlaceToGroupPlanActionState = { error: null, success: false };
+const CREATE_PLAN_OPTION_VALUE = "__create_plan__";
 
 export function PlacePlanDialog({
   groupId,
@@ -288,10 +289,15 @@ export function PlacePlanDialog({
           <select
             aria-label="Añadir lugar a un plan"
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            disabled={isAdding || availablePlans.length === 0}
+            disabled={isAdding}
             onChange={(event) => {
               const planId = event.target.value;
               setSelectedPlanId(planId);
+              if (planId === CREATE_PLAN_OPTION_VALUE) {
+                setMode("create");
+                setSelectedPlanId("");
+                return;
+              }
               if (!planId) return;
 
               const payload = new FormData();
@@ -304,17 +310,15 @@ export function PlacePlanDialog({
             }}
             value={selectedPlanId}
           >
-            <option value="">{availablePlans.length ? "Selecciona un plan" : "No hay planes disponibles"}</option>
+            <option value="">{availablePlans.length ? "Selecciona un plan" : "Elige una opción"}</option>
             {availablePlans.map((plan) => (
               <option key={plan.id} value={plan.id}>
                 {plan.title}
               </option>
             ))}
+            <option value={CREATE_PLAN_OPTION_VALUE}>+ Crear nuevo plan</option>
           </select>
         </label>
-        <Button className={triggerClass} onClick={() => setMode("create")} size="sm" type="button" variant="primary">
-          Crear plan
-        </Button>
       </div>
       {addState.error ? <p className="mt-1 text-xs font-medium text-rose-600">{addState.error}</p> : null}
       {typeof document !== "undefined" && modal ? createPortal(modal, document.body) : null}
