@@ -137,6 +137,12 @@ type GroupPlanVoteRow = {
   vote: string;
 };
 
+type GroupPlanVoteProfileRow = {
+  avatar_url: string | null;
+  id: string;
+  username: string | null;
+};
+
 export type GroupPlanPlaceItem = {
   id: string;
   placeId: string | null;
@@ -167,7 +173,7 @@ export type GroupPlanItem = {
   createdAt: string;
   updatedAt: string;
   places: GroupPlanPlaceItem[];
-  votes: Array<{ userId: string; vote: GroupPlanVote }>;
+  votes: Array<{ avatarUrl: string | null; userId: string; username: string | null; vote: GroupPlanVote }>;
   attendingCount: number;
   maybeCount: number;
   notAttendingCount: number;
@@ -414,14 +420,32 @@ export async function getGroupPlansForUser(userId: string, groupId: string): Pro
     placesByPlanId.set(item.plan_id, current);
   });
 
-  const votesByPlanId = new Map<string, Array<{ userId: string; vote: GroupPlanVote }>>();
-  ((votesResult.data ?? []) as GroupPlanVoteRow[]).forEach((voteRow) => {
+  const voteRows = (votesResult.data ?? []) as GroupPlanVoteRow[];
+  const voterIds = Array.from(new Set(voteRows.map((vote) => vote.user_id)));
+  const profilesResult = voterIds.length ? await supabase.rpc("get_profiles_by_ids", { p_ids: voterIds }) : { data: [] as GroupPlanVoteProfileRow[] };
+  const profileByUserId = new Map(
+    (profilesResult.data || []).map((profile) => [
+      profile.id,
+      {
+        avatarUrl: profile.avatar_url ?? null,
+        username: profile.username ?? null
+      }
+    ])
+  );
+  const votesByPlanId = new Map<string, GroupPlanItem["votes"]>();
+  voteRows.forEach((voteRow) => {
     if (!isGroupPlanVote(voteRow.vote)) {
       return;
     }
 
     const current = votesByPlanId.get(voteRow.plan_id) ?? [];
-    current.push({ userId: voteRow.user_id, vote: voteRow.vote });
+    const profile = profileByUserId.get(voteRow.user_id);
+    current.push({
+      avatarUrl: profile?.avatarUrl ?? null,
+      userId: voteRow.user_id,
+      username: profile?.username ?? null,
+      vote: voteRow.vote
+    });
     votesByPlanId.set(voteRow.plan_id, current);
   });
 

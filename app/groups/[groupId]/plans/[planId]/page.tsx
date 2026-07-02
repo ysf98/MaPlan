@@ -34,6 +34,7 @@ export default async function GroupPlanDetailPage({ params }: GroupPlanDetailPag
   return (
     <AppShell currentUser={user} fullBleed>
       <GroupPlanDetailView
+        currentUserId={user.id}
         groupId={groupId}
         groupName={group.name}
         mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}

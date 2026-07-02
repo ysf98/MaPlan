@@ -25,6 +25,7 @@ import { getPlanTimeMinutes } from "@/lib/groupPlansShared";
 import type { GroupPlanVote } from "@/types/supabase";
 
 type GroupPlanDetailViewProps = {
+  currentUserId?: string;
   groupId: string;
   groupName: string;
   loginHref?: string;
@@ -86,6 +87,19 @@ function formatPlanTime(date: string | null): string | null {
     minute: "2-digit",
     timeZone: PLAN_TIME_ZONE
   }).format(parsed);
+}
+
+function getVoteUserLabel(username: string | null, isCurrentUser: boolean): string {
+  if (isCurrentUser) {
+    return username && username !== "Tú" ? `@${username} · Tú` : "Tú";
+  }
+
+  return username ? `@${username}` : "Usuario";
+}
+
+function getVoteInitial(username: string | null, fallback: string): string {
+  const value = username?.trim() || fallback;
+  return value.slice(0, 1).toUpperCase();
 }
 
 function toDateInputValue(date: string | null): string {
@@ -288,6 +302,7 @@ function NativeDateTimeInput({ disabled, label, onChange, type, value }: NativeD
 }
 
 export function GroupPlanDetailView({
+  currentUserId,
   groupId,
   groupName,
   loginHref = "/login",
@@ -311,6 +326,7 @@ export function GroupPlanDetailView({
   const [pendingReorderRequestId, setPendingReorderRequestId] = useState<string | null>(null);
   const [draggedPlaceId, setDraggedPlaceId] = useState<string | null>(null);
   const [pendingVote, setPendingVote] = useState<GroupPlanVote | null>(null);
+  const [isVotersOpen, setIsVotersOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
   const [detailsState, updateDetailsAction, isSavingDetails] = useActionState(updateGroupPlanDetailsAction, updateDetailsInitialState);
   const [timeState, updateTimeAction, isSavingTime] = useActionState(updateGroupPlanPlaceTimeAction, updateTimeInitialState);
@@ -324,6 +340,14 @@ export function GroupPlanDetailView({
   const backHref = publicReadOnly ? "/" : `/groups/${groupId}?tab=planes`;
   const canEditPlan = !publicReadOnly && localPlan.canEdit;
   const canDeletePlan = !publicReadOnly && localPlan.canDelete;
+  const voteGroups = useMemo(
+    () => ({
+      attending: localPlan.votes.filter((vote) => vote.vote === "attending"),
+      maybe: localPlan.votes.filter((vote) => vote.vote === "maybe"),
+      not_attending: localPlan.votes.filter((vote) => vote.vote === "not_attending")
+    }),
+    [localPlan.votes]
+  );
 
   useEffect(() => {
     setLocalPlan(plan);
@@ -546,12 +570,24 @@ export function GroupPlanDetailView({
   function applyLocalVote(nextVote: GroupPlanVote) {
     setLocalPlan((current) => {
       const previousVote = current.currentUserVote;
+      const nextVotes = currentUserId
+        ? [
+            ...current.votes.filter((vote) => vote.userId !== currentUserId),
+            {
+              avatarUrl: null,
+              userId: currentUserId,
+              username: current.votes.find((vote) => vote.userId === currentUserId)?.username ?? "Tú",
+              vote: nextVote
+            }
+          ]
+        : current.votes;
       return {
         ...current,
         attendingCount: current.attendingCount + (nextVote === "attending" ? 1 : 0) - (previousVote === "attending" ? 1 : 0),
         maybeCount: current.maybeCount + (nextVote === "maybe" ? 1 : 0) - (previousVote === "maybe" ? 1 : 0),
         notAttendingCount: current.notAttendingCount + (nextVote === "not_attending" ? 1 : 0) - (previousVote === "not_attending" ? 1 : 0),
-        currentUserVote: nextVote
+        currentUserVote: nextVote,
+        votes: nextVotes
       };
     });
   }
@@ -923,7 +959,13 @@ export function GroupPlanDetailView({
           <div className="rounded-[32px] bg-[#fff0ef] p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-extrabold text-zinc-950">Asistentes</h2>
-              <span className="text-xs font-bold text-[#c6283a]">Ver todos</span>
+              <button
+                className="text-xs font-bold text-[#c6283a] transition hover:text-[#a91f31]"
+                onClick={() => setIsVotersOpen(true)}
+                type="button"
+              >
+                Ver todos
+              </button>
             </div>
             {voteState.error ? <p className="mt-3 text-sm font-semibold text-rose-600">{voteState.error}</p> : null}
             <div className="mt-4 grid grid-cols-3 gap-2">
@@ -968,6 +1010,76 @@ export function GroupPlanDetailView({
         </section>
         ) : null}
       </main>
+      {isVotersOpen ? (
+        <div className="fixed inset-0 z-[80] flex items-end bg-zinc-950/35 px-4 pb-5 pt-16 backdrop-blur-sm sm:items-center sm:justify-center" onClick={() => setIsVotersOpen(false)}>
+          <div
+            className="max-h-[82dvh] w-full overflow-y-auto rounded-[28px] border border-rose-100 bg-[#fff8f7] p-5 shadow-[0_24px_70px_rgba(38,24,23,0.24)] sm:max-w-md"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#c6283a]">Asistentes</p>
+                <h2 className="mt-1 text-xl font-extrabold text-zinc-950">Votos del plan</h2>
+              </div>
+              <button
+                aria-label="Cerrar"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-100 bg-white/80 text-zinc-500 transition hover:bg-white hover:text-[#c6283a]"
+                onClick={() => setIsVotersOpen(false)}
+                type="button"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              {[
+                { label: "Iré", votes: voteGroups.attending },
+                { label: "Quizás", votes: voteGroups.maybe },
+                { label: "No", votes: voteGroups.not_attending }
+              ].map((group) => (
+                <section className="rounded-[22px] bg-white/80 p-4" key={group.label}>
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-extrabold text-zinc-950">{group.label}</h3>
+                    <span className="rounded-full bg-[#fff0ef] px-2.5 py-1 text-[11px] font-extrabold text-[#c6283a]">{group.votes.length}</span>
+                  </div>
+                  {group.votes.length ? (
+                    <div className="mt-3 space-y-2">
+                      {group.votes.map((vote) => {
+                        const isCurrentUser = Boolean(currentUserId && vote.userId === currentUserId);
+                        const label = getVoteUserLabel(vote.username, isCurrentUser);
+                        return (
+                          <div className="flex items-center gap-3" key={vote.userId}>
+                            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-[#fde2e0]">
+                              {vote.avatarUrl ? (
+                                <div
+                                  aria-label={label}
+                                  className="h-full w-full bg-cover bg-center"
+                                  role="img"
+                                  style={{ backgroundImage: `url("${vote.avatarUrl}")` }}
+                                />
+                              ) : (
+                                <div className="grid h-full w-full place-items-center text-xs font-extrabold text-[#c6283a]">
+                                  {getVoteInitial(vote.username, isCurrentUser ? "T" : "U")}
+                                </div>
+                              )}
+                            </div>
+                            <span className="min-w-0 truncate text-sm font-bold text-zinc-700">{label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm font-semibold text-zinc-500">Sin votos todavía.</p>
+                  )}
+                </section>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
       <BottomDockNav isAuthenticated={!publicReadOnly} />
     </div>
   );
