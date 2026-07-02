@@ -32,13 +32,24 @@ export async function GET(_request: Request, { params }: ChatContextRouteProps) 
   return NextResponse.json({
     places: places.map((place) => ({
       id: place.id,
+      imageUrl: place.imageUrl ?? null,
       kind: "place",
+      rating: place.rating,
       subtitle: place.address,
-      title: place.name
+      title: place.name,
+      userRatingsTotal: place.userRatingsTotal
     })),
     plans: plans.map((plan) => ({
       id: plan.id,
       kind: "plan",
+      places: plan.places.slice(0, 4).map((place) => ({
+        address: place.address,
+        city: place.city,
+        imageUrl: place.imageUrl,
+        name: place.name
+      })),
+      plannedDate: plan.plannedDate,
+      placeCount: plan.places.length,
       subtitle: plan.plannedDate,
       title: plan.title
     })),

@@ -12,7 +12,7 @@ import {
 } from "@/app/groups/[groupId]/chat/actions";
 import { voteGroupPollAction, type GroupDecisionActionState } from "@/app/groups/[groupId]/decisions/actions";
 import { Button } from "@/components/ui/Button";
-import type { GroupChatMessageItem } from "@/lib/groupChat";
+import type { GroupChatMessageItem, GroupChatPlanPlacePreview } from "@/lib/groupChat";
 import type { GroupPollItem } from "@/lib/groupPolls";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -37,13 +37,19 @@ type LocalChatMessage = GroupChatMessageItem & {
 type ChatContext =
   | {
       id: string;
+      imageUrl?: string | null;
       kind: "place";
+      rating?: number | null;
       subtitle: string | null;
       title: string;
+      userRatingsTotal?: number | null;
     }
   | {
       id: string;
       kind: "plan";
+      placeCount?: number;
+      places?: GroupChatPlanPlacePreview[];
+      plannedDate?: string | null;
       subtitle: string | null;
       title: string;
     }
@@ -76,6 +82,22 @@ function formatMessageTime(value: string): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    month: "short"
+  }).format(parsed);
+}
+
+function formatPlanDateLabel(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
     month: "short"
   }).format(parsed);
 }
@@ -132,7 +154,10 @@ function buildMessageContext(message: GroupChatMessageItem, pollById: Map<string
     return {
       id: message.planId,
       kind: "plan",
-      subtitle: null,
+      placeCount: message.planPlaces.length,
+      places: message.planPlaces,
+      plannedDate: message.planPlannedDate,
+      subtitle: message.planPlannedDate,
       title: message.planTitle || "Plan"
     };
   }
@@ -140,13 +165,84 @@ function buildMessageContext(message: GroupChatMessageItem, pollById: Map<string
   if (message.placeId) {
     return {
       id: message.placeId,
+      imageUrl: message.placeImageUrl,
       kind: "place",
+      rating: message.placeRating,
       subtitle: message.placeAddress,
-      title: message.placeName || "Lugar"
+      title: message.placeName || "Lugar",
+      userRatingsTotal: message.placeUserRatingsTotal
     };
   }
 
   return null;
+}
+
+function PlaceContextCard({ context, groupId, isMine }: { context: Extract<ChatContext, { kind: "place" }>; groupId: string; isMine: boolean }) {
+  return (
+    <Link
+      className={`mt-3 flex gap-3 rounded-[18px] border p-2.5 transition ${
+        isMine ? "border-[#f3b6b2] bg-white/60 hover:bg-white" : "border-rose-100 bg-[#fff4f3] hover:bg-[#fff0ef]"
+      }`}
+      href={getContextHref(groupId, context)}
+    >
+      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-rose-100">
+        {context.imageUrl ? (
+          <div aria-hidden="true" className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url("${context.imageUrl}")` }} />
+        ) : (
+          <div className="grid h-full w-full place-items-center text-sm font-extrabold text-[#c6283a]">
+            {context.title.slice(0, 2).toUpperCase()}
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-extrabold uppercase text-[#c6283a]">Lugar</p>
+        <p className="mt-0.5 line-clamp-2 text-sm font-extrabold leading-4">{context.title}</p>
+        {context.subtitle ? <p className="mt-1 line-clamp-1 text-xs text-zinc-500">{context.subtitle}</p> : null}
+        {typeof context.rating === "number" ? (
+          <p className="mt-1 text-[11px] font-bold text-amber-700">★ {context.rating.toFixed(1)}{context.userRatingsTotal ? ` (${context.userRatingsTotal})` : ""}</p>
+        ) : null}
+      </div>
+    </Link>
+  );
+}
+
+function PlanContextCard({ context, groupId, isMine }: { context: Extract<ChatContext, { kind: "plan" }>; groupId: string; isMine: boolean }) {
+  const places = context.places || [];
+  const totalPlaces = context.placeCount ?? places.length;
+  const dateLabel = formatPlanDateLabel(context.plannedDate || context.subtitle);
+
+  return (
+    <Link
+      className={`mt-3 block rounded-[18px] border p-3 transition ${
+        isMine ? "border-[#f3b6b2] bg-white/60 hover:bg-white" : "border-rose-100 bg-[#fff4f3] hover:bg-[#fff0ef]"
+      }`}
+      href={getContextHref(groupId, context)}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-extrabold uppercase text-[#c6283a]">Plan</p>
+          <p className="mt-0.5 line-clamp-2 text-sm font-extrabold leading-4">{context.title}</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-extrabold text-[#c6283a]">
+          {totalPlaces} {totalPlaces === 1 ? "parada" : "paradas"}
+        </span>
+      </div>
+      {dateLabel ? <p className="mt-1 text-xs font-semibold text-zinc-500">{dateLabel}</p> : null}
+      {places.length ? (
+        <div className="mt-3 space-y-2">
+          {places.slice(0, 3).map((place, index) => (
+            <div className="flex items-center gap-2" key={`${place.name}:${index}`}>
+              <span className="h-2 w-2 shrink-0 rounded-full bg-[#c6283a]" />
+              <span className="min-w-0 truncate text-xs font-semibold text-zinc-700">{place.name}</span>
+            </div>
+          ))}
+          {totalPlaces > 3 ? <p className="pl-4 text-[11px] font-bold text-zinc-500">+ {totalPlaces - 3} más</p> : null}
+        </div>
+      ) : (
+        <p className="mt-3 text-xs font-semibold text-zinc-500">Plan sin paradas todavía.</p>
+      )}
+    </Link>
+  );
 }
 
 function PollChatCard({
@@ -495,13 +591,17 @@ export function GroupChatView({
               ? "poll"
               : "message",
       planId: selectedContext?.kind === "plan" ? selectedContext.id : null,
+      planPlaces: selectedContext?.kind === "plan" ? (selectedContext.places || []) : [],
+      planPlannedDate: selectedContext?.kind === "plan" ? (selectedContext.plannedDate ?? selectedContext.subtitle) : null,
       planTitle: selectedContext?.kind === "plan" ? selectedContext.title : null,
       pollId: selectedContext?.kind === "poll" ? selectedContext.id : null,
       pollTitle: selectedContext?.kind === "poll" ? selectedContext.title : null,
       placeAddress: selectedContext?.kind === "place" ? selectedContext.subtitle : null,
       placeId: selectedContext?.kind === "place" ? selectedContext.id : null,
-      placeImageUrl: null,
+      placeImageUrl: selectedContext?.kind === "place" ? (selectedContext.imageUrl ?? null) : null,
       placeName: selectedContext?.kind === "place" ? selectedContext.title : null,
+      placeRating: selectedContext?.kind === "place" ? (selectedContext.rating ?? null) : null,
+      placeUserRatingsTotal: selectedContext?.kind === "place" ? (selectedContext.userRatingsTotal ?? null) : null,
       planPlaceId: null,
       senderAvatarUrl: currentSender?.senderAvatarUrl ?? null,
       senderId: currentUserId,
@@ -597,23 +697,10 @@ export function GroupChatView({
                     <div className="mt-3">
                       <PollChatCard context={messageContext} groupId={groupId} onVoted={reloadPollContext} />
                     </div>
-                  ) : messageContext ? (
-                    <Link
-                      className={`mt-3 block rounded-[18px] border px-3 py-2 transition ${
-                        isMine ? "border-[#f3b6b2] bg-white/60 hover:bg-white" : "border-rose-100 bg-[#fff4f3] hover:bg-[#fff0ef]"
-                      }`}
-                      href={getContextHref(groupId, messageContext)}
-                    >
-                      <p className="text-[11px] font-extrabold uppercase text-[#c6283a]">
-                        {getContextLabel(messageContext.kind)}
-                      </p>
-                      <p className="mt-0.5 truncate text-sm font-extrabold">{messageContext.title}</p>
-                      {messageContext.subtitle ? (
-                        <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
-                          {messageContext.subtitle}
-                        </p>
-                      ) : null}
-                    </Link>
+                  ) : messageContext?.kind === "place" ? (
+                    <PlaceContextCard context={messageContext} groupId={groupId} isMine={isMine} />
+                  ) : messageContext?.kind === "plan" ? (
+                    <PlanContextCard context={messageContext} groupId={groupId} isMine={isMine} />
                   ) : null}
                   {shouldShowContent && message.content ? (
                     <p className={isPollMessage ? "px-4 pb-4 pt-3 text-sm leading-6 text-zinc-700" : "mt-1 whitespace-pre-wrap break-words text-sm leading-6"}>

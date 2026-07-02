@@ -18,7 +18,17 @@ type GroupChatMessageRow = {
 
 type ChatPlanContextRow = {
   id: string;
+  planned_date: string | null;
   title: string;
+};
+
+type ChatPlanPlacePreviewRow = {
+  place_address: string | null;
+  place_city: string | null;
+  place_image_url: string | null;
+  place_name: string | null;
+  plan_id: string;
+  position: number;
 };
 
 type ChatPollContextRow = {
@@ -31,6 +41,8 @@ type ChatPlaceContextRow = {
   id: string;
   image_url: string | null;
   name: string;
+  rating: number | null;
+  user_ratings_total: number | null;
 };
 
 type CreateGroupChatMessageInput = {
@@ -65,6 +77,8 @@ export type GroupChatMessageItem = {
   content: string;
   kind: GroupChatMessageKind;
   planId: string | null;
+  planPlaces: GroupChatPlanPlacePreview[];
+  planPlannedDate: string | null;
   planTitle: string | null;
   pollId: string | null;
   pollTitle: string | null;
@@ -72,9 +86,18 @@ export type GroupChatMessageItem = {
   placeAddress: string | null;
   placeImageUrl: string | null;
   placeName: string | null;
+  placeRating: number | null;
+  placeUserRatingsTotal: number | null;
   planPlaceId: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type GroupChatPlanPlacePreview = {
+  address: string | null;
+  city: string | null;
+  imageUrl: string | null;
+  name: string;
 };
 
 export type GroupChatUnreadSummary = {
@@ -132,18 +155,42 @@ export async function getGroupChatMessagesForUser(userId: string, groupId: strin
   const placeIds = Array.from(new Set(rows.map((row) => row.place_id).filter(Boolean) as string[]));
   const [plansResult, pollsResult, placesResult] = await Promise.all([
     planIds.length
-      ? supabase.from("group_plans").select("id, title").eq("group_id", groupId).in("id", planIds)
+      ? supabase.from("group_plans").select("id, title, planned_date").eq("group_id", groupId).in("id", planIds)
       : Promise.resolve({ data: [] as ChatPlanContextRow[] }),
     pollIds.length
       ? supabase.from("group_polls").select("id, title").eq("group_id", groupId).in("id", pollIds)
       : Promise.resolve({ data: [] as ChatPollContextRow[] }),
     placeIds.length
-      ? supabase.from("places").select("id, name, address, image_url").eq("group_id", groupId).in("id", placeIds)
+      ? supabase.from("places").select("id, name, address, image_url, rating, user_ratings_total").eq("group_id", groupId).in("id", placeIds)
       : Promise.resolve({ data: [] as ChatPlaceContextRow[] })
   ]);
   const planById = new Map(((plansResult.data || []) as ChatPlanContextRow[]).map((plan) => [plan.id, plan]));
   const pollById = new Map(((pollsResult.data || []) as ChatPollContextRow[]).map((poll) => [poll.id, poll]));
   const placeById = new Map(((placesResult.data || []) as ChatPlaceContextRow[]).map((place) => [place.id, place]));
+  const planPlacesByPlanId = new Map<string, GroupChatPlanPlacePreview[]>();
+
+  if (planIds.length) {
+    const { data: planPlaces } = await supabase
+      .from("group_plan_places")
+      .select("plan_id, place_name, place_address, place_city, place_image_url, position")
+      .in("plan_id", planIds)
+      .order("position", { ascending: true });
+
+    ((planPlaces || []) as ChatPlanPlacePreviewRow[]).forEach((place) => {
+      if (!place.place_name) {
+        return;
+      }
+
+      const current = planPlacesByPlanId.get(place.plan_id) || [];
+      current.push({
+        address: place.place_address,
+        city: place.place_city,
+        imageUrl: place.place_image_url,
+        name: place.place_name
+      });
+      planPlacesByPlanId.set(place.plan_id, current);
+    });
+  }
 
   return rows.flatMap((row) => {
     if (!isGroupChatMessageKind(row.kind)) {
@@ -164,6 +211,8 @@ export async function getGroupChatMessagesForUser(userId: string, groupId: strin
         content: row.content,
         kind: row.kind,
         planId: row.plan_id,
+        planPlaces: row.plan_id ? (planPlacesByPlanId.get(row.plan_id) || []) : [],
+        planPlannedDate: plan?.planned_date ?? null,
         planTitle: plan?.title ?? null,
         pollId: row.poll_id,
         pollTitle: poll?.title ?? null,
@@ -171,6 +220,8 @@ export async function getGroupChatMessagesForUser(userId: string, groupId: strin
         placeAddress: place?.address ?? null,
         placeImageUrl: place?.image_url ?? null,
         placeName: place?.name ?? null,
+        placeRating: place?.rating ?? null,
+        placeUserRatingsTotal: place?.user_ratings_total ?? null,
         planPlaceId: row.plan_place_id,
         createdAt: row.created_at,
         updatedAt: row.updated_at
