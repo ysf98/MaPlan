@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { GroupPlanItem } from "@/lib/groupPlans";
-import { extractPlanDatePart, getTodayPlanDatePart, isPlanDateOnOrAfter } from "@/lib/groupPlansShared";
+import { getTodayPlanDatePart, isPlanDateOnOrAfter } from "@/lib/groupPlansShared";
 import type { MapDraftPlace } from "@/lib/map/geocoding";
 
 type DraftPlacePlanDialogProps = {
@@ -27,29 +27,13 @@ const CREATE_PLAN_OPTION_VALUE = "__create_plan__";
 export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: DraftPlacePlanDialogProps) {
   const [mode, setMode] = useState<"create" | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState("");
-  const [placeTime, setPlaceTime] = useState("");
-  const [placeNote, setPlaceNote] = useState("");
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [plannedDate, setPlannedDate] = useState("");
   const [minPlanDate] = useState(() => getTodayPlanDatePart());
   const [createState, createAction, isCreating] = useActionState(createGroupPlanFromDraftAction, createInitialState);
   const [addState, addAction, isAdding] = useActionState(addDraftPlaceToGroupPlanAction, addInitialState);
 
   const availablePlans = useMemo(() => plans.filter((plan) => plan.acceptsNewPlaces), [plans]);
-
-  function buildPlanPlaceDateTime(planDate: string | null, timeValue: string): string {
-    if (!planDate || !timeValue) {
-      return "";
-    }
-
-    const datePart = extractPlanDatePart(planDate);
-    if (!datePart) {
-      return "";
-    }
-
-    return `${datePart}T${timeValue}`;
-  }
 
   function isOptionalPlanDateAllowed(value: string): boolean {
     const trimmed = value.trim();
@@ -84,10 +68,7 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
 
     setMode(null);
     setSelectedPlanId("");
-    setPlaceTime("");
-    setPlaceNote("");
     setTitle("");
-    setDescription("");
     setPlannedDate("");
   }, [addState.success, createState.success]);
 
@@ -172,27 +153,6 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
                 <Input className="bg-[#fff1ef]" min={minPlanDate} onChange={(event) => setPlannedDate(event.target.value)} type="date" value={plannedDate} />
               </label>
               {!isCreatePlanDateAllowed ? <p className="text-sm text-rose-600">La fecha del plan no puede ser anterior a hoy.</p> : null}
-              <label className="block space-y-2">
-                <span className="text-sm font-semibold text-zinc-700">Descripción</span>
-                <textarea
-                  className="min-h-[110px] w-full rounded-[22px] border border-transparent bg-[#fff4f3] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-[#ff5a5f]"
-                  maxLength={500}
-                  onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Cuenta de que va el plan"
-                  value={description}
-                />
-              </label>
-              <Input label="Hora del lugar" onChange={(event) => setPlaceTime(event.target.value)} type="time" value={placeTime} />
-              <label className="block space-y-2">
-                <span className="text-sm font-semibold text-zinc-700">Nota del lugar</span>
-                <textarea
-                  className="min-h-[96px] w-full rounded-2xl border border-transparent bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-[#ff5a5f]"
-                  maxLength={280}
-                  onChange={(event) => setPlaceNote(event.target.value)}
-                  placeholder="Algo útil para este sitio"
-                  value={placeNote}
-                />
-              </label>
               {createState.error ? <p className="text-sm text-rose-600">{createState.error}</p> : null}
               <div className="flex justify-end gap-2 pt-4">
                 <Button onClick={() => setMode(null)} size="sm" type="button" variant="ghost">
@@ -205,10 +165,10 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
                     const payload = new FormData();
                     appendDraftFields(payload);
                     payload.set("title", title);
-                    payload.set("description", description);
+                    payload.set("description", "");
                     payload.set("plannedDate", plannedDate);
-                    payload.set("initialPlacePlannedAt", buildPlanPlaceDateTime(plannedDate, placeTime));
-                    payload.set("initialPlaceNote", placeNote);
+                    payload.set("initialPlacePlannedAt", "");
+                    payload.set("initialPlaceNote", "");
                     startTransition(() => createAction(payload));
                   }}
                   size="sm"
