@@ -150,7 +150,7 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
             <div className="mt-4 space-y-4">
               <label className="block space-y-2">
                 <span className="text-sm font-semibold text-zinc-700">Nombre del Plan</span>
-                <Input className="bg-[#fdeeee]" onChange={(event) => setTitle(event.target.value)} placeholder="Ruta de tapas" value={title} />
+                <Input className="bg-[#fdeeee]" onChange={(event) => setTitle(event.target.value)} placeholder="" value={title} />
               </label>
               <label className="block space-y-2">
                 <span className="text-sm font-semibold text-zinc-700">Fecha</span>

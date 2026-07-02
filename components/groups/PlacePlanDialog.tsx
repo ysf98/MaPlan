@@ -102,7 +102,7 @@ export function PlacePlanDialog({
             <Input
               className="bg-[#fdeeee]"
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Ruta de tapas"
+              placeholder=""
               value={title}
             />
           </label>
