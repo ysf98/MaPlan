@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 type MapMobileTabsProps<TValue extends string> = {
   tabs: Array<{ label: string; value: TValue }>;
   activeValue: TValue;
+  fallbackHref: string;
   onChange: (value: TValue) => void;
 };
 
-export function MapMobileTabs<TValue extends string>({ tabs, activeValue, onChange }: MapMobileTabsProps<TValue>) {
+export function MapMobileTabs<TValue extends string>({ tabs, activeValue, fallbackHref, onChange }: MapMobileTabsProps<TValue>) {
   const router = useRouter();
 
   return (
@@ -23,7 +24,7 @@ export function MapMobileTabs<TValue extends string>({ tabs, activeValue, onChan
         <button
           aria-label="Volver"
           className="mb-1 mr-2 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-700 transition hover:bg-white/40 hover:text-zinc-950 active:scale-95"
-          onClick={() => router.back()}
+          onClick={() => router.push(fallbackHref)}
           type="button"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 24 24">

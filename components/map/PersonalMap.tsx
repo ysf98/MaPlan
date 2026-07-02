@@ -36,6 +36,7 @@ import {
 import { getGooglePlaceDetails, getGooglePlaceNearby, type GooglePlaceSuggestion } from "@/lib/map/googlePlaces";
 import type { PersonalPlace } from "@/lib/personalPlaces";
 import type { PersonalMapTab } from "@/lib/map/tabs";
+import { ROUTES } from "@/utils/constants";
 
 const addPersonalPlaceInitialState: AddPersonalPlaceActionState = {
   error: null,
@@ -534,7 +535,7 @@ export function PersonalMap({
 
         <div className="pointer-events-none absolute inset-x-4 top-[calc(env(safe-area-inset-top)+12px)] z-20">
           {mobileTabs && activeMobileTab && onMobileTabChange ? (
-            <MapMobileTabs activeValue={activeMobileTab} onChange={onMobileTabChange} tabs={mobileTabs} />
+            <MapMobileTabs activeValue={activeMobileTab} fallbackHref={ROUTES.maps} onChange={onMobileTabChange} tabs={mobileTabs} />
           ) : null}
           <div
             className="pointer-events-auto mt-2 min-w-0 sm:mt-0"

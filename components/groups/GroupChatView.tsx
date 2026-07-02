@@ -620,11 +620,6 @@ export function GroupChatView({
   }
 
   function goBack() {
-    if (window.history.length > 1) {
-      router.back();
-      return;
-    }
-
     router.push(`/groups/${groupId}`);
   }
 

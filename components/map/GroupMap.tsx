@@ -604,7 +604,7 @@ export function GroupMap({
 
         <div className="pointer-events-none absolute inset-x-4 top-[calc(env(safe-area-inset-top)+12px)] z-20">
           {mobileTabs && activeMobileTab && onMobileTabChange ? (
-            <MapMobileTabs activeValue={activeMobileTab} onChange={onMobileTabChange} tabs={mobileTabs} />
+            <MapMobileTabs activeValue={activeMobileTab} fallbackHref={`/groups/${groupId}`} onChange={onMobileTabChange} tabs={mobileTabs} />
           ) : null}
           <div
             className="pointer-events-auto mt-2 min-w-0 sm:mt-0"
