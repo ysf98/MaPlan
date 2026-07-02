@@ -127,23 +127,27 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
       {addState.error ? <p className="mt-1 text-xs font-medium text-rose-600">{addState.error}</p> : null}
 
       {mode ? (
-        <div className="fixed inset-0 z-[120] overflow-y-auto bg-[#fff8f7] px-5 py-4" onClick={() => setMode(null)}>
-          <div className="mx-auto w-full max-w-xl bg-[#fff8f7]" onClick={(event) => event.stopPropagation()}>
+        <div className="fixed inset-0 z-[120] flex items-end bg-zinc-950/35 px-4 pb-5 pt-16 backdrop-blur-sm sm:items-center sm:justify-center" onClick={() => setMode(null)}>
+          <div
+            className="w-full rounded-[28px] border border-rose-100 bg-[#fff8f7] p-5 shadow-[0_24px_70px_rgba(38,24,23,0.24)] sm:max-w-md"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="flex items-center justify-between gap-3">
+              <h3 className="text-lg font-bold text-zinc-950">Crear plan</h3>
               <button
-                aria-label="Volver"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-700 transition hover:bg-white/80 hover:text-[#c6283a]"
+                aria-label="Cerrar"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-100 bg-white/80 text-zinc-500 transition hover:bg-white hover:text-[#c6283a]"
                 onClick={() => setMode(null)}
                 type="button"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                  <path d="m15 18-6-6 6-6" />
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
                 </svg>
               </button>
-              <div className="h-9 w-9" aria-hidden="true" />
             </div>
 
-            <div className="mt-7 space-y-4">
+            <div className="mt-4 space-y-4">
               <label className="block space-y-2">
                 <span className="text-sm font-semibold text-zinc-700">Nombre del Plan</span>
                 <Input className="bg-[#fdeeee]" onChange={(event) => setTitle(event.target.value)} placeholder="Ruta de tapas" value={title} />
@@ -154,7 +158,7 @@ export function DraftPlacePlanDialog({ groupId, draft, canManagePlans, plans }: 
               </label>
               {!isCreatePlanDateAllowed ? <p className="text-sm text-rose-600">La fecha del plan no puede ser anterior a hoy.</p> : null}
               {createState.error ? <p className="text-sm text-rose-600">{createState.error}</p> : null}
-              <div className="flex justify-end gap-2 pt-4">
+              <div className="flex justify-end gap-2 pt-2">
                 <Button onClick={() => setMode(null)} size="sm" type="button" variant="ghost">
                   Cancelar
                 </Button>
