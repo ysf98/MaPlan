@@ -4,6 +4,8 @@ MaPlan es una aplicación social de mapas para guardar, organizar y compartir lu
 
 Versión desplegada: [https://maplan.vercel.app/](https://maplan.vercel.app/)
 
+Slides de presentación: [Presentación MaPlan Final](docs/presentacion-maplan-final.pdf)
+
 ## ✨ Descripción general
 
 La idea principal de MaPlan es convertir el mapa en un espacio colaborativo. Cada usuario puede tener su propio mapa personal y, además, participar en grupos donde se comparten lugares, planes, encuestas y mensajes.
@@ -141,6 +143,7 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 ### 🔒 Autenticación y seguridad
 
 - Registro e inicio de sesión con Supabase Auth.
+- Recuperación de contraseña por email con enlace seguro y pantalla de nueva contraseña.
 - Protección de datos mediante RLS.
 - Validaciones server-side con Zod.
 - Server actions con autenticación y comprobación de permisos.
@@ -255,6 +258,8 @@ Estas credenciales son solo para demostraciones y pruebas del prototipo.
 - `/`
 - `/login`
 - `/register`
+- `/forgot-password`
+- `/reset-password`
 - `/dashboard`
 - `/friends`
 - `/invitations`
@@ -350,6 +355,7 @@ pnpm test:e2e
 - Si `pnpm` no existe, instalar pnpm/Corepack antes de cambiar de package manager.
 - Si Mapbox no carga, revisar `NEXT_PUBLIC_MAPBOX_TOKEN`.
 - Si Google Places no responde, revisar `GOOGLE_PLACES_API_KEY`.
+- Si el enlace de recuperación de contraseña no vuelve a la app, revisar en Supabase Auth que el dominio permita redirigir a `/auth/callback`.
 - Si la ubicación del navegador no funciona, usar HTTPS o `localhost` y revisar permisos.
 - Si Realtime no actualiza, comprobar que las tablas necesarias están activadas en `supabase_realtime`.
 - Si el mapa aparece gris o mal dimensionado, revisar `components/map/useMapboxResize.ts`.
