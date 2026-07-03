@@ -89,9 +89,9 @@ export function LoginForm({ nextPath = ROUTES.dashboard }: LoginFormProps) {
       </div>
 
       <div className="flex justify-end">
-        <a className="text-xs font-semibold text-[rgb(var(--vc-coral))] hover:underline" href="#">
+        <Link className="text-xs font-semibold text-[rgb(var(--vc-coral))] hover:underline" href={ROUTES.forgotPassword}>
           Olvidé mi contraseña
-        </a>
+        </Link>
       </div>
 
       {state.error ? <p className="text-sm text-rose-600">{state.error}</p> : null}
