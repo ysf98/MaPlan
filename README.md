@@ -6,6 +6,8 @@ Versión desplegada: [https://maplan.vercel.app/](https://maplan.vercel.app/)
 
 Slides de presentación: [Presentación MaPlan Final](docs/presentacion-maplan-final.pdf)
 
+Vídeo demo: [VideoMaPlan](docs/video-maplan.mp4)
+
 ## ✨ Descripción general
 
 La idea principal de MaPlan es convertir el mapa en un espacio colaborativo. Cada usuario puede tener su propio mapa personal y, además, participar en grupos donde se comparten lugares, planes, encuestas y mensajes.
